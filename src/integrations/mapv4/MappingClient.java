@@ -47,8 +47,8 @@ public class MappingClient {
     public static void destroy() {
 	synchronized (MappingClient.class) {
 	    if(INSTANCE != null) {
-	        INSTANCE.gridsUploader.shutdown();
-	        INSTANCE.scheduler.shutdown();
+		INSTANCE.gridsUploader.shutdown();
+		INSTANCE.scheduler.shutdown();
 		INSTANCE = null;
 	    }
 	}
@@ -118,6 +118,8 @@ public class MappingClient {
      */
     public boolean CheckEndpoint() {
 	try {
+	    if (INSTANCE == null)
+		return false;
 	    HttpURLConnection connection =
 		(HttpURLConnection) new URL(endpoint + "/checkVersion?version=4").openConnection();
 	    connection.setRequestMethod("GET");
@@ -248,7 +250,7 @@ public class MappingClient {
 	@Override
 	public void run() {
 	    if(mapfile.lock.readLock().tryLock()) {
-		List<MarkerData> markers = mapfile.markers.stream().filter(uploadCheck).map(m -> {
+		List<MarkerData> markers = mapfile.markers.stream().map(m -> {
 		    Coord mgc = new Coord(Math.floorDiv(m.tc.x, 100), Math.floorDiv(m.tc.y, 100));
 		    Indir<MapFile.Grid> indirGrid = mapfile.segments.get(m.seg).grid(mgc);
 		    return new MarkerData(m, indirGrid);
@@ -286,14 +288,19 @@ public class MappingClient {
 	
 	@Override
 	public void run() {
-	    ArrayList<JSONObject> loadedMarkers = new ArrayList<>();
-	    while (!markers.isEmpty()) {
+	    try
+	    {
+		ArrayList<JSONObject> loadedMarkers = new ArrayList<>();
+		if (markers.isEmpty())
+		    return;
+	    
 		System.out.println("processing " + markers.size() + " markers");
-		Iterator<MarkerData> iterator = markers.iterator();
-		while (iterator.hasNext()) {
-		    MarkerData md = iterator.next();
+		for (int i = 0; i < markers.size(); i++) {
 		    try {
+			MarkerData md = markers.get(i);
 			Coord mgc = new Coord(Math.floorDiv(md.m.tc.x, 100), Math.floorDiv(md.m.tc.y, 100));
+			if (md.indirGrid.get() == null)
+			    continue;
 			long gridId = md.indirGrid.get().id;
 			JSONObject o = new JSONObject();
 			o.put("name", md.m.nm);
@@ -301,28 +308,34 @@ public class MappingClient {
 			Coord gridOffset = md.m.tc.sub(mgc.mul(100));
 			o.put("x", gridOffset.x);
 			o.put("y", gridOffset.y);
-			
 			if(md.m instanceof SMarker) {
 			    o.put("type", "shared");
-			    o.put("id", ((SMarker) md.m).oid);
+			    try {
+				o.put("id", ((SMarker) md.m).oid);
+			    } catch (Exception ex)
+			    {
+				o.put("id", 0);
+			    }
 			    o.put("image", ((SMarker) md.m).res.name);
 			} else if(md.m instanceof PMarker) {
 			    o.put("type", "player");
 			    o.put("color", ((PMarker) md.m).color);
 			}
 			loadedMarkers.add(o);
-			iterator.remove();
 		    } catch (Loading ex) {
 		    }
 		}
+	 
+		System.out.println("scheduling marker upload");
 		try {
-		    Thread.sleep(50);
-		} catch (InterruptedException ex) { }
+		    scheduler.execute(new MarkerUpdate(new JSONArray(loadedMarkers.toArray())));
+		} catch (Exception ex) {
+		    System.out.println(ex);
+		}
 	    }
-	    System.out.println("scheduling marker upload");
-	    try {
-		scheduler.execute(new MarkerUpdate(new JSONArray(loadedMarkers.toArray())));
-	    } catch (Exception ex) {
+	    catch (Exception ex)
+	    {
+		System.out.println("Error while processing markers");
 		System.out.println(ex);
 	    }
 	}
@@ -345,6 +358,7 @@ public class MappingClient {
 		connection.setDoOutput(true);
 		try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
 		    final String json = data.toString();
+		    //System.out.println(json);
 		    out.write(json.getBytes(StandardCharsets.UTF_8));
 		}
 		int code = connection.getResponseCode();
@@ -432,6 +446,7 @@ public class MappingClient {
 			connection.setDoOutput(true);
 			try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
 			    final String json = upload.toString();
+			    //System.out.println(json);
 			    out.write(json.getBytes(StandardCharsets.UTF_8));
 			} catch (Exception e) {
 			}
@@ -536,6 +551,13 @@ public class MappingClient {
 			for (int i = 0; reqs != null && i < reqs.length(); i++) {
 			    gridsUploader.execute(new GridUploadTask(reqs.getString(i), gridUpdate.gridRefs.get(reqs.getString(i))));
 			}
+			try {
+			    JSONArray reqs2 = jo.optJSONArray("gridOverlayRequests");
+			    for (int i = 0; reqs2 != null && i < reqs2.length(); i++) {
+				gridsUploader.execute(new GridOverlayUploadTask(reqs2.getString(i), gridUpdate.gridRefs.get(reqs2.getString(i))));
+			    }
+			}
+			catch (Exception ex) {}
 		    }
 		    
 		} catch (Exception ex) {
@@ -561,7 +583,7 @@ public class MappingClient {
 		if(g != null && glob != null && glob.map != null) {
 		    BufferedImage image = MinimapImageGenerator.drawmap(glob.map, g);
 		    if(image == null) {
-			throw new Loading();
+			return;
 		    }
 		    try {
 			JSONObject extraData = new JSONObject();
@@ -576,8 +598,50 @@ public class MappingClient {
 			MultipartUtility.Response response = multipart.finish();
 			if(response.statusCode != 200) {
 			    System.out.println("Upload Error: Code" + response.statusCode + " - " + response.response);
-			} else {
-			
+			}
+		    } catch (IOException e) {
+			System.out.println("Cannot upload " + gridID + ": " + e.getMessage());
+		    }
+		}
+	    } catch (Loading ex) {
+		// Retry on Loading
+		gridsUploader.submit(this);
+	    }
+	    
+	}
+    }
+    
+    private class GridOverlayUploadTask implements Runnable {
+	private final String gridID;
+	private final WeakReference<MCache.Grid> grid;
+	
+	GridOverlayUploadTask(String gridID, WeakReference<MCache.Grid> grid) {
+	    this.gridID = gridID;
+	    this.grid = grid;
+	}
+	
+	@Override
+	public void run() {
+	    try {
+		MCache.Grid g = grid.get();
+		if(g != null && glob != null && glob.map != null) {
+		    BufferedImage image = MinimapImageGenerator.drawoverlay(glob.map, g);
+		    if(image == null) {
+			return;
+		    }
+		    try {
+			JSONObject extraData = new JSONObject();
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			ImageIO.write(image, "png", outputStream);
+			ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+			MultipartUtility multipart = new MultipartUtility(endpoint + "/gridOverlayUpload", "utf-8");
+			multipart.addFormField("id", this.gridID);
+			multipart.addFilePart("file", inputStream, "minimap.png");
+			extraData.put("season", glob.ast.is);
+			multipart.addFormField("extraData", extraData.toString());
+			MultipartUtility.Response response = multipart.finish();
+			if(response.statusCode != 200) {
+			    System.out.println("Upload Error: Code" + response.statusCode + " - " + response.response);
 			}
 		    } catch (IOException e) {
 			System.out.println("Cannot upload " + gridID + ": " + e.getMessage());

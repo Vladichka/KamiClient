@@ -26,12 +26,16 @@
 
 package haven;
 
-
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
 import java.util.HashSet;
 import java.util.LinkedList;
 import haven.render.*;
 import java.awt.event.KeyEvent;
 import java.util.Set;
+import integrations.mapv4.MappingClient;
 
 import static haven.Text.*;
 
@@ -1334,23 +1338,73 @@ public class OptWnd extends WindowX {
 	
 	x = 0;
 	y = START;
-	
+ 
+	Label mappingLabel = new Label("Mapping URL: Re-Enable options");;
+	MappingClient automapper = null;
+	try {
+	    automapper = MappingClient.getInstance();
+	    mappingLabel.settext("Mapping URL: " + (automapper.CheckEndpoint() ? "Valid" : "Invalid"));
+	} catch (Exception ex) {
+	    CFG.AUTOMAP_UPLOAD.set(false);
+	    CFG.AUTOMAP_TRACK.set(false);
+	    CFG.AUTOFOOD_TRACK.set(false);
+	}
+ 
+ 
 	panel.add(new CFGBox("Upload enabled", CFG.AUTOMAP_UPLOAD), x, y);
 	y += STEP;
 	
 	panel.add(new CFGBox("Tracking enabled", CFG.AUTOMAP_TRACK), x, y);
 	y += STEP;
-	
-	panel.add(new Label("Mapping URL:"), x, y);
+ 
+	panel.add(new CFGBox("Food Tracking Enabled", CFG.AUTOFOOD_TRACK), x, y);
 	y += STEP;
-	
-	panel.add(new TextEntry(UI.scale(250), CFG.AUTOMAP_ENDPOINT.get()) {
+ 
+	panel.add(mappingLabel, x, y);
+	y += STEP;
+ 
+	String automapEndpoint = CFG.AUTOMAP_ENDPOINT.get();
+	if (automapEndpoint == null || automapEndpoint.isEmpty()) {
+	    automapEndpoint = "{input map key here}";
+	}
+	TextEntry map_url = new TextEntry(UI.scale(250), automapEndpoint) {
 	    @Override
-	    public boolean keydown(KeyEvent ev) {
+	    public boolean keyup(KeyEvent ev) {
 		if(!parent.visible)
 		    return false;
 		CFG.AUTOMAP_ENDPOINT.set(text());
-		return buf.key(ev);
+		return false;
+	    }
+	};
+ 
+	panel.add(map_url, x, y);
+ 
+	y += STEP;
+ 
+	panel.add(new Button(UI.scale(150), "load from clipboard", false) {
+	    @Override
+	    public void click() {
+		try {
+		
+		    // Get the system clipboard
+		    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+		
+		    // Get the clipboard's content
+		    Transferable contents = clipboard.getContents(null);
+		
+		    if (contents != null && contents.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+			// Clipboard contains text
+			String clipboardText = (String) contents.getTransferData(DataFlavor.stringFlavor);
+			map_url.settext(clipboardText);
+			CFG.AUTOMAP_ENDPOINT.set(clipboardText);
+			System.out.println("Clipboard content: " + clipboardText);
+		    }
+		    else {
+			System.out.println("Clipboard does not contain text");
+		    }
+		} catch (Exception e) {
+		    System.out.println(e);
+		}
 	    }
 	}, x, y);
 	
@@ -1386,10 +1440,30 @@ public class OptWnd extends WindowX {
 		}
 	    }
 	}, x, y);
-	
+ 
 	y += STEP;
-	
-	panel.add(new PButton(UI.scale(200), "Back", 27, main), x, y);
+	panel.add(new Button(UI.scale(100), "Save", false) {
+	    @Override
+	    public void click() {
+		try {
+		    boolean setUsername = false;
+		    if (!MappingClient.initialized() && ui.sess.username != null &&  ui.sess.username.length() > 0) {
+			MappingClient.init(ui.sess.glob);
+			setUsername = true;
+		    }
+		    MappingClient automapper = MappingClient.getInstance();
+		    if (setUsername)
+			automapper.SetPlayerName(ui.sess.username);
+		    automapper.SetEndpoint(CFG.AUTOMAP_ENDPOINT.get());
+		    automapper.EnableGridUploads(CFG.AUTOMAP_UPLOAD.get());
+		    automapper.EnableTracking(CFG.AUTOMAP_TRACK.get());
+		    mappingLabel.settext("Mapping URL: " + (automapper.CheckEndpoint() ? "Valid" : "Invalid"));
+		} catch (Exception ex) {}
+	    
+	    }
+	}, x, y);
+ 
+	panel.add(new PButton(UI.scale(100), "Back", 27, main), x + UI.scale(150), y);
 	panel.pack();
 	title.c.x = (panel.sz.x - title.sz.x) / 2;
     }

@@ -26,6 +26,7 @@
 
 package haven;
 
+import integrations.food.FoodService;
 import rx.functions.Action0;
 
 import java.awt.Color;
@@ -289,6 +290,12 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    if(pg != null)
 		info.add(new ItemInfo.Pagina(this, pg.text));
 	    this.info = info;
+	    try {
+		if (CFG.AUTOFOOD_TRACK.get()) {
+		    FoodService.checkFood(info, getres(), itemq.get().single().value);
+		}
+	    } catch (Exception ex) {
+	    }
 	}
 	return(this.info);
     }
