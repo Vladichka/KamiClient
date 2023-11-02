@@ -826,7 +826,7 @@ public class Widget {
 	}
 	return(false);
     }
-	
+    
     public void mousemove(Coord c) {
 	for(Widget wdg = lchild; wdg != null; wdg = wdg.prev) {
 	    if(!wdg.visible)
@@ -835,7 +835,6 @@ public class Widget {
 	    wdg.mousemove(c.add(cc.inv()));
 	}
     }
-
     public boolean mousehover(Coord c) {
 	for(Widget wdg = lchild; wdg != null; wdg = wdg.prev) {
 	    if(!wdg.visible)
@@ -846,7 +845,8 @@ public class Widget {
 	}
 	return(false);
     }
-
+    
+    
     private static final Map<Integer, Integer> gkeys = Utils.<Integer, Integer>map().
 	put((int)'0', KeyEvent.VK_0).put((int)'1', KeyEvent.VK_1).put((int)'2', KeyEvent.VK_2).put((int)'3', KeyEvent.VK_3).put((int)'4', KeyEvent.VK_4).
 	put((int)'5', KeyEvent.VK_5).put((int)'6', KeyEvent.VK_6).put((int)'7', KeyEvent.VK_7).put((int)'8', KeyEvent.VK_8).put((int)'9', KeyEvent.VK_9).
@@ -1425,11 +1425,6 @@ public class Widget {
 	}
     }
 
-    @Deprecated
-    public Object tooltip(Coord c, boolean again) {
-	return(null);
-    }
-
     public Object tooltip(Coord c, Widget prev) {
 	if(prev != this)
 	    prevtt = null;
@@ -1450,7 +1445,7 @@ public class Widget {
 	    }
 	}
 	prevtt = null;
-	return(tooltip(c, prev == this));
+	return(null);
     }
 
     public Widget settip(String text, boolean rich) {

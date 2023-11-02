@@ -50,12 +50,10 @@ public abstract class ItemInfo {
     public static ItemInfo make(Session sess, String resname, Object... args) {
 	Resource res = Resource.remote().load(resname).get();
 	InfoFactory f = res.layer(Resource.CodeEntry.class).get(InfoFactory.class);
-	return f.build(new SessOwner(sess), args);
+	return f.build(new SessOwner(sess), null, args);
     }
     
     public interface Owner extends OwnerContext {
-	@Deprecated
-	public default Glob glob() {return(context(Glob.class));}
 	public List<ItemInfo> info();
     }
 
@@ -103,13 +101,7 @@ public abstract class ItemInfo {
 
     @Resource.PublishedCode(name = "tt", instancer = FactMaker.class)
     public static interface InfoFactory {
-	public default ItemInfo build(Owner owner, Raw raw, Object... args) {
-	    return(build(owner, args));
-	}
-	@Deprecated
-	public default ItemInfo build(Owner owner, Object... args) {
-	    throw(new AbstractMethodError("info factory missing either build bmethod"));
-	}
+	public ItemInfo build(Owner owner, Raw raw, Object... args);
     }
 
     public static class FactMaker extends Resource.PublishedCode.Instancer.Chain<InfoFactory> {
@@ -219,7 +211,7 @@ public abstract class ItemInfo {
 	    original = orig;
 	    this.str = str;
 	}
-    
+ 
 	public Name(Owner owner, Text str) {
 	    this(owner, str, str.text);
 	}
@@ -227,7 +219,7 @@ public abstract class ItemInfo {
 	public Name(Owner owner, String str) {
 	    this(owner, Text.render(str), str);
 	}
-    
+ 
 	public Name(Owner owner, String str, String orig) {
 	    this(owner, Text.render(str), orig);
 	}
@@ -250,11 +242,11 @@ public abstract class ItemInfo {
 	}
 
 	public static class Default implements InfoFactory {
-	    public ItemInfo build(Owner owner, Object... args) {
+	    public static String get(Owner owner) {
 		if(owner instanceof SpriteOwner) {
 		    GSprite spr = ((SpriteOwner)owner).sprite();
 		    if(spr instanceof Dynamic)
-			return(new Name(owner, ((Dynamic)spr).name()));
+			return(((Dynamic)spr).name());
 		}
 		if(!(owner instanceof ResOwner))
 		    return(null);
@@ -262,7 +254,12 @@ public abstract class ItemInfo {
 		Resource.Tooltip tt = res.layer(Resource.tooltip);
 		if(tt == null)
 		    throw(new RuntimeException("Item resource " + res + " is missing default tooltip"));
-		return(new Name(owner, tt.t));
+		return(tt.t);
+	    }
+
+	    public ItemInfo build(Owner owner, Raw raw, Object... args) {
+		String nm = get(owner);
+		return((nm == null) ? null : new Name(owner, nm));
 	    }
 	}
     }
@@ -314,7 +311,7 @@ public abstract class ItemInfo {
 		    public int order() {return(100);}
 		});
 	}
-    
+ 
 	public Content content() {
 	    QualityList q = QualityList.make(sub);
 	    for (ItemInfo i : sub) {
@@ -339,8 +336,8 @@ public abstract class ItemInfo {
 		return new Content(m.group(3), m.group(2), count, q);
 	    }
 	    return Content.EMPTY;
-	} 
-    
+	}
+ 
 	public static class Content {
 	    public final String name;
 	    public final String unit;
@@ -486,21 +483,27 @@ public abstract class ItemInfo {
 
     public static List<ItemInfo> buildinfo(Owner owner, Raw raw) {
 	List<ItemInfo> ret = new ArrayList<ItemInfo>();
+	Resource.Resolver rr = owner.context(Resource.Resolver.class);
 	for(Object o : raw.data) {
 	    if(o instanceof Object[]) {
 		Object[] a = (Object[])o;
-		Resource ttres;
-		if(a[0] instanceof Integer) {
-		    ttres = owner.glob().sess.getres((Integer)a[0]).get();
-		} else if(a[0] instanceof Resource) {
-		    ttres = (Resource)a[0];
-		} else if(a[0] instanceof Indir) {
-		    ttres = (Resource)((Indir)a[0]).get();
+		ItemInfo inf;
+		if(a[0] instanceof InfoFactory) {
+		    inf = ((InfoFactory)a[0]).build(owner, raw, a);
 		} else {
-		    throw(new ClassCastException("Unexpected info specification " + a[0].getClass()));
+		    Resource ttres;
+		    if(a[0] instanceof Integer) {
+			ttres = rr.getres((Integer)a[0]).get();
+		    } else if(a[0] instanceof Resource) {
+			ttres = (Resource)a[0];
+		    } else if(a[0] instanceof Indir) {
+			ttres = (Resource)((Indir)a[0]).get();
+		    } else {
+			throw(new ClassCastException("Unexpected info specification " + a[0].getClass()));
+		    }
+		    InfoFactory f = ttres.getcode(InfoFactory.class, true);
+		    inf = f.build(owner, raw, a);
 		}
-		InfoFactory f = ttres.getcode(InfoFactory.class, true);
-		ItemInfo inf = f.build(owner, raw, a);
 		if(inf != null)
 		    ret.add(inf);
 	    } else if(o instanceof String) {
@@ -703,7 +706,7 @@ public abstract class ItemInfo {
 	    this.data = data;
 	    this.def = def;
 	}
-    
+ 
 	public AttrCache(Supplier<List<ItemInfo>> from, Function<List<ItemInfo>, Supplier<R>> data) {
 	    this(from, data, null);
 	}
@@ -711,7 +714,7 @@ public abstract class ItemInfo {
 	public R get() {
 	    return get(def);
 	}
-    
+ 
 	public R get(R def) {
 	    try {
 		List<ItemInfo> info = from.get();

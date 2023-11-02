@@ -511,7 +511,7 @@ public class UI {
 	mc = c;
 	root.mousemove(c);
     }
-
+    
     public void mousehover(Coord c) {
 	root.mousehover(c);
     }

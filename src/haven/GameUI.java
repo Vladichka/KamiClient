@@ -271,11 +271,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	this.genus = genus;
 	setcanfocus(true);
 	setfocusctl(true);
-	chat = add(new ChatUI(0, 0));
-	if(Utils.getprefb("chatvis", true)) {
-	    chat.hresize(chat.savedh);
-	    chat.show();
-	}
+	chat = add(new ChatUI());
+	chat.show(Utils.getprefb("chatvis", true));
 	beltwdg.raise();
 	blpanel = add(new Hidepanel("gui-bl", null, new Coord(-1,  1)) {
 		public void move(double a) {
@@ -581,14 +578,14 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	if(chat.visible() && !chat.hasfocus) {
 	    setfocus(chat);
 	} else {
-	    if(chat.targeth == 0) {
-		chat.sresize(chat.savedh);
-		setfocus(chat);
+	    if(chat.targetshow) {
+		chat.sshow(false);
 	    } else {
-		chat.sresize(0);
+		chat.sshow(true);
+		setfocus(chat);
 	    }
 	}
-	Utils.setprefb("chatvis", chat.targeth != 0);
+	Utils.setprefb("chatvis", chat.targetshow);
     }
 
     public void toggleCraftDB() {
@@ -1334,10 +1331,10 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	public boolean dragp(int button) {
 	    return(false);
 	}
-
+ 
 	public boolean clickmarker(DisplayMarker mark, Location loc, int button, boolean press) {
 	    if(mark.m instanceof SMarker) {
-		Gob gob = MarkerID.find(ui.sess.glob.oc, ((SMarker)mark.m).oid);
+		Gob gob = MarkerID.find(ui.sess.glob.oc, (SMarker)mark.m);
 		if(gob != null)
 		    mvclick(map, null, loc, gob, button);
 	    }

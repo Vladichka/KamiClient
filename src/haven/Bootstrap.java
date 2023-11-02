@@ -42,7 +42,7 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
     public static boolean useinitauth = true;
     String hostname;
     int port;
-    final Queue<Message> msgs = new LinkedList<Message>();
+    Queue<Message> msgs = new LinkedList<Message>();
     String inituser = null;
     byte[] initcookie = null;
     byte[] inittoken = null;
@@ -282,21 +282,13 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		    for(int i = 0; i < addrs.length; i++) {
 			if(i > 0)
 			    ui.uimsg(1, "prg", String.format("Connecting (address %d/%d)...", i + 1, addrs.length));
-			sess = new Session(new InetSocketAddress(addrs[i], port), acctname, cookie);
-			sess.ui = ui;
-			while(true) {
-			    synchronized(sess) {
-				if(sess.state == "") {
-				    break connect;
-				} else if(sess.connfailed != 0) {
-				    String error = sess.connerror;
-				    if(error == null)
-					error = "Connection failed";;
-				    ui.uimsg(1, "error", error);
-				    continue retry;
-				}
-				sess.wait();
-			    }
+			try {
+			    sess = new Session(new InetSocketAddress(addrs[i], port), acctname, cookie);
+			    break connect;
+			} catch(Connection.SessionConnError err) {
+			} catch(Connection.SessionError err) {
+			    ui.uimsg(1, "error", err.toString());
+			    continue retry;
 			}
 		    }
 		    ui.uimsg(1, "error", "Could not connect to server");

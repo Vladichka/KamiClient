@@ -209,11 +209,11 @@ public class CharWnd extends WindowX {
 
 	public void update(Object... args) {
 	    int n = 0;
-	    this.cap = (Float)args[n++];
+	    this.cap = Utils.fv(args[n++]);
 	    List<El> enew = new LinkedList<El>();
 	    while(n < args.length) {
 		Indir<Resource> res = ui.sess.getres((Integer)args[n++]);
-		double a = (Float)args[n++];
+		double a = Utils.fv(args[n++]);
 		enew.add(new El(res, a));
 	    }
 	    this.enew = enew;
@@ -1079,8 +1079,6 @@ public class CharWnd extends WindowX {
 	    public Text text;
 
 	    public DefaultCond(Condition cond) {super(cond);}
-	    @Deprecated
-	    public DefaultCond(Widget parent, Condition cond) {super(cond);}
 
 	    protected void added() {
 		super.added();
@@ -1376,7 +1374,7 @@ public class CharWnd extends WindowX {
 			Indir<Resource> wres = ui.sess.getres((Integer)cond[i].wdata[0]);
 			nw[i] = (CondWidget)wres.get().getcode(Widget.Factory.class, true).create(ui, new Object[] {cond[i]});
 		    } else {
-			nw[i] = new DefaultCond(cont, cond[i]);
+			nw[i] = new DefaultCond(cond[i]);
 		    }
 		    y += cont.add(nw[i], new Coord(0, y)).sz.y;
 		}

@@ -18,7 +18,7 @@ public class Ingredient extends ItemInfo.Tip {
 	this(owner, name, null);
     }
 
-    public static class Fac implements InfoFactory {
+    public static abstract class Fac implements InfoFactory {
 	public ItemInfo build(Owner owner, Object... args) {
 	    int a = 1;
 	    String name;

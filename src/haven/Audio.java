@@ -36,13 +36,9 @@ public class Audio {
     public static boolean enabled = true;
     private static Player player;
     public static final AudioFormat fmt = new AudioFormat(44100, 16, 2, true, false);
+    public static double volume = Double.parseDouble(Utils.getpref("sfxvol", "1.0"));
     public static int bufsize = CFG.AUDIO_BUFFER.get();
-    public static double volume = 1.0;
-    
-    static {
-	volume = Double.parseDouble(Utils.getpref("sfxvol", "1.0"));
-    }
-    
+
     public static void setvolume(double volume) {
 	Audio.volume = volume;
 	Utils.setpref("sfxvol", Double.toString(volume));

@@ -41,7 +41,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
     public Indir<Resource> res;
     public MessageBuf sdt;
     public int meter = 0;
-    public long meterUpdated = 0; //last time meter was updated, ms 
+    public long meterUpdated = 0; //last time meter was updated, ms
     public int num = -1;
     public Widget contents = null;
     public String contentsnm = null;
@@ -56,7 +56,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
     public boolean sendttupdate = false;
     private long filtered = 0;
     private final List<Action0> matchListeners = new ArrayList<>();
-
+    
     public static void setFilter(ItemFilter filter) {
 	GItem.filter = filter;
 	lastFilter = System.currentTimeMillis();
@@ -69,44 +69,44 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    return(new GItem(ui.sess.getres(res), sdt));
 	}
     }
-
+    
     public interface ColorInfo {
 	public Color olcol();
     }
-
+    
     public interface OverlayInfo<T> {
 	public T overlay();
 	public void drawoverlay(GOut g, T data);
     }
-
+    
     public static class InfoOverlay<T> {
 	public final OverlayInfo<T> inf;
 	public final T data;
-
+	
 	public InfoOverlay(OverlayInfo<T> inf) {
 	    this.inf = inf;
 	    this.data = inf.overlay();
 	}
-
+	
 	public void draw(GOut g) {
 	    inf.drawoverlay(g, data);
 	}
-
+	
 	public static <S> InfoOverlay<S> create(OverlayInfo<S> inf) {
 	    return(new InfoOverlay<S>(inf));
 	}
     }
-
+    
     public interface NumberInfo extends OverlayInfo<Tex> {
 	public int itemnum();
 	public default Color numcolor() {
 	    return(Color.WHITE);
 	}
-
+	
 	public default Tex overlay() {
 	    return(new TexI(GItem.NumberInfo.numrender(itemnum(), numcolor())));
 	}
-
+	
 	public default void drawoverlay(GOut g, Tex tex) {
 	    if(CFG.SWAP_NUM_AND_Q.get()) {
 		g.aimage(tex, TEXT_PADD_TOP.add(g.sz().x, 0), 1, 0);
@@ -114,38 +114,38 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 		g.aimage(tex, TEXT_PADD_BOT.add(g.sz()), 1, 1);
 	    }
 	}
-
+	
 	public static BufferedImage numrender(int num, Color col) {
 	    return(Utils.outline2(Text.render(Integer.toString(num), col).img, Utils.contrast(col)));
 	}
     }
-
+    
     public interface MeterInfo {
 	public double meter();
     }
-
+    
     public static class Amount extends ItemInfo implements NumberInfo {
 	private final int num;
-
+	
 	public Amount(Owner owner, int num) {
 	    super(owner);
 	    this.num = num;
 	}
-
+	
 	public int itemnum() {
 	    return(num);
 	}
     }
-
+    
     public GItem(Indir<Resource> res, Message sdt) {
 	this.res = res;
 	this.sdt = new MessageBuf(sdt);
     }
-
+    
     public GItem(Indir<Resource> res) {
 	this(res, Message.nil);
     }
-
+    
     private Random rnd = null;
     public Random mkrandoom() {
 	if(rnd == null)
@@ -160,7 +160,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
     public <T> T context(Class<T> cl) {return(ctxr.context(cl, this));}
     @Deprecated
     public Glob glob() {return(ui.sess.glob);}
-
+    
     public GSprite spr() {
 	GSprite spr = this.spr;
 	if(spr == null) {
@@ -171,7 +171,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	}
 	return(spr);
     }
-
+    
     public String resname(){
 	Resource res = resource();
 	if(res != null){
@@ -179,7 +179,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	}
 	return "";
     }
-
+    
     public void tick(double dt) {
 	super.tick(dt);
 	GSprite spr = spr();
@@ -254,7 +254,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	if(name == null) {throw new Loading("item is not ready!");}
 	return name.contains(what) || contains.get().is(what);
     }
-
+    
     public void testMatch() {
 	try {
 	    if(filtered < lastFilter && spr != null) {
@@ -280,7 +280,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    matchListeners.remove(listener);
 	}
     }
-
+    
     public List<ItemInfo> info() {
 	if(this.info == null) {
 	    List<ItemInfo> info = ItemInfo.buildinfo(this, rawinfo);
@@ -292,17 +292,17 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	}
 	return(this.info);
     }
-
+    
     public Resource resource() {
 	return(res.get());
     }
-
+    
     public GSprite sprite() {
 	if(spr == null)
 	    throw(new Loading("Still waiting for sprite to be constructed"));
 	return(spr);
     }
-
+    
     public void uimsg(String name, Object... args) {
 	if(name == "num") {
 	    num = (Integer)args[0];
@@ -320,7 +320,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    meterUpdated = System.currentTimeMillis();
 	    if(sendttupdate){wdgmsg("ttupdate");}
 	} else if(name == "meter") {
-	    meterUpdated = System.currentTimeMillis();	    
+	    meterUpdated = System.currentTimeMillis();
 	    meter = (int)((Number)args[0]).doubleValue();
 	} else if(name == "contopen") {
 	    boolean nst;
@@ -333,7 +333,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    super.uimsg(name, args);
 	}
     }
-
+    
     public void addchild(Widget child, Object... args) {
 	/* XXX: Update this to use a checkable args[0] once a
 	 * reasonable majority of clients can be expected to not crash
@@ -346,7 +346,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 		contentsid = args[2];
 	}
     }
-
+    
     public void cdestroy(Widget w) {
 	super.cdestroy(w);
 	if(w == contents) {
@@ -354,11 +354,11 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    contentsid = null;
 	}
     }
-
+    
     public static interface ContentsInfo {
 	public void propagate(List<ItemInfo> buf, ItemInfo.Owner outer);
     }
-
+    
     /* XXX: Please remove me some time, some day, when custom clients
      * can be expected to have merged ContentsInfo. */
     private static void propagate(ItemInfo inf, List<ItemInfo> buf, ItemInfo.Owner outer) {
@@ -368,7 +368,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	} catch(NoSuchMethodException e) {
 	}
     }
-
+    
     private int lastcontseq;
     private List<Pair<GItem, Integer>> lastcontinfo = null;
     private void updcontinfo() {
@@ -404,7 +404,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    lastcontinfo = null;
 	}
     }
-
+    
     private void addcontinfo(List<ItemInfo> buf) {
 	Widget contents = this.contents;
 	if(contents != null) {
@@ -425,13 +425,13 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	onBound(widget -> wdgmsg("drop", Coord.z));
     }
     
-
+    
     private Widget contparent() {
 	/* XXX: This is a bit weird, but I'm not sure what the alternative is... */
 	Widget cont = getparent(GameUI.class);
 	return((cont == null) ? cont = ui.root : cont);
     }
-
+    
     public void destroy() {
 	if(contents != null) {
 	    contents.reqdestroy();
@@ -443,14 +443,14 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	}
 	super.destroy();
     }
-
+    
     private Widget lcont = null;
     public Contents contentswdg;
     public Window contentswnd;
     private void ckconthover() {
 	if(lcont != this.contents) {
 	    if((this.contents != null) && (this.contentsid != null) && (contentswdg == null) && (contentswnd == null) &&
-	       Utils.getprefb(String.format("cont-wndvis/%s", this.contentsid), false)) {
+		Utils.getprefb(String.format("cont-wndvis/%s", this.contentsid), false)) {
 		Coord c = Utils.getprefc(String.format("cont-wndc/%s", this.contentsid), null);
 		if(c != null) {
 		    this.contents.unlink();
@@ -490,7 +490,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	hovering = null;
 	hovering_pos = null;
     }
-
+    
     public void showcontwnd(boolean show) {
 	if(show && (contentswnd == null)) {
 	    Widget cont = contparent();
@@ -517,7 +517,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    Utils.setprefb(String.format("cont-wndvis/%s", this.contentsid), false);
 	}
     }
-
+    
     public static class Contents extends Widget {
 	public static final Coord hovermarg = UI.scale(12, 12);
 	public static final Coord overlap = UI.scale(2, 2);
@@ -528,7 +528,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	private boolean invdest, hovering;
 	private UI.Grab dm = null;
 	private Coord doff;
-
+	
 	public Contents(GItem cont, Widget inv) {
 	    z(90);
 	    this.cont = cont;
@@ -540,7 +540,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    this.inv = add(inv, hovermarg.add(obox.ctloff()));
 	    this.tick(0);
 	}
-
+	
 	public void draw(GOut g) {
 	    Coord bgc = new Coord();
 	    Coord ctl = hovermarg.add(obox.btloff());
@@ -552,13 +552,13 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    obox.draw(g, hovermarg, sz.sub(hovermarg));
 	    super.draw(g);
 	}
-
+	
 	public void tick(double dt) {
 	    super.tick(dt);
 	    resize(inv.c.add(inv.sz).add(obox.btloff()));
 	    hovering = false;
 	}
-
+	
 	public void destroy() {
 	    if(!invdest) {
 		inv.unlink();
@@ -566,7 +566,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    }
 	    super.destroy();
 	}
-
+	
 	public boolean hasmore() {
 	    for(GItem item : children(GItem.class)) {
 		if(item.contentswdg != null)
@@ -574,7 +574,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    }
 	    return(false);
 	}
-
+	
 	public void cdestroy(Widget w) {
 	    super.cdestroy(w);
 	    if(w == inv) {
@@ -584,11 +584,11 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 		cont.contentswdg = null;
 	    }
 	}
-
+	
 	public boolean checkhit(Coord c) {
 	    return((c.x >= hovermarg.x) && (c.y >= hovermarg.y));
 	}
-
+	
 	public boolean mousedown(Coord c, int btn) {
 	    if(super.mousedown(c, btn))
 		return(true);
@@ -601,7 +601,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    }
 	    return(false);
 	}
-
+	
 	public boolean mouseup(Coord c, int btn) {
 	    if((dm != null) && (btn == 1)) {
 		dm.remove();
@@ -610,7 +610,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    }
 	    return(super.mouseup(c, btn));
 	}
-
+	
 	public void mousemove(Coord c) {
 	    if(dm != null) {
 		if(c.dist(doff) > 10) {
@@ -630,21 +630,21 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 		super.mousemove(c);
 	    }
 	}
-
+	
 	public boolean mousehover(Coord c) {
 	    super.mousehover(c);
 	    hovering = true;
 	    return(true);
 	}
     }
-
+    
     public static class ContentsWindow extends WindowX {
 	public final GItem cont;
 	public final Widget inv;
 	private boolean invdest;
 	private Coord psz = null;
 	private Object id;
-
+	
 	public ContentsWindow(GItem cont, Widget inv) {
 	    super(Coord.z, cont.contentsnm);
 	    this.cont = cont;
@@ -652,7 +652,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    this.id = cont.contentsid;
 	    this.tick(0);
 	}
-
+	
 	private Coord lc = null;
 	public void tick(double dt) {
 	    if(cont.contents != inv) {
@@ -668,7 +668,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 		Utils.setprefb(String.format("cont-wndvis/%s", cont.contentsid), true);
 	    }
 	}
-
+	
 	public void wdgmsg(Widget sender, String msg, Object... args) {
 	    if((sender == this) && (msg == "close")) {
 		reqdestroy();
@@ -679,7 +679,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 		super.wdgmsg(sender, msg, args);
 	    }
 	}
-
+	
 	public void destroy() {
 	    if(!invdest) {
 		inv.unlink();
@@ -687,7 +687,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    }
 	    super.destroy();
 	}
-
+	
 	public void cdestroy(Widget w) {
 	    super.cdestroy(w);
 	    if(w == inv) {
