@@ -60,6 +60,8 @@ public class CFG<T> {
     public static final CFG<UI.KeyMod> MENU_SKIP_AUTO_CHOOSE = new CFG<>("ui.menu_skip_auto_choose", UI.KeyMod.SHIFT);
     public static final CFG<Boolean> MENU_ADD_PICK_ALL = new CFG<>("ui.menu_add_pick_all", false);
     public static final CFG<Boolean> FLAT_CUPBOARDS = new CFG<>("display.gob.flat.cupboard", false);
+    public static final CFG<Integer> CUPBOARD_HEIGHT = new CFG<>("display.cupboard_height", 100);
+    public static final CFG<Integer> PALISADE_HEIGHT = new CFG<>("display.palisade_height", 100);
     
     public static final CFG<Map<String, Map<String, Boolean>>> WARN_CONFIG = new CFG<>("general.warning", new HashMap<>());
     public static final CFG<Boolean> REAL_TIME_CURIO = new CFG<>("ui.real_time_curio", false);
