@@ -93,7 +93,10 @@ public class CFG<T> {
     public static final CFG<Boolean> AUTOFOOD_TRACK = new CFG<>("autofood.track", false);
     public static final CFG<Set<BuddyWnd.Group>> AUTOMAP_MARKERS = new CFG<>("automap.markers", new HashSet<>(), new TypeToken<Set<BuddyWnd.Group>>(){});
     public static final CFG<String> AUTOMAP_ENDPOINT = new CFG<>("automap.andpoint", "");
-
+    
+    // some new additions
+    public static final CFG<Boolean> FLATTEN_TERRAIN = new CFG("display.flatten_terrain", false);
+    
     private static final String CONFIG_JSON = "config.json";
     private static final Map<Object, Object> cfg;
     private static final Map<String, Object> cache = new HashMap<>();

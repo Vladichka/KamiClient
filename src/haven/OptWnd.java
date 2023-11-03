@@ -1056,6 +1056,9 @@ public class OptWnd extends WindowX {
 	x = 0;
 	y = START;
 	panel.add(new CFGBox("Show flavor objects", CFG.DISPLAY_FLAVOR, "Requires restart"), x, y);
+ 
+	y += STEP;
+	panel.add(new CFGBox("Flatten terrain", CFG.FLATTEN_TERRAIN), x, y);
 	
 	y += STEP;
 	panel.add(new CFGBox("Simple crops", CFG.SIMPLE_CROPS, "Requires area reload"), x, y);
