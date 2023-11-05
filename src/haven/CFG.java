@@ -98,6 +98,7 @@ public class CFG<T> {
     // some new additions
     public static final CFG<Boolean> FLATTEN_TERRAIN = new CFG("display.flatten_terrain", false);
     public static final CFG<Boolean> MOVE_COMBAT_UI = new CFG<>("combat.ui_movable", false);
+    public static final CFG<Boolean> DRAW_OPENINGS_OVER_GOBS = new CFG<>("combat.openings_over_gobs", false);
     public static final CFG<Coord> OFFSET_OPENINGS = new CFG<>("combat.offset_openings", new Coord(0,0));
     public static final CFG<Coord> OFFSET_ACTIONS = new CFG<>("combat.offset_actions", new Coord(0,0));
     

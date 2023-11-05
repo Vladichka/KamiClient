@@ -300,9 +300,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		public Coord get() {
 		    int x = blpanel.c.y - mapmenupanel.sz.y + UI.scale(33);
 		    int y = GameUI.this.sz.y - chat.sz.y - mapmenupanel.sz.y;
-		    Coord z = new Coord(0, Math.min(x,y));
-		    System.out.println(String.format("Hidepanel: %d, %d: %s", x, y, z.toString()));
-		    return(z);
+		    return(new Coord(0, Math.min(x,y)));
 		}
 	    }, new Coord(-1, 0)));
 	brpanel = add(new Hidepanel("gui-br", null, new Coord( 1,  1)) {

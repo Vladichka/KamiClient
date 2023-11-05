@@ -285,4 +285,16 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	wdgmsg("cl", c.sub(imgoff), btn, ui.modflags());
 	return(true);
     }
+    
+    public boolean isOpening() {
+	try
+	{
+	    Resource res = this.res.get();
+	    Color clr = OPENINGS.get(res.name);
+	    return (clr != null);
+	}
+	catch (Exception ex) {
+	    return false;
+	}
+    }
 }
