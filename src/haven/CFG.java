@@ -2,6 +2,7 @@ package haven;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 import haven.PathVisualizer.PathCategory;
 import haven.rx.BuffToggles;
@@ -96,6 +97,9 @@ public class CFG<T> {
     
     // some new additions
     public static final CFG<Boolean> FLATTEN_TERRAIN = new CFG("display.flatten_terrain", false);
+    public static final CFG<Boolean> MOVE_COMBAT_UI = new CFG<>("combat.ui_movable", false);
+    public static final CFG<Coord> OFFSET_OPENINGS = new CFG<>("combat.offset_openings", new Coord(0,0));
+    public static final CFG<Coord> OFFSET_ACTIONS = new CFG<>("combat.offset_actions", new Coord(0,0));
     
     private static final String CONFIG_JSON = "config.json";
     private static final Map<Object, Object> cfg;

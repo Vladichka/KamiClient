@@ -1308,6 +1308,18 @@ public class OptWnd extends WindowX {
 	
 	y += STEP;
 	panel.add(new CFGBox("Display combat keys", CFG.SHOW_COMBAT_KEYS), x, y);
+ 
+	y += STEP;
+	panel.add(new CFGBox("Enable UI movement", CFG.MOVE_COMBAT_UI, "Move openings with SHIFT + CTRL. Move actions with CTRL."), x, y);
+ 
+	y += STEP;
+	panel.add(new Button(UI.scale(200), "Reset UI", false) {
+	    @Override
+	    public void click() {
+		CFG.OFFSET_ACTIONS.set(new Coord(0,0));
+		CFG.OFFSET_OPENINGS.set(new Coord(0,0));
+	    }
+	}, x, y);
 	
 	//second row
 	my = Math.max(my, y);

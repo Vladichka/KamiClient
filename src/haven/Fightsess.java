@@ -70,6 +70,11 @@ public class Fightsess extends Widget {
     public Coord pcc;
     public int pho;
     private Fightview fv;
+    
+    private boolean changeOffset1 = false;
+    private boolean changeOffset2 = false;
+    private Coord offsetCombatActions = CFG.OFFSET_ACTIONS.get();
+    private Coord offsetOpeningView = CFG.OFFSET_OPENINGS.get();
 
     public static class Action {
 	public final Indir<Resource> res;
@@ -86,6 +91,40 @@ public class Fightsess extends Widget {
 	    int nact = (Integer)args[0];
 	    return(new Fightsess(nact));
 	}
+    }
+    
+    public boolean mousedown(Coord c, int button) {
+	if (CFG.MOVE_COMBAT_UI.get()) {
+	    changeOffset1 = (this.ui.modshift && this.ui.modctrl);
+	    changeOffset2 = (!this.ui.modshift && this.ui.modctrl);
+	}
+	return false;
+    }
+    
+    public boolean mouseup(Coord c, int button)
+    {
+	changeOffset1 = false;
+	changeOffset2 = false;
+	return false;
+    }
+    
+    private Coord lastMousePos = null;
+    public void mousemove(Coord c)
+    {
+	if (lastMousePos == null)
+	{
+	    lastMousePos = c;
+	    return;
+	}
+	if (changeOffset1) {
+	    offsetOpeningView = offsetOpeningView.add(c.sub(lastMousePos));
+	    CFG.OFFSET_OPENINGS.set(offsetOpeningView);
+	}
+	if (changeOffset2) {
+	    offsetCombatActions = offsetCombatActions.add(c.sub(lastMousePos));
+	    CFG.OFFSET_ACTIONS.set(offsetCombatActions);
+	}
+	lastMousePos = c;
     }
 
     @SuppressWarnings("unchecked")
@@ -213,10 +252,16 @@ public class Fightsess extends Widget {
     private Effect curtgtfx;
     public void draw(GOut g) {
 	updatepos();
-        boolean altui = CFG.ALT_COMBAT_UI.get();
-	int x0 = ui.gui.calendar.rootpos().x + ui.gui.calendar.sz.x / 2;
-	int y0 = ui.gui.calendar.rootpos().y + ui.gui.calendar.sz.y / 2;
-	int bottom = ui.gui.beltwdg.c.y - 40;
+ 
+	boolean altui = CFG.ALT_COMBAT_UI.get();
+	int x0 = ui.gui.calendar.rootpos().x + (ui.gui.calendar.sz.x / 2);
+	int y0 = ui.gui.calendar.rootpos().y + (ui.gui.calendar.sz.y / 2) + UI.scale(50);
+	int x1 = x0;
+	int y1 = ui.gui.sz.y - UI.scale(100) ;
+	y0 += offsetOpeningView.y;
+	x0 += offsetOpeningView.x;
+	x1 += offsetCombatActions.x;
+	y1 += offsetCombatActions.y;
 	double now = Utils.rtime();
 
 	for(Buff buff : fv.buffs.children(Buff.class))
@@ -289,7 +334,7 @@ public class Fightsess extends Widget {
 	    }
 	}
 	for(int i = 0; i < actions.length; i++) {
-	    Coord ca = altui ? new Coord(x0 - 18, bottom - 150).add(actc(i)) : pcc.add(actc(i));
+	    Coord ca = altui ? new Coord(x1 - 18, y1 - UI.scale(150)).add(actc(i)) : pcc.add(actc(i));
 	    Action act = actions[i];
 	    try {
 		if(act != null) {
