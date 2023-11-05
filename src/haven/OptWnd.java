@@ -1058,6 +1058,12 @@ public class OptWnd extends WindowX {
 	panel.add(new CFGBox("Show flavor objects", CFG.DISPLAY_FLAVOR, "Requires restart"), x, y);
  
 	y += STEP;
+	panel.add(new CFGBox("Enable terrain blending", CFG.ENABLE_TERRAIN_BLEND, "Game looks worse without it, but it may save some computing power... maybe..."), x, y);
+	
+	y += STEP;
+	panel.add(new CFGBox("Enable biome transition", CFG.ENABLE_BIOME_TRANSITION, "You like square tiles? Disable this."), x, y);
+ 
+	y += STEP;
 	panel.add(new CFGBox("Flatten terrain", CFG.FLATTEN_TERRAIN), x, y);
 	
 	y += STEP;

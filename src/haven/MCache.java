@@ -803,6 +803,8 @@ public class MCache implements MapSource {
 	    }
 	};
 	CFG.FLATTEN_TERRAIN.observe(change);
+	CFG.ENABLE_BIOME_TRANSITION.observe((change));
+	CFG.ENABLE_TERRAIN_BLEND.observe((change));
     }
 
     public void ctick(double dt) {
