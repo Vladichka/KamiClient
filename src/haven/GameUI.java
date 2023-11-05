@@ -271,18 +271,38 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	this.genus = genus;
 	setcanfocus(true);
 	setfocusctl(true);
-	chat = add(new ChatUI());
+	chat = add(new ChatUI() {
+	    public void resize(Coord c)
+	    {
+		super.resize(c);
+		if (blpanel != null)
+		    blpanel.move();
+		if(fold_bl[2] != null)
+		    fold_bl[2].presize();
+		if (qqview != null)
+		    qqview.presize();
+	    }
+	});
 	chat.show(Utils.getprefb("chatvis", true));
 	beltwdg.raise();
-	blpanel = add(new Hidepanel("gui-bl", null, new Coord(-1,  1)) {
+	blpanel = add(new Hidepanel("gui-bl", new Indir<Coord>() {
+		public Coord get() {
+		    Coord x = new Coord(0, GameUI.this.sz.y - mapmenupanel.sz.y - chat.sz.y + beltwdg.sz.y + UI.scale(5));
+		    return(x);
+		}
+	    }, new Coord(-1,  1)) {
 		public void move(double a) {
 		    super.move(a);
 		    mapmenupanel.move();
 		}
-	    });
+	});
 	mapmenupanel = add(new Hidepanel("mapmenu", new Indir<Coord>() {
 		public Coord get() {
-		    return(new Coord(0, Math.min(blpanel.c.y - mapmenupanel.sz.y + UI.scale(33), GameUI.this.sz.y - mapmenupanel.sz.y)));
+		    int x = blpanel.c.y - mapmenupanel.sz.y + UI.scale(33);
+		    int y = GameUI.this.sz.y - chat.sz.y - mapmenupanel.sz.y;
+		    Coord z = new Coord(0, Math.min(x,y));
+		    System.out.println(String.format("Hidepanel: %d, %d: %s", x, y, z.toString()));
+		    return(z);
 		}
 	    }, new Coord(-1, 0)));
 	brpanel = add(new Hidepanel("gui-br", null, new Coord( 1,  1)) {
@@ -470,7 +490,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		    updfold(true);
 		}
 		public void presize() {
-		    this.c = new Coord(0, parent.sz.y - sz.y);
+		    this.c = new Coord(0, parent.sz.y - sz.y - chat.sz.y);
 		}
 	    };
 	fold_bl[3] = new IButton("gfx/hud/lbtn-dwn", "", "-d", "-h") {
@@ -1261,7 +1281,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     }
 
     public void draw(GOut g) {
-	beltwdg.c = new Coord(chat.c.x, Math.min(chat.c.y - beltwdg.sz.y, sz.y - beltwdg.sz.y));
+	beltwdg.c = new Coord(chat.c.x + blpw, Math.min(chat.c.y - beltwdg.sz.y, sz.y - beltwdg.sz.y));
 	super.draw(g);
 	int by = sz.y;
 	if(chat.visible())
@@ -1749,8 +1769,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 
     public void resize(Coord sz) {
 	super.resize(sz);
-	chat.resize(sz.x - blpw - brpw);
-	chat.move(new Coord(blpw, sz.y));
+	chat.resize(UI.scale(600));
+	chat.move(new Coord(0, sz.y));
 	if(map != null)
 	    map.resize(sz);
 	if(prog != null)
