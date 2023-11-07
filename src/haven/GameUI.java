@@ -99,6 +99,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     public TimerPanel timers;
     private Gob detectGob;
     public StudyWnd studywnd;
+    public List<Widget> ExtInventories = new LinkedList<>();
     public Observable menuObservable = new Observable(){
 	@Override
 	public void notifyObservers(Object arg) {
@@ -2125,5 +2126,27 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     }
     public Map<String, Console.Command> findcmds() {
 	return(cmdmap);
+    }
+    
+    public void addInventory(Widget ext) {
+	WindowX wnd = ext.getparent(WindowX.class);
+	if(wnd == null) {return;}
+	String name = wnd.cfgName(wnd.caption()).toLowerCase();
+	if(name.contains("inventory")
+	    || name.contains("character sheet")
+	    || name.contains("equipment")
+	    || name.contains("study")) {
+	    return;
+	}
+	ExtInventories.add(ext);
+    }
+    
+    public void remInventory(Widget ext) {
+	for (int i = 0; i < ExtInventories.size(); i++) {
+	    if(ExtInventories.get(i) == ext) {
+		ExtInventories.remove(i);
+		return;
+	    }
+	}
     }
 }
