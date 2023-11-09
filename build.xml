@@ -140,6 +140,7 @@
       <fileset dir="resources/compiled" />
       <fileset dir="resources" includes="item_data/**"/>
       <file file="etc/radar.json"/>
+      <file file="etc/pvp_map.json"/>
       <file file="etc/gob_path.json"/>
       <file file="etc/gob_radius.json"/>
       <file file="etc/autochoose.json"/>
@@ -188,6 +189,9 @@
       <fileset dir="lib/ext/jogl"><include name="*.jar" /></fileset>
       <fileset dir="lib/ext/lwjgl"><include name="*.jar" /></fileset>
     </copy>
+    <copy todir="build/alerts">
+      <fileset dir="etc/alerts"><include name="*.wav" /></fileset>
+    </copy>
     <copy file="local-config.properties" tofile="build/haven-config.properties" failonerror="false" quiet="true" />
   </target>
 
@@ -203,6 +207,9 @@
       </fileset>
       <fileset dir="lib/ext/jogl"><include name="*.jar" /></fileset>
       <fileset dir="lib/ext/lwjgl"><include name="*.jar" /></fileset>
+    </copy>
+    <copy todir="bin/alerts">
+      <fileset dir="etc/alerts"><include name="*.wav" /></fileset>
     </copy>
     <copy file="etc/ansgar-config.properties" tofile="bin/haven-config.properties" />
     <chmod file="bin/hafen.jar" perm="a+x" />

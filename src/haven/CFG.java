@@ -103,6 +103,10 @@ public class CFG<T> {
     public static final CFG<Boolean> DRAW_OPENINGS_OVER_GOBS = new CFG<>("combat.openings_over_gobs", false);
     public static final CFG<Coord> OFFSET_OPENINGS = new CFG<>("combat.offset_openings", new Coord(0,0));
     public static final CFG<Coord> OFFSET_ACTIONS = new CFG<>("combat.offset_actions", new Coord(0,0));
+    public static final CFG<Boolean> PVP_MAP = new CFG("map.pvp_mode", false);
+    public static final CFG<Boolean> SHOW_PLAYER_NAME = new CFG("map.player_names", false);
+    public static final CFG<Boolean> SHOW_RED_NAME = new CFG("map.red_names", false);
+    public static final CFG<Boolean> SHOW_PARTY_NAMES = new CFG("map.party_names", false);
     
     private static final String CONFIG_JSON = "config.json";
     private static final Map<Object, Object> cfg;

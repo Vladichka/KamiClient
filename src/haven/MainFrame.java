@@ -207,6 +207,8 @@ public class MainFrame extends java.awt.Frame implements Console.Directory {
 	pp.requestFocus();
 	seticon();
 	setVisible(true);
+	Utils.initPvpMap();
+	Utils.initPvpModeMarkers();
 	addWindowListener(new WindowAdapter() {
 		public void windowClosing(WindowEvent e) {
 		    mt.interrupt();

@@ -26,11 +26,11 @@
 
 package haven;
 
+import java.awt.*;
 import java.util.*;
 import java.util.List;
 
 import java.util.function.*;
-import java.awt.Color;
 import java.util.stream.Collectors;
 
 import haven.MapFile.Segment;
@@ -281,8 +281,16 @@ public class MiniMap extends Widget {
 	    GobIcon.Image img = this.img;
 	    
 	    if(isPlayer()) {
-		g.chcolor(kin() != null ? Color.WHITE : Color.RED);
+		g.chcolor(col);
 		g.aimage(RadarCFG.Symbols.$circle.tex, sc, 0.5, 0.5);
+		if (kin() != null)
+		{
+		    if (CFG.SHOW_PLAYER_NAME.get() || (CFG.SHOW_RED_NAME.get() && kin().group == 2))
+		    {
+			String pName = kin().name;
+			g.aimage(playerName(pName) , sc.addy(UI.scale(6)), 0.5, 0);
+		    }
+		}
 	    } else if(isDead()) {
 		img = icon.imggray();
 	    }
@@ -313,6 +321,10 @@ public class MiniMap extends Widget {
 		snotify.accept(ui);
 		snotify = null;
 	    }
+	}
+ 
+	private Tex playerName(String name) {
+	    return new TexI(Utils.outline2(Text.mapNames.render(name, col).img, Color.BLACK));
 	}
 
 	public boolean force() {
@@ -391,6 +403,16 @@ public class MiniMap extends Widget {
 	}
 
 	public void draw(GOut g, Coord c, final float scale, final UI ui, final MapFile file, final boolean canShowName) {
+	    if (CFG.PVP_MAP.get()) {
+		if (m instanceof SMarker)
+		{
+		    if (Utils.PVP_MODE_MARKERS.contains(((SMarker) m).res.name))
+		    {
+			m.draw(g, c, canShowName ? tip : null, scale, file);
+		    }
+		}
+		return;
+	    }
 	    if(Config.always_true) {
 		checkTip(m.tip(ui));
 		if(visible()) {m.draw(g, c, canShowName ? tip : null, scale, file);}
@@ -459,6 +481,16 @@ public class MiniMap extends Widget {
 	    this.sc = sc;
 	    this.gref = gref;
 	    mapext = Area.sized(sc.mul(cmaps.mul(1 << lvl)), cmaps.mul(1 << lvl));
+	    
+	    CFG.Observer<Boolean> change = cfg -> {
+		if (this.img_c == null)
+		    return;
+		synchronized (this.img_c) {
+		    img_c = null;
+		}
+	    };
+	    
+	    CFG.PVP_MAP.observe(change);
 	}
 
 	class CachedImage {
@@ -706,11 +738,20 @@ public class MiniMap extends Widget {
     public void drawicons(GOut g) {
 	if((sessloc == null) || (dloc.seg != sessloc.seg))
 	    return;
-	for(DisplayIcon disp : icons) {
-	    if((disp.sc == null) || filter(disp))
-		continue;
-	    disp.draw(g);
+	if (!CFG.PVP_MAP.get())
+	{
+	    for(DisplayIcon disp : icons) {
+		if((disp.sc == null) || filter(disp))
+		    continue;
+		disp.draw(g);
+	    }
+	} else {
+	    for(DisplayIcon disp : icons) {
+		if (Utils.PVP_MODE_MARKERS.contains(disp.icon.res.get().name) || disp.isPlayer())
+		    disp.draw(g);
+	    }
 	}
+	
 	g.chcolor();
     }
 
@@ -742,6 +783,15 @@ public class MiniMap extends Widget {
 		g.chcolor(m.col.getRed(), m.col.getGreen(), m.col.getBlue(), 255);
 		g.rotimage(plp, p2c(ppc), plp.sz().div(2), -m.geta() - (Math.PI / 2));
 		g.chcolor();
+		try
+		{
+		    KinInfo kin = m.getgob().getattr(KinInfo.class);
+		    if (kin != null && CFG.SHOW_PARTY_NAMES.get())
+		    {
+			Tex t = new TexI(Utils.outline2(Text.mapNames.render(m.getgob().getattr(KinInfo.class).name, Color.WHITE).img, m.col));
+			g.aimage(t , p2c(ppc).addy(UI.scale(5)), 0.5, 0);
+		    }
+		} catch (Exception ex) {}
 	    } catch(Loading l) {}
 	}
     }

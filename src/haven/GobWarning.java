@@ -3,8 +3,15 @@ package haven;
 import haven.render.RenderTree;
 
 import java.awt.*;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static haven.GameUI.*;
 import static haven.GobWarning.WarnMethod.*;
@@ -19,7 +26,15 @@ public class GobWarning extends GAttrib implements RenderTree.Node {
 	tgt = categorize(gob);
 	if(tgt != null) {
 	    if(WarnCFG.get(tgt, message)) {
-		gob.glob.sess.ui.message(String.format("%s spotted!", tgt.message), tgt.mcol, errsfx);
+		// TODO: make that work better.. that's awful code
+		if (tgt.message.equals("Player")) {
+		    wavnotif(Utils.path("alerts/unknownplayer.wav")).accept(gob.glob.sess.ui);
+		    gob.glob.sess.ui.message(String.format("%s spotted!", tgt.message), tgt.mcol);
+		}else if (tgt.message.equals("Enemy")) {
+		    wavnotif(Utils.path("alerts/enemy.wav")).accept(gob.glob.sess.ui);
+		    gob.glob.sess.ui.message(String.format("%s spotted!", tgt.message), tgt.mcol);
+		} else
+		    gob.glob.sess.ui.message(String.format("%s spotted!", tgt.message), tgt.mcol, errsfx);
 	    }
 	    radius = new ColoredRadius(gob, tgt.radius, tgt.scol, tgt.ecol);
 	} else {
@@ -39,8 +54,11 @@ public class GobWarning extends GAttrib implements RenderTree.Node {
     
     private static WarnTarget categorize(Gob gob) {
 	if(gob.is(GobTag.FOE) && !gob.anyOf(GobTag.DEAD, GobTag.KO)) {
+	    KinInfo kin = gob.getattr(KinInfo.class);
+	    if (kin != null && kin.group == 2)
+		return enemy;
 	    return player;
-	} else if(gob.is(GobTag.AGGRESSIVE) && !gob.anyOf(GobTag.DEAD, GobTag.KO)) {
+	}  else if(gob.is(GobTag.AGGRESSIVE) && !gob.anyOf(GobTag.DEAD, GobTag.KO)) {
 	    return animal;
 	} else if(gob.is(GobTag.GEM)) {
 	    return gem;
@@ -52,6 +70,7 @@ public class GobWarning extends GAttrib implements RenderTree.Node {
     
     public enum WarnTarget {
 	player(50, "Player", Color.RED, new Color(192, 0, 0, 128), new Color(255, 224, 96)),
+	enemy(60, "Enemy", Color.RED, new Color(192, 0, 0, 128), new Color(255, 224, 96)),
 	animal(50, "Dangerous animal", Color.RED, new Color(192, 0, 0, 128), new Color(255, 224, 96)),
 	gem(5, "Gem", Color.GREEN, new Color(0, 192, 122, 64), new Color(255, 90, 200, 128)),
 	midges(15, "Midges", Color.MAGENTA, new Color(255, 255, 255, 64), new Color(128, 0, 255, 128));
@@ -122,14 +141,24 @@ public class GobWarning extends GAttrib implements RenderTree.Node {
 	    int y = 0;
 	    
 	    //TODO: Make this pretty
-	    CheckBox box = add(new CheckBox("Highlight players", false), 0, y);
+	    CheckBox box = add(new CheckBox("Highlight unknown players", false), 0, y);
 	    box.a = WarnCFG.get(player, highlight);
 	    box.changed(val -> WarnCFG.set(player, highlight, val));
 	    y += 25;
 	    
-	    box = add(new CheckBox("Warn about players", false), 0, y);
+	    box = add(new CheckBox("Warn about unknown players", false), 0, y);
 	    box.a = WarnCFG.get(player, message);
 	    box.changed(val -> WarnCFG.set(player, message, val));
+	    y += 35;
+	    
+	    box = add(new CheckBox("Highlight enemies (red)", false), 0, y);
+	    box.a = WarnCFG.get(enemy, highlight);
+	    box.changed(val -> WarnCFG.set(enemy, highlight, val));
+	    y += 25;
+	    
+	    box = add(new CheckBox("Warn about enemies (red)", false), 0, y);
+	    box.a = WarnCFG.get(enemy, message);
+	    box.changed(val -> WarnCFG.set(enemy, message, val));
 	    y += 35;
 	    
 	    box = add(new CheckBox("Highlight animals", false), 0, y);
@@ -166,5 +195,34 @@ public class GobWarning extends GAttrib implements RenderTree.Node {
 		resize(new Coord(200, asz.y));
 	    }
 	}
+    }
+    
+    private static Consumer<UI> wavnotif(Path path) {
+	return(ui -> {
+	    ui.sess.glob.loader.defer(() -> {
+		Audio.CS clip;
+		InputStream fail = null;
+		try {
+		    fail = Files.newInputStream(path);
+		    clip = Audio.PCMClip.fromwav(new BufferedInputStream(fail));
+		    fail = null;
+		} catch(IOException e) {
+		    String msg = e.getMessage();
+		    if(e instanceof FileSystemException)
+			msg = "Could not open file";
+		    ui.error("Could not play " + path + ": " + msg);
+		    return;
+		} finally {
+		    if(fail != null) {
+			try {
+			    fail.close();
+			} catch(IOException e) {
+			    new Warning(e, "unexpected error on close").issue();
+			}
+		    }
+		}
+		ui.sfx(clip);
+	    }, null);
+	});
     }
 }

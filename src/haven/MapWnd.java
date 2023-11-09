@@ -153,6 +153,11 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    .state(CFG.MMAP_SHOW_MARKER_NAMES::get)
 	    .set(CFG.MMAP_SHOW_MARKER_NAMES::set)
 	    .settip("Show marker names");
+    
+	btn = topbar.add(new ICheckBox("gfx/hud/mmap/pvpmode", "", "-d", "-h"), btn.pos("ur"))
+	    .state(CFG.PVP_MAP::get)
+	    .set(CFG.PVP_MAP::set)
+	    .settip("Enable PVP Mode");
 	
 	topbar.pack();
 	tool = add(new Toolbox2());;

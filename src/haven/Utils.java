@@ -2415,6 +2415,28 @@ public class Utils {
 	} catch (Exception ignored) {}
     }
     
+    public static Map<String, Integer> PVP_MAP = new HashMap<String, Integer>();
+    
+    public static void initPvpMap()
+    {
+	try {
+	    Gson gson = new GsonBuilder().create();
+	    PVP_MAP.putAll(gson.fromJson(Config.loadJarFile("pvp_map.json"), new TypeToken<Map<String, Integer>>() {
+	    }.getType()));
+	} catch (Exception ignored) {}
+    }
+    
+    public static List<String> PVP_MODE_MARKERS = new LinkedList<>();
+    
+    public static void initPvpModeMarkers()
+    {
+	try {
+	    Gson gson = new GsonBuilder().create();
+	    PVP_MAP.putAll(gson.fromJson(Config.loadJarFile("pvp_mode_markers.json"), new TypeToken<List<String>>() {
+	    }.getType()));
+	} catch (Exception ignored) {}
+    }
+    
     public static boolean checkbit(int target, int index) {
 	return (target & (1 << index)) != 0;
     }

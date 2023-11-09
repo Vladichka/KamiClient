@@ -38,11 +38,13 @@ import java.util.*;
 public class Text implements Disposable {
     public static final Font serif = new Font("Serif", Font.PLAIN, 10);
     public static final Font sans  = new Font("Sans", Font.PLAIN, 10);
+    public static final Font sansBold  = new Font("Sans", Font.BOLD, 10);
     public static final Font mono  = new Font("Monospaced", Font.PLAIN, 10);
     //public static final Font fraktur = Resource.local().loadwait("ui/fraktur").flayer(Resource.Font.class).font;
     public static final Font fraktur = serif;
     public static final Font dfont = sans;
     public static final Foundry std;
+    public static final Foundry mapNames;
     public final BufferedImage img;
     public final String text;
     private Tex tex;
@@ -51,7 +53,7 @@ public class Text implements Disposable {
 	
     static {
 	std = new Foundry(sans, 10);
-
+	mapNames = new Foundry(sansBold, 12);
 //	Font fnt = serif;
 //	try {
 //	    InputStream stream = Text.class.getResourceAsStream("font.ttf");

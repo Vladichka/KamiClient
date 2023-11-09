@@ -42,7 +42,7 @@ import static haven.Text.*;
 public class OptWnd extends WindowX {
     public static final Coord PANEL_POS = new Coord(220, 30);
     public static final Coord Q_TYPE_PADDING = new Coord(3, 0);
-    private final Panel display, general, camera, shortcuts, mapping, uipanel, combat;
+    private final Panel display, general, camera, shortcuts, mapping, uipanel, combat, minimap;
     public final Panel main;
     private static final Text.Foundry LBL_FNT = new Text.Foundry(sans, 14);
     public Panel current;
@@ -762,6 +762,7 @@ public class OptWnd extends WindowX {
 	camera = add(new Panel());
 	shortcuts = add(new Panel());
 	mapping = add(new Panel());
+	minimap = add(new Panel());
 	
 	int row = 0, colum = 0, mrow = 1;
 	
@@ -780,6 +781,7 @@ public class OptWnd extends WindowX {
 	addPanelButton("UI", 'u', uipanel, colum, row++);
 	addPanelButton("Display", 'd', display, colum, row++);
 	addPanelButton("Combat", 'b', combat, colum, row++);
+	addPanelButton("Map", 'm', minimap, colum, row++);
 	addPanelButton("Map upload", 'm', mapping, colum, row++);
 	
 	int y = 0;
@@ -810,6 +812,7 @@ public class OptWnd extends WindowX {
 	initGeneralPanel(general);
 	initCameraPanel();
 	initMappingPanel(mapping);
+	initMinimapPanel(minimap);
 	main.pack();
 	chpanel(main);
     }
@@ -1374,6 +1377,42 @@ public class OptWnd extends WindowX {
 	shortcuts.pack();
 	shortcuts.add(new PButton(UI.scale(200), "Back", 27, main), shortcuts.sz.x / 2 - 100, shortcuts.sz.y + 35);
 	shortcuts.pack();
+    }
+    
+    private void initMinimapPanel(Panel panel) {
+	int STEP = UI.scale(25);
+	int START;
+	int x, y;
+	int my = 0, tx;
+	
+	Widget title = panel.add(new Label("Minimap / Map settings", LBL_FNT), 0, 0);
+	START = title.sz.y + UI.scale(10);
+	
+	x = 0;
+	y = START;
+	//first row
+	panel.add(new CFGBox("Enable PVP Map Mode", CFG.PVP_MAP, "Simplyfies the Map towards PVP."), x, y);
+	
+	y += STEP;
+	panel.add(new CFGBox("Show names of party members", CFG.SHOW_PARTY_NAMES), x, y);
+ 
+	y += STEP;
+	panel.add(new CFGBox("Show names of kinned players", CFG.SHOW_PLAYER_NAME), x, y);
+ 
+	y += STEP;
+	panel.add(new CFGBox("Show names of red players", CFG.SHOW_RED_NAME), x, y);
+	
+	//second row
+	my = Math.max(my, y);
+	x += UI.scale(265);
+	y = START;
+	
+	
+	my = Math.max(my, y);
+	
+	panel.add(new PButton(UI.scale(200), "Back", 27, main), new Coord(0, my + UI.scale(35)));
+	panel.pack();
+	title.c.x = (panel.sz.x - title.sz.x) / 2;
     }
     
     private void initMappingPanel(Panel panel) {
