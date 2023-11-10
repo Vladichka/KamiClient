@@ -116,12 +116,12 @@
     "gfx/tiles/rocks/quartz",
     "gfx/tiles/rocks/rhyolite",
     "gfx/tiles/rocks/sandstone",
-    "gfx/tiles/rocks/serpentine",
-    "gfx/tiles/rocks/sunstone",
     "gfx/tiles/rocks/schist",
+    "gfx/tiles/rocks/serpentine",
     "gfx/tiles/rocks/slate",
     "gfx/tiles/rocks/soapstone",
     "gfx/tiles/rocks/sodalite",
+    "gfx/tiles/rocks/sunstone",
     "gfx/tiles/rocks/zincspar"
   ],
   "Paving": [
@@ -163,11 +163,11 @@
     "gfx/tiles/paving/rhyolite",
     "gfx/tiles/paving/sandstone",
     "gfx/tiles/paving/serpentine",
-    "gfx/tiles/paving/sunstone",
     "gfx/tiles/paving/slag",
     "gfx/tiles/paving/slate",
     "gfx/tiles/paving/soapstone",
     "gfx/tiles/paving/sodalite",
+    "gfx/tiles/paving/sunstone",
     "gfx/tiles/paving/zincspar"
   ]
 }
