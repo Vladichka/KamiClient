@@ -406,6 +406,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    if(upd) {
 		info = null;
 		infoseq++;
+		filtered = 0;
 	    }
 	} else {
 	    lastcontinfo = null;
