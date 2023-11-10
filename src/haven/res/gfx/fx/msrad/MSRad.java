@@ -10,7 +10,7 @@ import haven.*;
 import haven.render.*;
 
 /* >spr: MSRad */
-@haven.FromResource(name = "gfx/fx/msrad", version = 14)
+@haven.FromResource(name = "gfx/fx/msrad", version = 15)
 public class MSRad extends Sprite {
     public static boolean show = false;
     public static Collection<MSRad> current = new WeakList<>();
