@@ -1084,33 +1084,10 @@ public class OptWnd extends WindowX {
 	y += STEP;
 	panel.add(new CFGBox("Show object info", CFG.DISPLAY_GOB_INFO, "Enables damage and crop/tree growth stage displaying", true), x, y);
  
-	y += STEP;
-	panel.add(new Label("Cupboard Height (needs restart)"), x, y);
+	y = addSlider(CFG.CUPBOARD_HEIGHT, "Cupboard scale", "Scale cupboard vertically, changes are applied on open/close of cupboard or zone reload.", panel, x, y, STEP);
  
 	y += STEP;
-	panel.add(new HSlider(UI.scale(160), 5, 100, CFG.CUPBOARD_HEIGHT.get()) {
-	    protected void attach(UI ui) {
-		super.attach(ui);
-		val = CFG.CUPBOARD_HEIGHT.get();
-	    }
-	    public void changed() {
-		CFG.CUPBOARD_HEIGHT.set(val);
-	    }
-	}, x, y);
- 
-	y += STEP;
-	panel.add(new Label("Palisade Height (needs restart)"), x, y);
- 
-	y += STEP;
-	panel.add(new HSlider(UI.scale(160), 15, 100, CFG.PALISADE_HEIGHT.get()) {
-	    protected void attach(UI ui) {
-		super.attach(ui);
-		val = CFG.PALISADE_HEIGHT.get();
-	    }
-	    public void changed() {
-		CFG.PALISADE_HEIGHT.set(val);
-	    }
-	}, x, y);
+	y = addSlider(CFG.PALISADE_HEIGHT, "Wall scale", "Scale palisade and brick wall vertically, changes are applied on zone reload.", panel, x, y, STEP);
 	
 	y += STEP;
 	panel.add(new CFGBox("Display container fullness", CFG.SHOW_CONTAINER_FULLNESS, "Makes containers tint different colors when they are empty or full", true), x, y);
@@ -1148,6 +1125,27 @@ public class OptWnd extends WindowX {
 	panel.add(new PButton(UI.scale(200), "Back", 27, main), new Coord(0, my + UI.scale(35)));
 	panel.pack();
 	title.c.x = (panel.sz.x - title.sz.x) / 2;
+    }
+    
+    private int addSlider(CFG<Integer> cfg, String text, String tip, Panel panel, int x, int y, int STEP) {
+	final Label label = panel.add(new Label(text), x, y);
+	label.settip(tip);
+	
+	y += STEP;
+	panel.add(new HSlider(UI.scale(200), 15, 100, cfg.get()) {
+	    protected void attach(UI ui) {
+		super.attach(ui);
+		val = cfg.get();
+		label.settext(String.format("%s: %d%%", text, val));
+	    }
+	    
+	    public void changed() {
+		cfg.set(val);
+		label.settext(String.format("%s: %d%%", text, val));
+	    }
+	}, x, y).settip(tip);
+	
+	return y;
     }
     
     private void initUIPanel(Panel panel) {

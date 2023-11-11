@@ -313,23 +313,6 @@ public class Resource implements Serializable {
 	}
     }
     
-    public static class CustomizedJarSource extends JarSource {
-	public CustomizedJarSource(String base) {
-	    super(base);
-	}
-	
-	public InputStream get(String name) throws FileNotFoundException {
-	    if(name.contains("gfx/terobjs/cupboard") && !CFG.FLAT_CUPBOARDS.get()) {
-		throw new FileNotFoundException("Could not find resource locally: " + name);
-	    }
-	    return super.get(name);
-	}
-	
-	public String toString() {
-	    return ("'custom' jar source");
-	}
-    }
-    
     public static class HttpSource implements ResSource, Serializable {
 	public static final String USER_AGENT;
 	private final transient SslHelper ssl;
@@ -844,7 +827,7 @@ public class Resource implements Serializable {
 	if(_remote == null) {
 	    synchronized(Resource.class) {
 		if(_remote == null) {
-		    Pool remote = new Pool(local(), new CustomizedJarSource("customized-remote"));
+		    Pool remote = new Pool(local());
 		    if(prscache != null)
 			remote.add(new CacheSource(prscache));
 		    _remote = remote;;

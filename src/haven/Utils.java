@@ -2540,4 +2540,6 @@ public class Utils {
 		}
 	    });
     }
+    
+    public static final List<String> WALLS_TO_RESIZE = Arrays.asList("gfx/terobjs/arch/palisadeseg", "gfx/terobjs/arch/palisadecp", "gfx/terobjs/arch/brickwallseg", "gfx/terobjs/arch/brickwallcp" );
 }
