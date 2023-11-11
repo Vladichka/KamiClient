@@ -1083,7 +1083,8 @@ public class OptWnd extends WindowX {
 	
 	y += STEP;
 	panel.add(new CFGBox("Show object info", CFG.DISPLAY_GOB_INFO, "Enables damage and crop/tree growth stage displaying", true), x, y);
- 
+	
+	y += STEP;
 	y = addSlider(CFG.CUPBOARD_HEIGHT, "Cupboard scale", "Scale cupboard vertically, changes are applied on open/close of cupboard or zone reload.", panel, x, y, STEP);
  
 	y += STEP;
