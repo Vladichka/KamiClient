@@ -167,6 +167,17 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    if(slots != null)
 		slots.remove(slot);
 	}
+ 
+	public String name() {
+	    try {
+		if(res != null)
+		    return res.get().name;
+		else
+		    return "";
+	    } catch (Loading l) {
+		return "";
+	    }
+	}
     }
     
     private static class CustomColor implements SetupMod {

@@ -14,6 +14,7 @@ public class GeneralGobInfo extends GobInfo {
     private static final double TREE_MULT = 100.0 / (100.0 - TREE_START);
     private static final double BUSH_MULT = 100.0 / (100.0 - BUSH_START);
     private static final Color Q_COL = new Color(235, 252, 255, 255);
+    private static final Color BARREL_COL = new Color(252, 235, 255, 255);
     private static final Color BG = new Color(0, 0, 0, 84);
     public static Pattern GOB_Q = Pattern.compile("Quality: (\\d+)");
     private static final Map<Long, Integer> gobQ = new LinkedHashMap<Long, Integer>() {
@@ -43,17 +44,21 @@ public class GeneralGobInfo extends GobInfo {
 
     @Override
     protected Tex render() {
-	if(gob == null || gob.getres() == null) { return null;}
-
-	BufferedImage growth = growth();
-	BufferedImage health = health();
-	BufferedImage quality = quality();
-
-	if(growth == null && health == null && quality == null) {
-	    return null;
+	if(gob == null || gob.getres() == null) {return null;}
+ 
+	BufferedImage[] parts = new BufferedImage[]{
+	    growth(),
+	    health(),
+	    barrel(),
+	    quality(),
+	};
+ 
+	for (BufferedImage part : parts) {
+	    if(part == null) {continue;}
+	    return new TexI(ItemInfo.catimgsh(UI.scale(3), 0, BG, parts));
 	}
 
-	return new TexI(ItemInfo.catimgsh(3, 0, BG, health, growth, quality));
+	return null;
     }
     
     @Override
@@ -116,6 +121,21 @@ public class GeneralGobInfo extends GobInfo {
 	    return line.img;
 	}
 	return null;
+    }
+    
+    private BufferedImage barrel() {
+	String res = gob.resid();
+	if(res == null || !res.startsWith("gfx/terobjs/barrel")) {
+	    return null;
+	}
+	return gob.ols.stream()
+	    .map(Gob.Overlay::name)
+	    .filter(name -> name.startsWith("gfx/terobjs/barrel-"))
+	    .map(name -> name.substring(name.lastIndexOf("-") + 1))
+	    .map(Utils::prettyResName)
+	    .findAny()
+	    .map(name -> Text.std.renderstroked(name, BARREL_COL, Color.black).img)
+	    .orElse(null);
     }
 
     private static Message getDrawableData(Gob gob) {
