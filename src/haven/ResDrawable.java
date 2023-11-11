@@ -37,7 +37,7 @@ public class ResDrawable extends Drawable implements EquipTarget {
     public final Sprite spr;
     MessageBuf sdt;
     // private double delay = 0; XXXRENDER
-    private final String resid;
+    private String resid;
 
     public ResDrawable(Gob gob, Indir<Resource> res, Message sdt) {
 	super(gob);
@@ -83,7 +83,7 @@ public class ResDrawable extends Drawable implements EquipTarget {
     @Override
     public String resId() {return resid;}
     
-    public String makeResId() {
+    private String makeResId() {
 	String name = res.get().name;
 	String extra = null;
 	int state =  sdtnum();
@@ -93,6 +93,11 @@ public class ResDrawable extends Drawable implements EquipTarget {
 	    }
 	}
 	return extra == null ? name : String.format("%s[%s]", name, extra);
+    }
+    
+    public void updateResId() {
+	resid = makeResId();
+	gob.idUpdated();
     }
     
     public int sdtnum() {
@@ -143,6 +148,7 @@ public class ResDrawable extends Drawable implements EquipTarget {
 	    if((d != null) && (d.res == res) && !d.sdt.equals(sdt) && (d.spr != null) && (d.spr instanceof Sprite.CUpd)) {
 		((Sprite.CUpd)d.spr).update(sdt);
 		d.sdt = sdt;
+		d.updateResId();
 	    } else if((d == null) || (d.res != res) || !d.sdt.equals(sdt)) {
 		g.setattr(new ResDrawable(g, res, sdt));
 	    }

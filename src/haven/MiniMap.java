@@ -713,7 +713,7 @@ public class MiniMap extends Widget {
 			GobIcon.Setting conf = iconconf.get(icon.res.get());
 			if((conf != null) && conf.show && GobIconCategoryList.GobCategory.categorize(conf).enabled()) {
 			    DisplayIcon disp = pmap.remove(gob);
-			    if(disp == null)
+			    if(disp == null || disp.icon != icon)
 				disp = new DisplayIcon(icon, conf);
 			    disp.update(gob.rc, gob.a);
 			    KinInfo kin = gob.getattr(KinInfo.class);
