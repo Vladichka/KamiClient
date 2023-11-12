@@ -1,4 +1,4 @@
-$size[14]{$u{Initial release on 12.11.2023:}
+$size[14]{$u{update on 12.11.2023:}
   * re-merged all loftar code for new repository
   * re-added all the previous features
   * made combat UI movable
@@ -16,7 +16,7 @@ $size[14]{$u{Initial release on 12.11.2023:}
   * Update filters fix (From Ender)
   * Some minor tweaks from Ender
 
-$size[14]{$u{Initial release on 01.11.2023:}
+$size[14]{$u{update on 01.11.2023:}
   * changed default renderer to jogl to fix smoke
   * supplied additional batch files for lwjgl
   * added flatten terrain
