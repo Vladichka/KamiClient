@@ -2432,7 +2432,7 @@ public class Utils {
     {
 	try {
 	    Gson gson = new GsonBuilder().create();
-	    PVP_MAP.putAll(gson.fromJson(Config.loadJarFile("pvp_mode_markers.json"), new TypeToken<List<String>>() {
+	    PVP_MODE_MARKERS.addAll(gson.fromJson(Config.loadJarFile("pvp_mode_markers.json"), new TypeToken<List<String>>() {
 	    }.getType()));
 	} catch (Exception ignored) {}
     }

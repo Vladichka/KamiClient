@@ -404,13 +404,12 @@ public class MiniMap extends Widget {
 
 	public void draw(GOut g, Coord c, final float scale, final UI ui, final MapFile file, final boolean canShowName) {
 	    if (CFG.PVP_MAP.get()) {
-		if (m instanceof SMarker)
-		{
-		    if (Utils.PVP_MODE_MARKERS.contains(((SMarker) m).res.name))
-		    {
+		if (m instanceof CustomMarker)
+		    if (Utils.PVP_MODE_MARKERS.contains(((CustomMarker) m).res.name))
 			m.draw(g, c, canShowName ? tip : null, scale, file);
-		    }
-		}
+		if (m instanceof SMarker)
+		    if (Utils.PVP_MODE_MARKERS.contains(((SMarker) m).res.name))
+			m.draw(g, c, canShowName ? tip : null, scale, file);
 		return;
 	    }
 	    if(Config.always_true) {

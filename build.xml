@@ -141,6 +141,7 @@
       <fileset dir="resources" includes="item_data/**"/>
       <file file="etc/radar.json"/>
       <file file="etc/pvp_map.json"/>
+      <file file="etc/pvp_mode_markers.json"/>
       <file file="etc/gob_path.json"/>
       <file file="etc/gob_radius.json"/>
       <file file="etc/autochoose.json"/>
