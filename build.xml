@@ -139,6 +139,7 @@
       <fileset dir="resources/pre-compiled" />
       <fileset dir="resources/compiled" />
       <fileset dir="resources" includes="item_data/**"/>
+      <fileset dir="etc" includes="*.wav"/>
       <file file="etc/radar.json"/>
       <file file="etc/pvp_map.json"/>
       <file file="etc/pvp_mode_markers.json"/>
@@ -201,6 +202,7 @@
     <copy todir="bin">
       <fileset dir="build">
 	<include name="hafen.jar" />
+        <include name="client-res.jar" />
       </fileset>
       <fileset dir="lib/ext">
 	<include name="hafen-res.jar" />
