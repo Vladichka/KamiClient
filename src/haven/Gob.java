@@ -1272,7 +1272,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     }
     
     private void updateIcon() {
-	GobIcon icon = Radar.getIcon(this);
+	GobIcon icon = getattr(GobIcon.class);
+	if(icon != null && !icon.isCustom) {
+	    return;
+	}
+	icon = Radar.getIcon(this);
 	if(icon == null) {
 	    delattr(GobIcon.class);
 	} else {

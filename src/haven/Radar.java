@@ -31,7 +31,7 @@ public class Radar {
     public static GobIcon getIcon(Gob gob) {
 	String resname = gob2icon.get(gob.resid());
 	if(resname != null) {
-	    return new GobIcon(gob, Resource.remote().load(resname));
+	    return new GobIcon(gob, Resource.remote().load(resname), true);
 	}
 	return null;
     }

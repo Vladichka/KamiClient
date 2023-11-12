@@ -43,10 +43,18 @@ public class GobIcon extends GAttrib {
     private static final Map<Indir<Resource>, Image> cachegray = new WeakHashMap<>();
     public final Indir<Resource> res;
     private Image img, imggray;
+    public final boolean isCustom;
 
     public GobIcon(Gob g, Indir<Resource> res) {
 	super(g);
 	this.res = res;
+	isCustom = false;
+    }
+    
+    public GobIcon(Gob g, Indir<Resource> res, boolean isCustom) {
+	super(g);
+	this.res = res;
+	this.isCustom = isCustom;
     }
 
     public static class Image {
