@@ -11,8 +11,14 @@ public class GobOpeningOverlay extends GobInfo {
     private Fightview.Relation relation;
     protected Coord3f stance;
     protected Coord3f openings;
+    protected Coord3f lastAction;
     private Coord buffSize = UI.scale(new Coord(26, 26));
+    private Coord lastActionSize = UI.scale(new Coord(32, 32));
+    private Coord lastActionSizeOutline = UI.scale(new Coord(32, 32)).add(6,6);
+    private Coord lastActionSizeOutlineOffset = new Coord(3,3);
     private Coord buffSizeCenter = UI.scale(new Coord(13,13));
+    private Indir<Resource> lastaction1;
+    private Indir<Resource> lastaction2;
     
     private static final Map<String, Color> OPENINGS = new HashMap<String, Color>(4) {{
 	put("paginae/atk/offbalance", new Color(81, 165, 56));
@@ -26,6 +32,10 @@ public class GobOpeningOverlay extends GobInfo {
 	
 	this.stance = new Coord3f(0.0F, 0.0F, 20.0F);
 	this.openings = new Coord3f(0.0F, 0.0F, 20.0F);
+	this.lastAction = new Coord3f(0.0F, 0.0F, -1.0F);
+ 
+	this.lastaction1 = null;
+	this.lastaction2 = null;
 	
 	this.oip = new Text.UText<Integer>(opIp) {
 	    public String text(Integer v) {
@@ -63,14 +73,18 @@ public class GobOpeningOverlay extends GobInfo {
     private final Text.UText<?> mip;
     
     public void draw(GOut g, Pipe state) {
+	double now = Utils.rtime();
 	if(relation != null && (CFG.DRAW_OPENINGS_OVER_GOBS.get())) {
 	    Coord3f coordsOpenings = Homo3D.obj2view2(openings, state, Area.sized(g.sz()));
 	    Coord3f coordsStance = Homo3D.obj2view2(stance, state, Area.sized(g.sz()));
-	    if(coordsOpenings == null || coordsStance == null)
+	    Coord3f coordsLastAction = Homo3D.obj2view2(lastAction, state, Area.sized(g.sz()));
+	    if(coordsOpenings == null || coordsStance == null || coordsLastAction == null)
 		return;
 	    
 	    Coord sc = coordsOpenings.round2().sub(0,UI.scale(40));
 	    Coord sc3 = coordsStance.round2().sub(0,UI.scale(80));
+	    
+	    Coord sc2 = coordsLastAction.round2().add(0, buffSize.y);
 	    
 	    int count = 0;
 	    for (Buff buff : this.relation.buffs.children(Buff.class)) {
@@ -121,6 +135,33 @@ public class GobOpeningOverlay extends GobInfo {
 		    g.image(stanceImg, stanceCoord, buffSize);
 		} catch (Exception ex) {System.out.println("too dumb to programm");}
 	    }
+	    
+	    try {
+	    	Indir<Resource> lastact = this.relation.lastact;
+	    	if (lastact != this.lastaction2) {
+		    this.lastaction2 = lastact;
+	        }
+	        double lastuse = this.relation.lastuse;
+	     	if (lastact != null) {
+		    Tex ut = ((Resource.Image)((Resource)lastact.get()).flayer(Resource.imgc)).tex();
+		    Coord useul = new Coord(sc2.x - (lastActionSize).x / 2, sc2.y - (lastActionSize).y / 2);
+		    
+		    g.chcolor(new Color(0,0,0,180));
+		    g.image(ut, useul.sub(2,2), lastActionSize.add(4,4));
+	     
+		    double sec = now - lastuse;
+		    double cd = 1.0D; // TODO: calculate that somehow
+		    if (sec < cd) {
+			g.chcolor(new Color(255, 0, 0));
+			int height = lastActionSizeOutline.mul(0, cd-sec).y;
+			int offsetY = lastActionSizeOutline.mul(0, sec).y;
+			g.frect(useul.sub(lastActionSizeOutlineOffset).addy(offsetY), new Coord(lastActionSizeOutline.x, height));
+		    }
+		    
+		    g.chcolor(new Color(255,255,255));
+		    g.image(ut, useul, lastActionSize);
+	     	}
+	    } catch (Loading loading) {}
 	}
     }
     public static final Text.Foundry nfnd = new Text.Foundry(Text.dfont.deriveFont(Font.BOLD), 12);
