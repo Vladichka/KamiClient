@@ -1228,7 +1228,11 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	}
 	mmap.sz = UI.scale(133, 133);
 	blpanel.add(mmap, minimapc);
-	blpanel.show();
+	blpanel.cshow(false);
+	mapmenupanel.cshow(true);
+	updfold(true);
+	blpanel.presize();
+	mapmenupanel.presize();
 	mmap.lower();
     }
 
