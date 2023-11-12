@@ -211,9 +211,6 @@
       <fileset dir="lib/ext/jogl"><include name="*.jar" /></fileset>
       <fileset dir="lib/ext/lwjgl"><include name="*.jar" /></fileset>
     </copy>
-    <copy todir="bin/alerts">
-      <fileset dir="etc/alerts"><include name="*.wav" /></fileset>
-    </copy>
     <copy file="etc/ansgar-config.properties" tofile="bin/haven-config.properties" />
     <chmod file="bin/hafen.jar" perm="a+x" />
   </target>
