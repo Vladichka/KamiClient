@@ -79,6 +79,12 @@ public class StaticSprite extends Sprite {
     }
 
     public void added(RenderTree.Slot slot) {
+	try {
+	    if (res.name.equals("gfx/terobjs/items/parchment-decal") && CFG.RELOCATE_DECALS.get() && this.owner.getres().name.equals("gfx/terobjs/cupboard"))
+	    {
+		slot.cstate(Location.xlate(new Coord3f(-10,0,-5)));
+	    }
+	} catch (Exception ex) {}
 	for(RenderTree.Node p : parts)
 	    slot.add(p);
     }

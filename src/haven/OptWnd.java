@@ -1085,12 +1085,6 @@ public class OptWnd extends WindowX {
 	panel.add(new CFGBox("Show object info", CFG.DISPLAY_GOB_INFO, "Enables damage and crop/tree growth stage displaying", true), x, y);
 	
 	y += STEP;
-	y = addSlider(CFG.CUPBOARD_HEIGHT, "Cupboard scale", "Scale cupboard vertically, changes are applied on open/close of cupboard or zone reload.", panel, x, y, STEP);
- 
-	y += STEP;
-	y = addSlider(CFG.PALISADE_HEIGHT, "Wall scale", "Scale palisade and brick wall vertically, changes are applied on zone reload.", panel, x, y, STEP);
-	
-	y += STEP;
 	panel.add(new CFGBox("Display container fullness", CFG.SHOW_CONTAINER_FULLNESS, "Makes containers tint different colors when they are empty or full", true), x, y);
 	
 	y += STEP;
@@ -1120,8 +1114,22 @@ public class OptWnd extends WindowX {
 		}
 	    }
 	}, x, y);
-	
+ 
+	//second row
 	my = Math.max(my, y);
+	x += UI.scale(265);
+	
+	y = START;
+	y = addSlider(CFG.CUPBOARD_HEIGHT, "Cupboard scale", "Scale cupboard vertically, changes are applied on open/close of cupboard or zone reload.", panel, x, y, STEP);
+ 
+	y += STEP;
+	y = addSlider(CFG.PALISADE_HEIGHT, "Wall scale", "Scale palisade and brick wall vertically, changes are applied on zone reload.", panel, x, y, STEP);
+ 
+	y += STEP;
+	panel.add(new CFGBox("Floating decals on cupboards", CFG.FLOATING_DECALS, "Instaed of squishing the decals, it let's them float.", true), x, y);
+	
+	y += STEP;
+	panel.add(new CFGBox("Relocate decals", CFG.RELOCATE_DECALS, "Moves the decals down and backwards. ATTENTION: IF YOU DROP THEM, DISABLE THIS OPTION AND RELOG / CHANGE AREA.", true), x, y);
 	
 	panel.add(new PButton(UI.scale(200), "Back", 27, main), new Coord(0, my + UI.scale(35)));
 	panel.pack();
@@ -1133,7 +1141,7 @@ public class OptWnd extends WindowX {
 	label.settip(tip);
 	
 	y += STEP;
-	panel.add(new HSlider(UI.scale(200), 15, 100, cfg.get()) {
+	panel.add(new HSlider(UI.scale(200), 5, 100, cfg.get()) {
 	    protected void attach(UI ui) {
 		super.attach(ui);
 		val = cfg.get();

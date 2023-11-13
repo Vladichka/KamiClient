@@ -14,8 +14,7 @@ public class GobCustomScale implements Gob.SetupMod {
 	    op = null;
 	    return;
 	}
-	
-	if(res.equals("gfx/terobjs/cupboard")) {
+	if(res.equals("gfx/terobjs/cupboard") && !CFG.FLOATING_DECALS.get()) {
 	    update(CFG.CUPBOARD_HEIGHT.get());
 	} else if(Utils.WALLS_TO_RESIZE.contains(res)) {
 	    update(CFG.PALISADE_HEIGHT.get());

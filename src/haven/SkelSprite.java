@@ -256,7 +256,18 @@ public class SkelSprite extends Sprite implements Sprite.CUpd, EquipTarget, Skel
 	update(fl);
     }
     
+    private Location cupboardSize() {
+	return new Location(new Matrix4f(1, 0, 0, 0,
+	    0, 1, 0, 0,
+	    0, 0, (float) CFG.CUPBOARD_HEIGHT.get() / 100, 0,
+	    0, 0, 0, 1));
+    }
+    
     public void added(RenderTree.Slot slot) {
+	if (res.name.equals("gfx/terobjs/cupboard") && CFG.FLOATING_DECALS.get())
+	{
+	    slot.ostate(cupboardSize());
+	}
 	parts(slot);
 	slots.add(slot);
     }
