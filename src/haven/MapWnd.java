@@ -857,11 +857,15 @@ public class MapWnd extends WindowX implements Console.Directory {
 	return(super.mousedown(c, button));
     }
 
+    private static Coord MaxSizeNonCompact = UI.scale(350,240);
+    private static Coord MaxSizeCompact = UI.scale(150,150);
     public void mousemove(Coord c) {
-	if(drag != null && tool.visible) {
+	if(drag != null) {
+	    Coord size = (!tool.visible ? MaxSizeCompact : MaxSizeNonCompact);
+	    System.out.println(size);
 	    Coord nsz = c.add(dragc);
-	    nsz.x = Math.max(nsz.x, UI.scale(350));
-	    nsz.y = Math.max(nsz.y, UI.scale(240));
+	    nsz.x = Math.max(nsz.x, size.x);
+	    nsz.y = Math.max(nsz.y, size.y);
 	    resize(nsz);
 	}
 	super.mousemove(c);
