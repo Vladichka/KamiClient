@@ -1,3 +1,7 @@
+$size[14]{$u{update on 13.11.2023:}
+  * fixed alert resources
+  * fixed compact mode resize
+
 $size[14]{$u{update on 12.11.2023:}
   * re-merged all loftar code for new repository
   * re-added all the previous features
