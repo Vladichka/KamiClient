@@ -858,7 +858,7 @@ public class MapWnd extends WindowX implements Console.Directory {
     }
 
     public void mousemove(Coord c) {
-	if(drag != null) {
+	if(drag != null && tool.visible) {
 	    Coord nsz = c.add(dragc);
 	    nsz.x = Math.max(nsz.x, UI.scale(350));
 	    nsz.y = Math.max(nsz.y, UI.scale(240));
