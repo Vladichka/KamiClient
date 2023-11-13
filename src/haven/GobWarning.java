@@ -28,10 +28,10 @@ public class GobWarning extends GAttrib implements RenderTree.Node {
 	    if(WarnCFG.get(tgt, message)) {
 		// TODO: make that work better.. that's awful code
 		if (tgt.message.equals("Player")) {
-		    wavnotif(Utils.path("alerts/unknownplayer.wav")).accept(gob.glob.sess.ui);
+		    resnotif("sfx/alerts/unknownplayer").accept(gob.glob.sess.ui);
 		    gob.glob.sess.ui.message(String.format("%s spotted!", tgt.message), tgt.mcol);
 		}else if (tgt.message.equals("Enemy")) {
-		    wavnotif(Utils.path("alerts/enemy.wav")).accept(gob.glob.sess.ui);
+		    resnotif("sfx/alerts/enemy").accept(gob.glob.sess.ui);
 		    gob.glob.sess.ui.message(String.format("%s spotted!", tgt.message), tgt.mcol);
 		} else
 		    gob.glob.sess.ui.message(String.format("%s spotted!", tgt.message), tgt.mcol, errsfx);
@@ -197,30 +197,20 @@ public class GobWarning extends GAttrib implements RenderTree.Node {
 	}
     }
     
-    private static Consumer<UI> wavnotif(Path path) {
+    private static Consumer<UI> resnotif(String nm) {
 	return(ui -> {
+	    Indir<Resource> resid = Resource.local().load(nm);
 	    ui.sess.glob.loader.defer(() -> {
-		Audio.CS clip;
-		InputStream fail = null;
+		Resource res;
 		try {
-		    fail = Files.newInputStream(path);
-		    clip = Audio.PCMClip.fromwav(new BufferedInputStream(fail));
-		    fail = null;
-		} catch(IOException e) {
-		    String msg = e.getMessage();
-		    if(e instanceof FileSystemException)
-			msg = "Could not open file";
-		    ui.error("Could not play " + path + ": " + msg);
+		    res = resid.get();
+		} catch(Loading l) {
+		    throw(l);
+		} catch(RuntimeException e) {
+		    ui.error("Could not play " + nm);
 		    return;
-		} finally {
-		    if(fail != null) {
-			try {
-			    fail.close();
-			} catch(IOException e) {
-			    new Warning(e, "unexpected error on close").issue();
-			}
-		    }
 		}
+		Audio.CS clip = Audio.fromres(res);
 		ui.sfx(clip);
 	    }, null);
 	});

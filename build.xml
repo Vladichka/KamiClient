@@ -139,7 +139,6 @@
       <fileset dir="resources/pre-compiled" />
       <fileset dir="resources/compiled" />
       <fileset dir="resources" includes="item_data/**"/>
-      <fileset dir="etc" includes="*.wav"/>
       <file file="etc/radar.json"/>
       <file file="etc/pvp_map.json"/>
       <file file="etc/pvp_mode_markers.json"/>
@@ -190,9 +189,6 @@
     <copy todir="build">
       <fileset dir="lib/ext/jogl"><include name="*.jar" /></fileset>
       <fileset dir="lib/ext/lwjgl"><include name="*.jar" /></fileset>
-    </copy>
-    <copy todir="build/alerts">
-      <fileset dir="etc/alerts"><include name="*.wav" /></fileset>
     </copy>
     <copy file="local-config.properties" tofile="build/haven-config.properties" failonerror="false" quiet="true" />
   </target>
