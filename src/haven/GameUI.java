@@ -288,8 +288,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	beltwdg.raise();
 	blpanel = add(new Hidepanel("gui-bl", new Indir<Coord>() {
 		public Coord get() {
-		    Coord x = new Coord(0, GameUI.this.sz.y - mapmenupanel.sz.y - chat.sz.y + beltwdg.sz.y + UI.scale(5));
-		    return(x);
+		    if (CFG.VANILLA_CHAT.get())
+			return(new Coord(0, GameUI.this.sz.y));
+		    return(new Coord(0, GameUI.this.sz.y - mapmenupanel.sz.y - chat.sz.y + beltwdg.sz.y + UI.scale(5)));
 		}
 	    }, new Coord(-1,  1)) {
 		public void move(double a) {
@@ -301,6 +302,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		public Coord get() {
 		    int x = blpanel.c.y - mapmenupanel.sz.y + UI.scale(33);
 		    int y = GameUI.this.sz.y - chat.sz.y - mapmenupanel.sz.y;
+		    if (CFG.VANILLA_CHAT.get())
+			y = GameUI.this.sz.y - mapmenupanel.sz.y;
 		    return(new Coord(0, Math.min(x,y)));
 		}
 	    }, new Coord(-1, 0)));
@@ -339,6 +342,12 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	zerg = add(new Zergwnd(), Utils.getprefc("wndc-zerg", UI.scale(new Coord(187, 50))));
 	zerg.hide();
 	placemmap();
+	CFG.Observer<Boolean> change = cfg -> {
+	    synchronized (this) {
+		resize(GameUI.this.sz);
+	    }
+	};
+	CFG.VANILLA_CHAT.observe(change);
     }
 
     protected void attached() {
@@ -489,7 +498,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		    updfold(true);
 		}
 		public void presize() {
-		    this.c = new Coord(0, parent.sz.y - sz.y - chat.sz.y);
+		    this.c = new Coord(0, parent.sz.y - sz.y - (CFG.VANILLA_CHAT.get() ? 0 : chat.sz.y));
 		}
 	    };
 	fold_bl[3] = new IButton("gfx/hud/lbtn-dwn", "", "-d", "-h") {
@@ -1228,10 +1237,13 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	}
 	mmap.sz = UI.scale(133, 133);
 	blpanel.add(mmap, minimapc);
-	blpanel.cshow(false);
-	mapmenupanel.cshow(true);
-	updfold(true);
-	blpanel.presize();
+	if (!CFG.VANILLA_CHAT.get()) {
+	    blpanel.cshow(false);
+	    mapmenupanel.cshow(true);
+	    updfold(true);
+	    blpanel.presize();
+	} else
+	    blpanel.show();
 	mapmenupanel.presize();
 	mmap.lower();
     }
@@ -1284,7 +1296,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     }
 
     public void draw(GOut g) {
-	beltwdg.c = new Coord(chat.c.x + blpw, Math.min(chat.c.y - beltwdg.sz.y, sz.y - beltwdg.sz.y));
+	int beltoffset = (CFG.VANILLA_CHAT.get() ? 0 : blpw);
+	beltwdg.c = new Coord(chat.c.x + beltoffset, Math.min(chat.c.y - beltwdg.sz.y, sz.y - beltwdg.sz.y));
 	super.draw(g);
 	int by = sz.y;
 	if(chat.visible())
@@ -1772,8 +1785,14 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 
     public void resize(Coord sz) {
 	super.resize(sz);
-	chat.resize(UI.scale(600));
-	chat.move(new Coord(0, sz.y));
+	if (CFG.VANILLA_CHAT.get()) {
+	    chat.resize(sz.x - blpw - brpw);
+	    chat.move(new Coord(blpw, sz.y));
+	}
+	else {
+	    chat.resize(UI.scale(600));
+	    chat.move(new Coord(0, sz.y));
+	}
 	if(map != null)
 	    map.resize(sz);
 	if(prog != null)

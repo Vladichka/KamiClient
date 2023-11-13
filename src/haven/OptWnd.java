@@ -1235,6 +1235,9 @@ public class OptWnd extends WindowX {
 	
 	y += STEP;
 	panel.add(new CFGBox("Show queued path on minimap", CFG.MMAP_SHOW_PATH), x, y);
+ 
+	y += STEP;
+	panel.add(new CFGBox("Vanilla chat layout", CFG.VANILLA_CHAT), new Coord(x, y));
 	
 	y += 2*STEP;
 	panel.add(new CFGBox("Require SHIFT to show stack inventory", CFG.UI_STACK_SUB_INV_ON_SHIFT, "Show stack hover-inventories only if SHIFT is pressed"), x, y);
