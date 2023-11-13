@@ -56,6 +56,8 @@ public interface GLPanel extends UIPanel, UI.Context {
 	    this.p = p;
 	    ed = new Dispatcher();
 	    ed.register((java.awt.Component)p);
+	    updateForceHWCursor(CFG.FORCE_HW_CURSOR);
+	    CFG.FORCE_HW_CURSOR.observe(this::updateForceHWCursor);
 	}
 
 	private double framedur() {
@@ -222,12 +224,18 @@ public interface GLPanel extends UIPanel, UI.Context {
 	private String cursmode = defaultcurs();
 	private Resource lastcursor = null;
 	private Coord curshotspot = Coord.z;
+	private boolean forceHW = false;
+ 
+	private void updateForceHWCursor(CFG<Boolean> cfg) {
+	    forceHW = cfg.get();
+	    lastcursor = null;
+	}
 	private void drawcursor(UI ui, GOut g) {
 	    Resource curs;
 	    synchronized(ui) {
 		curs = ui.getcurs(ui.mc);
 	    }
-	    if(cursmode == "awt") {
+	    if(cursmode == "awt" || forceHW) {
 		if(curs != lastcursor) {
 		    try {
 			if(curs == null) {
@@ -239,6 +247,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 			}
 		    } catch(Exception e) {
 			cursmode = "tex";
+			forceHW = false;
 		    }
 		}
 	    } else if(cursmode == "tex") {
