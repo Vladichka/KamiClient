@@ -108,7 +108,8 @@ public class CFG<T> {
     public static final CFG<Boolean> SHOW_PARTY_NAMES = new CFG("map.party_names", false);
     public static final CFG<Boolean> VANILLA_CHAT = new CFG("ui.vanlla_chat", false);
     public static final CFG<Boolean> RELOCATE_DECALS = new CFG("display.relocate_decals", false);
-    public static final CFG<Boolean> CTRL_CLICK_DECAL = new CFG("display.ctrl_click_decal", false);
+    public static final CFG<Boolean> CTRL_CLICK_DECAL = new CFG("general.ctrl_click_decal", false);
+    public static final CFG<Boolean> DISPLAY_CRACKING_TEXTURE = new CFG("display.display_cracking_texture", true);
     
     
     private static final String CONFIG_JSON = "config.json";

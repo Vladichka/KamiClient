@@ -41,7 +41,7 @@ public class GobHealth extends GAttrib implements Gob.SetupMod {
 	super(g);
 	this.hp = hp;
 	int level = 3 - Math.round(hp * 4);
-	if(level >= 0) {
+	if(level >= 0 && CFG.DISPLAY_CRACKING_TEXTURE.get()) {
 	    Random rnd = g.mkrandoom();
 	    this.fx = Pipe.Op.compose(new CrackTex(CrackTex.imgs[Math.min(level, 2)],
 						   new Color(0, 0, 0, 255),

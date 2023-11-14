@@ -1131,6 +1131,9 @@ public class OptWnd extends WindowX {
 	y += STEP;
 	panel.add(new CFGBox("Relocate decals", CFG.RELOCATE_DECALS, "Moves the decals down to the back on cupboards.", true), x, y);
 	
+	y += STEP;
+	panel.add(new CFGBox("Display cracking textures", CFG.DISPLAY_CRACKING_TEXTURE, "Displays the cracking texture on damaged objects.", true), x, y);
+	
 	panel.add(new PButton(UI.scale(200), "Back", 27, main), new Coord(0, my + UI.scale(35)));
 	panel.pack();
 	title.c.x = (panel.sz.x - title.sz.x) / 2;
