@@ -1,3 +1,10 @@
+$size[14]{$u{update on 14.11.2023:}
+  * option to turn bring back vanilla chat / minimap layout
+  * From Ender: decal placing.
+  * Option to prevent right click on decal (Options->General)
+  * Option to disable cracking texture
+  * From Ender: fixed hardware cursor.
+
 $size[14]{$u{update on 13.11.2023:}
   * fixed alert resources
   * fixed compact mode resize
