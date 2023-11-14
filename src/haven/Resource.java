@@ -1864,6 +1864,9 @@ public class Resource implements Serializable {
     }
 
     public <I, L extends IDLayer<I>> L layer(Class<L> cl, I id) {
+	if(StaticSpriteCustomization.needReturnNull(this, cl, id)) {
+	    return null;
+	}
 	used = true;
 	for(Layer l : layers) {
 	    if(cl.isInstance(l)) {

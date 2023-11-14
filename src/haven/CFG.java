@@ -107,7 +107,6 @@ public class CFG<T> {
     public static final CFG<Boolean> SHOW_RED_NAME = new CFG("map.red_names", false);
     public static final CFG<Boolean> SHOW_PARTY_NAMES = new CFG("map.party_names", false);
     public static final CFG<Boolean> VANILLA_CHAT = new CFG("ui.vanlla_chat", false);
-    public static final CFG<Boolean> FLOATING_DECALS = new CFG("display.floatng_decals", false);
     public static final CFG<Boolean> RELOCATE_DECALS = new CFG("display.relocate_decals", false);
     
     
