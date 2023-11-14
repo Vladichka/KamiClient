@@ -2224,6 +2224,19 @@ public class MapView extends PView implements DTarget, Console.Directory {
 		ui.gui.pathQueue.start(mc);
 	    }
 	}
+	if (CFG.CTRL_CLICK_DECAL.get() && args.length >= 7)
+	{
+	    try {
+		Gob g = ui.sess.glob.oc.getgob((int)args[5]);
+		if (g != null)
+		{
+		    if (g.getres().name.equals("gfx/terobjs/cupboard") && (int)args[3] != 2) {
+			args[4] = 0;
+			args[7] = 0;
+		    }
+		}
+	    } catch (Exception ex) {}
+	}
 	if(send)
 	    wdgmsg("click", args);
     }
