@@ -344,6 +344,10 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	placemmap();
 	CFG.Observer<Boolean> change = cfg -> {
 	    synchronized (this) {
+		if (!blpanel.tvis && CFG.VANILLA_CHAT.get()) {
+		    blpanel.cshow(true);
+		    mapmenupanel.cshow(true);
+		}
 		resize(GameUI.this.sz);
 	    }
 	};
