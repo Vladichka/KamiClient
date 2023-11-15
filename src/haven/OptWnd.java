@@ -1134,6 +1134,9 @@ public class OptWnd extends WindowX {
 	y += STEP;
 	panel.add(new CFGBox("Display cracking textures", CFG.DISPLAY_CRACKING_TEXTURE, "Displays the cracking texture on damaged objects.", true), x, y);
 	
+	y += STEP;
+	panel.add(new CFGBox("Display enhanced waterfall", CFG.ENHANCE_WATERFALL, "Enables the waterfall animation / foam from Bullfinch Falls update. (Needs area reload)", true), x, y);
+	
 	panel.add(new PButton(UI.scale(200), "Back", 27, main), new Coord(0, my + UI.scale(35)));
 	panel.pack();
 	title.c.x = (panel.sz.x - title.sz.x) / 2;

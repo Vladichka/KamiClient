@@ -671,30 +671,33 @@ public class WaterTile extends Tiler {
 	    for(int i = 0; i < d.f.length; i += 3)
 		mesh.new Face(mv[d.f[i]], mv[d.f[i + 1]], mv[d.f[i + 2]]);
 	}
-
-	foam: {
-	    FlowData sd = m.data(FlowData.id);
-	    skip: {
-		for(int i = 0; i < 4; i++) {
-		    if(!sd.vel(d.lc.add(Coord.uccw[i])).equals(Coord3f.o))
-			break skip;
+	if (CFG.ENHANCE_WATERFALL.get()) {
+	    foam:
+	    {
+		FlowData sd = m.data(FlowData.id);
+		skip:
+		{
+		    for (int i = 0; i < 4; i++) {
+			if(!sd.vel(d.lc.add(Coord.uccw[i])).equals(Coord3f.o))
+			    break skip;
+		    }
+		    break foam;
 		}
-		break foam;
+		MeshBuf mesh = MapMesh.Model.get(m, foammat);
+		MeshVertex[] mv = new MeshVertex[d.v.length];
+		MeshBuf.Vec2Layer[] vertv = new MeshBuf.Vec2Layer[4];
+		for (int i = 0; i < 4; i++)
+		    vertv[i] = mesh.layer(FoamSurface.lvertv[i]);
+		MeshBuf.Vec2Layer vipol = mesh.layer(FoamSurface.lvipol);
+		for (int i = 0; i < d.v.length; i++) {
+		    mv[i] = new MeshVertex(mesh, d.v[i]);
+		    for (int o = 0; o < 4; o++)
+			vertv[o].set(mv[i], sd.vel(d.lc.add(Coord.uccw[o])));
+		    vipol.set(mv[i], Coord3f.of(d.tcx[i], d.tcy[i], 0));
+		}
+		for (int i = 0; i < d.f.length; i += 3)
+		    mesh.new Face(mv[d.f[i]], mv[d.f[i + 1]], mv[d.f[i + 2]]);
 	    }
-	    MeshBuf mesh = MapMesh.Model.get(m, foammat);
-	    MeshVertex[] mv = new MeshVertex[d.v.length];
-	    MeshBuf.Vec2Layer[] vertv = new MeshBuf.Vec2Layer[4];
-	    for(int i = 0; i < 4; i++)
-		vertv[i] = mesh.layer(FoamSurface.lvertv[i]);
-	    MeshBuf.Vec2Layer vipol = mesh.layer(FoamSurface.lvipol);
-	    for(int i = 0; i < d.v.length; i++) {
-		mv[i] = new MeshVertex(mesh, d.v[i]);
-		for(int o = 0; o < 4; o++)
-		    vertv[o].set(mv[i], sd.vel(d.lc.add(Coord.uccw[o])));
-		vipol.set(mv[i], Coord3f.of(d.tcx[i], d.tcy[i], 0));
-	    }
-	    for(int i = 0; i < d.f.length; i += 3)
-		mesh.new Face(mv[d.f[i]], mv[d.f[i + 1]], mv[d.f[i + 2]]);
 	}
 
 	Bottom b = m.data(Bottom.id);
