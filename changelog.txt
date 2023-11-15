@@ -1,3 +1,8 @@
+$size[14]{$u{update on 15.11.2023:}
+  * merged loftar's code
+  * added option to turn off enhanced waterfall
+  * added cart to minimap icons
+
 $size[14]{$u{update on 14.11.2023:}
   * option to turn bring back vanilla chat / minimap layout
   * From Ender: decal placing.
