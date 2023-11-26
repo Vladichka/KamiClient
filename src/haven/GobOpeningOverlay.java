@@ -177,10 +177,6 @@ public class GobOpeningOverlay extends GobInfo {
 	return null;
     }
     
-    public void destroy() {
-	this.gob.clearOpenings();
-    }
-    
     public void update(Fightview.Relation rel) {
 	this.relation = rel;
     }

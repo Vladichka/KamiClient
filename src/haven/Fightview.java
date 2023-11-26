@@ -71,8 +71,6 @@ public class Fightview extends Widget {
 	public void remove() {
 	    buffs.destroy();
 	    relbuffs.destroy();
-	    if (openings != null)
-		openings.destroy();
 	    invalid = true;
 	}
 
@@ -333,6 +331,9 @@ public class Fightview extends Widget {
             return;
         } else if(msg == "del") {
             Relation rel = getrel(uint32((Integer)args[0]));
+	    Gob target = this.ui.sess.glob.oc.getgob(rel.gobid);
+	    if (target != null)
+	    	target.clearOpenings();
 	    rel.remove();
             lsrel.remove(rel);
 	    if(rel == current)
