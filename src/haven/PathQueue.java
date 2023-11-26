@@ -176,19 +176,21 @@ public class PathQueue {
 	    Gob vehicle = follow.tgt();
 	    if(vehicle != null) {
 		String id = vehicle.resid();
-		String pos = follow.xfname;
-		if(id.contains("/vehicle/snekkja")) {
-		    passenger = !pos.equals("m0");
-		} else if(id.contains("/vehicle/knarr")) {
-		    passenger = !pos.equals("m0"); //TODO: check if knarr works properly
-		} else if(id.contains("/vehicle/rowboat")) {
-		    passenger = !pos.equals("d");
-		} else if(id.contains("/vehicle/spark")) {
-		    passenger = !pos.equals("d");
-		} else if(id.contains("/vehicle/wagon")) {
-		    passenger = !pos.equals("d0");
+		if (id != null) {
+		    String pos = follow.xfname;
+		    if(id.contains("/vehicle/snekkja")) {
+			passenger = !pos.equals("m0");
+		    } else if(id.contains("/vehicle/knarr")) {
+			passenger = !pos.equals("m0"); //TODO: check if knarr works properly
+		    } else if(id.contains("/vehicle/rowboat")) {
+			passenger = !pos.equals("d");
+		    } else if(id.contains("/vehicle/spark")) {
+			passenger = !pos.equals("d");
+		    } else if(id.contains("/vehicle/wagon")) {
+			passenger = !pos.equals("d0");
+		    }
+		    if(DBG) Debug.log.printf("vehicle: '%s', position: '%s', passenger: %s%n", id, pos, passenger);
 		}
-		if(DBG) Debug.log.printf("vehicle: '%s', position: '%s', passenger: %s%n", id, pos, passenger);
 	    }
 	}
 	this.passenger = passenger;
