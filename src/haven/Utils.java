@@ -40,6 +40,9 @@ import java.lang.reflect.*;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.prefs.*;
 import java.util.*;
 import java.util.function.*;
@@ -2558,4 +2561,11 @@ public class Utils {
     }
     
     public static final List<String> WALLS_TO_RESIZE = Arrays.asList("gfx/terobjs/arch/palisadeseg", "gfx/terobjs/arch/palisadecp", "gfx/terobjs/arch/brickwallseg", "gfx/terobjs/arch/brickwallcp" );
+    
+    public static String UTCTimestamp()
+    {
+	OffsetDateTime now = OffsetDateTime.now( ZoneOffset.UTC );
+	DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
+	return now.format(format);
+    }
 }

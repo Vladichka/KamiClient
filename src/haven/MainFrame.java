@@ -439,6 +439,8 @@ public class MainFrame extends java.awt.Frame implements Console.Directory {
 	f.run(fun);
 	resdump();
 	status("exit");
+	if (crashed)
+	    System.exit(137);
 	System.exit(0);
     }
     
@@ -456,6 +458,7 @@ public class MainFrame extends java.awt.Frame implements Console.Directory {
 	final haven.error.ErrorHandler hg = new haven.error.ErrorHandler(errordest);
 	hg.sethandler(new haven.error.ErrorGui(null) {
 	    public void errorsent() {
+		crashed = true;
 		hg.interrupt();
 	    }
 	});
@@ -465,6 +468,8 @@ public class MainFrame extends java.awt.Frame implements Console.Directory {
 	Thread main = new HackThread(g, () -> main2(args), "Haven main thread");
 	main.start();
     }
+    
+    public static boolean crashed = false;
 	
     private static void dumplist(Collection<Resource> list, Path fn) {
 	try {
