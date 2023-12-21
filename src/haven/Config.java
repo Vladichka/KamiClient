@@ -35,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.io.PrintStream;
 import java.util.Properties;
 import java.util.function.*;
 import java.io.*;
@@ -48,8 +49,6 @@ public class Config {
     public static final Variable<Boolean> par = Variable.def(() -> true);
     public final Properties localprops = getlocalprops();
 
-    
-    
     private static Config global = null;
     public static Config get() {
 	if(global != null)
@@ -210,14 +209,10 @@ public class Config {
 	return(Utils.path(p));
     }
 
-    public static final URL parseurl(String url) {
+    public static final URI parseuri(String url) {
 	if((url == null) || url.equals(""))
 	    return(null);
-	try {
-	    return(new URL(url));
-	} catch(java.net.MalformedURLException e) {
-	    throw(new RuntimeException(e));
-	}
+	return(Utils.uri(url));
     }
 
     public static void parsesvcaddr(String spec, Consumer<String> host, Consumer<Integer> port) {
@@ -300,11 +295,11 @@ public class Config {
 	public static Variable<byte[]> propb(String name, byte[] defval) {
 	    return(prop(name, Utils::hex2byte, () -> defval));
 	}
-	public static Variable<URL> propu(String name, URL defval) {
-	    return(prop(name, Config::parseurl, () -> defval));
+	public static Variable<URI> propu(String name, URI defval) {
+	    return(prop(name, Config::parseuri, () -> defval));
 	}
-	public static Variable<URL> propu(String name, String defval) {
-	    return(propu(name, parseurl(defval)));
+	public static Variable<URI> propu(String name, String defval) {
+	    return(propu(name, parseuri(defval)));
 	}
 	public static Variable<Path> propp(String name, Path defval) {
 	    return(prop(name, Config::parsepath, () -> defval));
@@ -362,8 +357,8 @@ public class Config {
 		break;
 	    case 'U':
 		try {
-		    Resource.resurl.set(new URL(opt.arg));
-		} catch(java.net.MalformedURLException e) {
+		    Resource.resurl.set(Utils.uri(opt.arg));
+		} catch(IllegalArgumentException e) {
 		    System.err.println(e);
 		    System.exit(1);
 		}
