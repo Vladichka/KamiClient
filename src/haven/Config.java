@@ -30,7 +30,7 @@ import haven.rx.Reactor;
 import integrations.mapv4.MappingClient;
 
 import java.io.*;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
