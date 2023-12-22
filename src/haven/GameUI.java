@@ -348,7 +348,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		    blpanel.cshow(true);
 		    mapmenupanel.cshow(true);
 		}
-		resize(GameUI.this.sz);
+		resizeLayout(GameUI.this.sz);
 	    }
 	};
 	CFG.VANILLA_CHAT.observe(change);
@@ -1785,6 +1785,10 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 
     public void resize(Coord sz) {
 	super.resize(sz);
+	resizeLayout(sz);
+    }
+    
+    public void resizeLayout(Coord sz) {
 	if (CFG.VANILLA_CHAT.get()) {
 	    chat.resize(sz.x - blpw - brpw);
 	    chat.move(new Coord(blpw, sz.y));
