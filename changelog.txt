@@ -1,3 +1,8 @@
+$size[14]{$u{update on 21.12.2023:}
+  * merged loftar's code
+  * small bug fixes
+  * placing error crashes in a folder with a timestamp.
+
 $size[14]{$u{update on 15.11.2023:}
   * merged loftar's code
   * added option to turn off enhanced waterfall
