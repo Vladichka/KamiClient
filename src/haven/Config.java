@@ -45,7 +45,7 @@ public class Config {
     public static final File HOMEDIR = new File("").getAbsoluteFile();
     public static final String LINE_SEPARATOR = System.getProperty("line.separator");
     public static final Properties jarprops = getjarprops();
-    public static final String confid = jarprops.getProperty("config.client-id", "unknown");
+    public static final String confid = jarprops.getProperty("config.client-id", "KamiClient");
     public static final Variable<Boolean> par = Variable.def(() -> true);
     public final Properties localprops = getlocalprops();
 
