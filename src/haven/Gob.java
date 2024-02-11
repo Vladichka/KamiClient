@@ -77,7 +77,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     public static final ChangeCallback CHANGED = new ChangeCallback() {
 	@Override
 	public void added(Gob ob) {
-	    
+	
 	}
 	
 	@Override
@@ -92,7 +92,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	public final Indir<Resource> res;
 	public MessageBuf sdt;
 	public Sprite spr;
-	public boolean delign = false;
+	public boolean delign = false, old = false;
 	private Collection<RenderTree.Slot> slots = null;
 	private boolean added = false;
 
@@ -115,6 +115,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private void init() {
 	    if(spr == null) {
 		spr = Sprite.create(gob, res.get(), sdt);
+		if(old)
+		    spr.age();
 		if(added && (spr instanceof SetupMod))
 		    gob.setupmods.add((SetupMod)spr);
 	    }
@@ -150,10 +152,20 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    remove0();
 	    gob.ols.remove(this);
 	    gob.overlaysUpdated();
+	    removed();
 	}
 
 	public void remove() {
 	    remove(true);
+	}
+
+	protected void removed() {
+	}
+
+	public boolean tick(double dt) {
+	    if(spr == null)
+		return(false);
+	    return(spr.tick(dt));
 	}
 
 	public void added(RenderTree.Slot slot) {
@@ -183,7 +195,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     private static class CustomColor implements SetupMod {
 	Pipe.Op op = null;
 	Color c = null;
-    
+ 
 	void color(Color c) {
 	    if(Objects.equals(c, this.c)) {
 		return;
@@ -196,7 +208,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    }
 	    this.c = c;
 	}
-    
+ 
 	@Override
 	public Pipe.Op gobstate() {
 	    return op;
@@ -522,7 +534,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		    ol.init();
 		} catch(Loading e) {}
 	    } else {
-		boolean done = ol.spr.tick(dt);
+		boolean done = ol.tick(dt);
 		if((!ol.delign || (ol.spr instanceof Sprite.CDel)) && done) {
 		    ol.remove0();
 		    i.remove();
@@ -1388,18 +1400,18 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if(updateseq == 0 || !status.updated()) {return;}
 	StatusUpdates status = this.status;
 	this.status = new StatusUpdates();
-    
+ 
 	if(status.updated(StatusType.drawable, StatusType.kin, StatusType.id, StatusType.pose, StatusType.tags, StatusType.overlay)) {
 	    updateTags();
 	    status.update(StatusType.tags);
 	}
-    
+ 
 	if(status.updated(StatusType.drawable, StatusType.visibility, StatusType.tags)) {
 	    if(updateVisibility()) {
 		status.update(StatusType.visibility);
 	    }
 	}
-    
+ 
 	if(status.updated(StatusType.drawable) && radius == null) {
 	    Resource res = getres();
 	    if(res != null) {
@@ -1409,7 +1421,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	    }
 	}
-    
+ 
 	if(status.updated(StatusType.drawable, StatusType.hitbox, StatusType.visibility)) {
 	    updateHitbox();
 	}
@@ -1417,11 +1429,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if(status.updated(StatusType.drawable)) {
 	    customScale.update(this);
 	}
-    
+ 
 	if(status.updated(StatusType.drawable, StatusType.id, StatusType.icon)) {
 	    updateIcon();
 	}
-    
+ 
 	if(status.updated(StatusType.tags)) {
 	    updateWarnings();
 	}
@@ -1429,7 +1441,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if(status.updated(StatusType.info, StatusType.tags)) {
 	    info.clean();
 	}
-    
+ 
 	if(status.updated(StatusType.tags, StatusType.info)) {
 	    updateColor();
 	}
