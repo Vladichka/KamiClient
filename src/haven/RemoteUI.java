@@ -71,7 +71,6 @@ public class RemoteUI implements UI.Receiver, UI.Runner {
 		    int parent = msg.int32();
 		    Object[] pargs = msg.list();
 		    Object[] cargs = msg.list();
-		    System.out.println(type);
 		    boolean createWidget = true;
 		    if (CFG.IGNORE_CERTAIN_REMOTE_UI.get() && cargs.length == 2 & pargs.length > 0 && type.equals("ui/rinit:3"))
 			if (cargs[0].toString().equals(Config.getPlayerName()) && pargs[0].toString().equals("misc"))

@@ -26,6 +26,7 @@
 
 package haven;
 
+import auto.AttackOpponent;
 import haven.Equipory.SLOTS;
 import haven.rx.BuffToggles;
 import haven.rx.Reactor;
@@ -110,6 +111,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    clearChanged();
 	}
     };
+    
+    public long lastopponent = -1;
+    public Thread keyboundActionThread;
 
     private static final OwnerContext.ClassResolver<BeltSlot> beltctxr = new OwnerContext.ClassResolver<BeltSlot>()
 	.add(GameUI.class, slot -> slot.wdg())
@@ -1683,6 +1687,10 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     public static final KeyBinding kb_vil = KeyBinding.get("ol-vil", KeyMatch.nil);
     public static final KeyBinding kb_rlm = KeyBinding.get("ol-rlm", KeyMatch.nil);
     public static final KeyBinding kb_ico = KeyBinding.get("map-icons", KeyMatch.nil);
+    
+    public static KeyBinding kb_aggroLastTarget = KeyBinding.get("aggroLastTarget",  KeyMatch.forchar('T', KeyMatch.S));
+    public static KeyBinding kb_peaceCurrentTarget  = KeyBinding.get("peaceCurrentTargetKB",  KeyMatch.forchar('P', KeyMatch.M));
+    
     private static final Tex mapmenubg = Resource.loadtex("gfx/hud/lbtn-bg");
     public class MapMenu extends Widget {
 	private void toggleol(String tag, boolean a) {
@@ -1751,6 +1759,12 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    return(true);
 	} else if((key == 27) && (map != null) && !map.hasfocus) {
 	    setfocus(map);
+	    return(true);
+	} else if (kb_aggroLastTarget.key().match(ev)) {
+	    this.runActionThread(new Thread(new AttackOpponent(this, this.lastopponent), "Reaggro"));
+	    return(true);
+	} else if(kb_peaceCurrentTarget.key().match(ev)) {
+	    peaceCurrentTarget();
 	    return(true);
 	}
 	return(super.globtype(key, ev));
@@ -2196,6 +2210,30 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		ExtInventories.remove(i);
 		return;
 	    }
+	}
+    }
+    
+    public void peaceCurrentTarget() {
+	try {
+	    if (fv != null && fv.curdisp != null && fv.curdisp.give != null) {
+		fv.curdisp.give.wdgmsg("click", 1);
+	    }
+	} catch (Exception e) {
+	    e.printStackTrace();
+	}
+    }
+    
+    public void runActionThread(Thread t) {
+	if (this.keyboundActionThread != null && keyboundActionThread.isAlive()) {
+	    keyboundActionThread.interrupt();
+	}
+	this.keyboundActionThread = t;
+	t.start();
+    }
+    
+    public void stopActionThread() {
+	if (keyboundActionThread != null && keyboundActionThread.isAlive()) {
+	    keyboundActionThread.interrupt();
 	}
     }
 }

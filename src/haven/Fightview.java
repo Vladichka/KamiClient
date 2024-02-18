@@ -278,6 +278,9 @@ public class Fightview extends Widget {
 	    add(curdisp = new Mainrel(rel));
 	}
 	current = rel;
+	if (current != null) {
+	    ui.gui.lastopponent = current.gobid;
+	}
 	layout();
 	updrel();
     }
