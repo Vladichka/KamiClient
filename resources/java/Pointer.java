@@ -48,7 +48,8 @@ public class Pointer extends Widget implements MiniMap.IPointer, DTarget {
 	if(marker instanceof PMarker) {
 	    col = new BaseColor(((PMarker) marker).color);
 	} else if(marker instanceof SMarker) {
-	    icon = ((SMarker) marker).res;
+	    Resource.Spec spec = ((SMarker) marker).res;
+	    icon = new Resource.Spec(spec.pool, spec.name, -1);
 	    col = colors[0];
 	} else if(marker instanceof MapWnd2.GobMarker) {
 	    MapWnd2.GobMarker gobMarker = (MapWnd2.GobMarker) marker;
@@ -262,6 +263,10 @@ public class Pointer extends Widget implements MiniMap.IPointer, DTarget {
 	}
     }
     
+    public String name() {
+	return tip;
+    }
+    
     public Object tooltip(Coord c, Widget prev) {
 	if((lc != null) && (lc.dist(c) < 20))
 	    return tooltip();
@@ -300,9 +305,9 @@ public class Pointer extends Widget implements MiniMap.IPointer, DTarget {
     long firsSegment = -1;
     
     private void triangulate(Coord2d b) {
-        if(b == null) {
-            firstLine = null;
-            return;
+	if(b == null) {
+	    firstLine = null;
+	    return;
 	}
 	mc = null;
 	tc();
@@ -312,13 +317,17 @@ public class Pointer extends Widget implements MiniMap.IPointer, DTarget {
 	if(player != null) {
 	    Pair<Coord2d, Coord2d> line = new Pair<>(player.rc, b);
 	    if(firstLine == null) {
-	        firsSegment = curseg;
+		firsSegment = curseg;
 		firstLine = line;
 	    } else if(curseg == firsSegment) {
 		mc = Utils.intersect(firstLine, line).orElse(mc);
+		//do not stop triangulation if calculated point diverges too far off from server one
+		if(mc != null && Math.abs(player.rc.angle(mc) - player.rc.angle(b)) > PI / 3) {
+		    mc = null;
+		}
 		triangulating = mc == null;
 	    } else {
-	        firstLine = null;
+		firstLine = null;
 	    }
 	}
     }

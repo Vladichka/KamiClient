@@ -2,12 +2,15 @@ package auto;
 
 import haven.*;
 import haven.rx.Reactor;
-import rx.functions.Action1;
+import rx.functions.Action2;
 
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static auto.InvHelper.*;
 
 
 public class Bot implements Defer.Callable<Void> {
@@ -17,11 +20,16 @@ public class Bot implements Defer.Callable<Void> {
     private final BotAction[] actions;
     private Defer.Future<Void> task;
     private boolean cancelled = false;
+    private String message = null;
     private static final Object waiter = new Object();
     
     public Bot(List<Target> targets, BotAction... actions) {
 	this.targets = targets;
 	this.actions = actions;
+    }
+    
+    public Bot(BotAction... actions) {
+	this(Collections.singletonList(Target.EMPTY), actions);
     }
     
     @Override
@@ -30,7 +38,7 @@ public class Bot implements Defer.Callable<Void> {
 	for (Target target : targets) {
 	    for (BotAction action : actions) {
 		if(target.disposed()) {break;}
-		action.call(target);
+		action.call(target, this);
 		checkCancelled();
 	    }
 	}
@@ -40,9 +48,9 @@ public class Bot implements Defer.Callable<Void> {
 	return null;
     }
     
-    private void run(Action1<String> callback) {
+    private void run(Action2<Boolean, String> callback) {
 	task = Defer.later(this);
-	task.callback(() -> callback.call(task.cancelled() ? "cancelled" : "complete"));
+	task.callback(() -> callback.call(task.cancelled(),  message));
     }
     
     private void checkCancelled() throws InterruptedException {
@@ -56,21 +64,44 @@ public class Bot implements Defer.Callable<Void> {
 	task.cancel();
     }
     
-    public static void cancel() {
+    public void cancel(String message) {
+	this.message = message;
+	markCancelled();
+    }
+    
+    public void cancel() {
+	cancel(null);
+    }
+    
+    public static void cancelCurrent() {
+	setCurrent(null);
+    }
+    private static void setCurrent(Bot bot) {
 	synchronized (lock) {
 	    if(current != null) {
-		current.markCancelled();
-		current = null;
+		current.cancel();
 	    }
+	    current = bot;
 	}
     }
     
     private static void start(Bot bot, UI ui) {
-	cancel();
-	synchronized (lock) { current = bot; }
-	bot.run((result) -> {
-	    if (CFG.SHOW_BOT_MESSAGES.get())
-	    	ui.message(String.format("Task is %s.", result), GameUI.MsgType.INFO);
+	start(bot, ui, false);
+    }
+    
+    private static void start(Bot bot, UI ui, boolean silent) {
+	setCurrent(bot);
+	bot.run((error, message) -> {
+	    if(!silent && CFG.SHOW_BOT_MESSAGES.get() || error) {
+		GameUI.MsgType type = error ? GameUI.MsgType.ERROR : GameUI.MsgType.INFO;
+		if(message == null) {
+		    message = error
+			? "Task is cancelled."
+			: "Task is completed.";
+		    type = GameUI.MsgType.INFO;
+		}
+		ui.message(message, type);
+	    }
 	});
     }
     
@@ -97,14 +128,96 @@ public class Bot implements Defer.Callable<Void> {
 	    .collect(Collectors.toList());
 	
 	start(new Bot(targets,
-	    Target::rclick,
-	    selectFlower("Pick"),
-	    target -> target.gob.waitRemoval()
+	    Target::rclick_shift,
+	    (target, bot) -> target.gob.waitRemoval()
 	), gui.ui);
     }
     
     public static void pickup(GameUI gui) {
 	pickup(gui, has(GobTag.PICKUP));
+    }
+    
+    public static void openGate(GameUI gui) {
+	List<Target> targets = gui.ui.sess.glob.oc.stream()
+	    .filter(has(GobTag.GATE))
+	    .filter(gob -> !gob.isVisitorGate())
+	    .filter(gob -> distanceToPlayer(gob) <= 35)
+	    .sorted(byDistance)
+	    .limit(1)
+	    .map(Target::new)
+	    .collect(Collectors.toList());
+	
+	start(new Bot(targets, Target::rclick), gui.ui, true);
+    }
+    
+    public static void refillDrinks(GameUI gui) {
+	if(gui.hand() != null || gui.cursor != null) {
+	    gui.error("You must have empty cursor to refill drinks!");
+	    return;
+	}
+	
+	Coord2d waterTile = null;
+	Gob barrel = null;
+	boolean needWalk = false;
+	Gob player = gui.map.player();
+	BotAction interact;
+	
+	if(MapHelper.isPlayerOnFreshWaterTile(gui)) {
+	    waterTile = player.rc;
+	} else {
+	    needWalk = true;
+	    List<Target> objs = getNearestTargets(gui, GobTag.HAS_WATER, 1, 32);
+	    if(!objs.isEmpty()) {
+		barrel = objs.get(0).gob;
+	    }
+	    if(barrel == null) {
+		waterTile = MapHelper.nearbyWaterTile(gui);
+	    } 
+	}
+	
+	final Coord2d tile = barrel != null ? barrel.rc : waterTile;
+	
+	if(waterTile != null) {
+	    interact = (t, b) -> gui.map.wdgmsg("itemact", Coord.z, tile.floor(OCache.posres), 0);
+	} else if(barrel != null) {
+	    final Gob gob = barrel;
+	    interact = (t, b) -> gui.map.wdgmsg("itemact", Coord.z, Coord.z, UI.MOD_META, 0, (int) gob.id, gob.rc.floor(OCache.posres), 0, -1);
+	    
+	} else {
+	    gui.error("You must be near tile or barrel with fresh water to refill drinks!");
+	    return;
+	}
+	
+	List<Target> targets = Stream.of(INVENTORY_CONTAINED(gui), BELT_CONTAINED(gui))
+	    .flatMap(x -> x.get().stream())
+	    .filter(InvHelper::isDrinkContainer)
+	    .filter(InvHelper::isNotFull)
+	    .map(Target::new)
+	    .collect(Collectors.toList());
+	
+	if(targets.isEmpty()) {
+	    gui.error("No non-full drink containers to refill!");
+	    return;
+	}
+	
+	Bot refillBot = new Bot(targets,
+	    Target::take,
+	    (t, b) -> waitHeldChanged(gui),
+	    interact,
+	    doWait(70),
+	    Target::putBack,
+	    (t, b) -> waitHeldChanged(gui)
+	);
+	if(needWalk) {
+	    start(new Bot(
+		(t, b) -> gui.map.click(tile, 1, Coord.z, tile.floor(OCache.posres), 1, 0),
+		waitGobPose(player, 1500,"/walking", "/running"),
+		waitGobNoPose(player, 1500,"/walking", "/running"),
+		(t, b) -> start(refillBot, gui.ui, true)
+	    ), gui.ui, true);
+	} else {
+	    start(refillBot, gui.ui, true);
+	}
     }
     
     public static void selectFlower(GameUI gui, long gobid, String option) {
@@ -137,21 +250,33 @@ public class Bot implements Defer.Callable<Void> {
     }
     
     public static void drink(WItem item) {
-	start(new Bot(Collections.singletonList(new Target(item)), Target::rclick, selectFlower("Drink")), item.ui);
+	start(new Bot(Collections.singletonList(new Target(item)), Target::rclick, selectFlower("Drink")), item.ui, true);
     }
     
     public static void fuelGob(GameUI gui, String name, String fuel, int count) {
-	List<Target> targets = getNearestTargets(gui, name, 1);
+	List<Target> targets = getNearestTargets(gui, name, 1, 33);
 	
 	if(!targets.isEmpty()) {
 	    start(new Bot(targets, fuelWith(gui, fuel, count)), gui.ui);
+	} else {
+	    gui.error("Cannot find target to add fuel to");
 	}
     }
     
-    private static List<Target> getNearestTargets(GameUI gui, String name, int limit) {
+    private static List<Target> getNearestTargets(GameUI gui, String name, int limit, double distance) {
 	return gui.ui.sess.glob.oc.stream()
 	    .filter(gobIs(name))
-	    .filter(gob -> distanceToPlayer(gob) <= CFG.AUTO_PICK_RADIUS.get())
+	    .filter(gob -> distanceToPlayer(gob) <= distance)
+	    .sorted(byDistance)
+	    .limit(limit)
+	    .map(Target::new)
+	    .collect(Collectors.toList());
+    }
+    
+    private static List<Target> getNearestTargets(GameUI gui, GobTag tag, int limit, double distance) {
+	return gui.ui.sess.glob.oc.stream()
+	    .filter(gobIs(tag))
+	    .filter(gob -> distanceToPlayer(gob) <= distance)
 	    .sorted(byDistance)
 	    .limit(limit)
 	    .map(Target::new)
@@ -159,30 +284,49 @@ public class Bot implements Defer.Callable<Void> {
     }
     
     private static BotAction fuelWith(GameUI gui, String fuel, int count) {
-	return target -> {
-	    Supplier<List<WItem>> inventory = INVENTORY(gui);
+	return (target, bot) -> {
+	    Supplier<List<WItem>> inventory = unstacked(INVENTORY(gui));
 	    float has = countItems(fuel, inventory);
-	    if(has >= count) {
-		for (int i = 0; i < count; i++) {
-		    Optional<WItem> w = findFirstItem(fuel, inventory);
-		    if(w.isPresent()) {
-			w.get().take();
-			if(!waitHeld(gui, fuel)) {
-			    cancel();
-			    return;
-			}
-			target.interact();
-			if(!waitHeld(gui, null)) {
-			    cancel();
-			    return;
-			}
-		    } else {
-			cancel();
-			return;
-		    }
+	    if(has < count) {
+		bot.cancel(String.format("Not enough '%s' in inventory: found %d, need: %d", fuel, (int) has, count));
+		return;
+	    }
+	    for (int i = 0; i < count; i++) {
+		Optional<WItem> w = findFirstItem(fuel, inventory);
+		if(!w.isPresent()) {
+		    bot.cancel("no fuel in inventory");
+		    return;
 		}
-	    } else {
-		cancel();
+		w.get().take();
+		if(!waitHeld(gui, fuel)) {
+		    bot.cancel("no fuel on cursor");
+		    return;
+		}
+		target.interact();
+		if(!waitHeld(gui, null)) {
+		    bot.cancel("cursor is not empty");
+		    return;
+		}
+	    }
+	};
+    }
+    
+    private static BotAction waitGobNoPose(Gob gob, long timeout, String... poses) {
+	return (t, b) -> {
+	    final long started = System.currentTimeMillis();
+	    while (System.currentTimeMillis() - started < timeout
+		&& gob != null && !gob.disposed() && gob.hasPose(poses)) {
+		pause(100);
+	    }
+	};
+    }
+    
+    private static BotAction waitGobPose(Gob gob, long timeout, String... poses) {
+	return (t, b) -> {
+	    final long started = System.currentTimeMillis();
+	    while (System.currentTimeMillis() - started < timeout
+		&& gob != null && !gob.disposed() && !gob.hasPose(poses)) {
+		pause(100);
 	    }
 	};
     }
@@ -234,6 +378,10 @@ public class Bot implements Defer.Callable<Void> {
 	return result;
     }
     
+    private static BotAction doWait(long ms) {
+	return (t, b) -> pause(ms);
+    }
+    
     private static void pause(long ms) {
 	synchronized (waiter) {
 	    try {
@@ -247,26 +395,6 @@ public class Bot implements Defer.Callable<Void> {
 	synchronized (waiter) { waiter.notifyAll(); }
     }
     
-    private static List<WItem> items(Widget inv) {
-	return inv != null ? new ArrayList<>(inv.children(WItem.class)) : new LinkedList<>();
-    }
-    
-    private static Optional<WItem> findFirstThatContains(String what, Collection<Supplier<List<WItem>>> where) {
-	for (Supplier<List<WItem>> place : where) {
-	    Optional<WItem> w = place.get().stream()
-		.filter(contains(what))
-		.findFirst();
-	    if(w.isPresent()) {
-		return w;
-	    }
-	}
-	return Optional.empty();
-    }
-    
-    private static Predicate<WItem> contains(String what) {
-	return w -> w.contains.get().is(what);
-    }
-    
     private static Predicate<Gob> gobIs(String what) {
 	return g -> {
 	    if(g == null) { return false; }
@@ -276,65 +404,17 @@ public class Bot implements Defer.Callable<Void> {
 	};
     }
     
-    private static float countItems(String what, Supplier<List<WItem>> where) {
-	return where.get().stream()
-	    .filter(wItem -> wItem.is(what))
-	    .map(wItem -> wItem.quantity.get())
-	    .reduce(0f, Float::sum);
-    }
-    
-    private static Optional<WItem> findFirstItem(String what, Supplier<List<WItem>> where) {
-	return where.get().stream()
-	    .filter(wItem -> wItem.is(what))
-	    .findFirst();
-    }
-    
-    
-    private static Supplier<List<WItem>> INVENTORY(GameUI gui) {
-	return () -> items(gui.maininv);
-    }
-    
-    private static Supplier<List<WItem>> BELT(GameUI gui) {
-	return () -> {
-	    Equipory e = gui.equipory;
-	    if(e != null) {
-		WItem w = e.slots[Equipory.SLOTS.BELT.idx];
-		if(w != null) {
-		    return items(w.item.contents);
-		}
-	    }
-	    return new LinkedList<>();
-	};
-    }
-    
-    private static Supplier<List<WItem>> HANDS(GameUI gui) {
-	return () -> {
-	    List<WItem> items = new LinkedList<>();
-	    if(gui.equipory != null) {
-		WItem slot = gui.equipory.slots[Equipory.SLOTS.HAND_LEFT.idx];
-		if(slot != null) {
-		    items.add(slot);
-		}
-		slot = gui.equipory.slots[Equipory.SLOTS.HAND_RIGHT.idx];
-		if(slot != null) {
-		    items.add(slot);
-		}
-	    }
-	    return items;
+    private static Predicate<Gob> gobIs(GobTag what) {
+	return g -> {
+	    if(g == null) { return false; }
+	    return g.is(what);
 	};
     }
     
     private static boolean isOnRadar(Gob gob) {
 	if(!CFG.AUTO_PICK_ONLY_RADAR.get()) {return true;}
-	GobIcon icon = gob.getattr(GobIcon.class);
-	GameUI gui = gob.glob.sess.ui.gui;
-	if(icon != null && gui != null) {
-	    try {
-		GobIcon.Setting s = gui.iconconf.get(icon.res.get());
-		return s.show;
-	    } catch (Loading ignored) {}
-	}
-	return true;
+	Boolean onRadar = gob.isOnRadar();
+	return onRadar == null || onRadar;
     }
     
     private static double distanceToPlayer(Gob gob) {
@@ -351,7 +431,7 @@ public class Bot implements Defer.Callable<Void> {
     };
     
     private static BotAction selectFlower(String... options) {
-	return target -> {
+	return (target, bot) -> {
 	    if(target.hasMenu()) {
 		FlowerMenu.lastTarget(target);
 		Reactor.FLOWER.first().subscribe(flowerMenu -> {
@@ -376,28 +456,59 @@ public class Bot implements Defer.Callable<Void> {
 	return gob -> gob.is(tag);
     }
     
-    private interface BotAction {
-	void call(Target target) throws InterruptedException;
+    public interface BotAction {
+	void call(Target target, Bot bot) throws InterruptedException;
     }
     
+    //TODO: rework with inheritance?
     public static class Target {
+	public static final Target EMPTY = new Target();
+	
 	public final Gob gob;
 	public final WItem item;
+	public final ContainedItem contained;
+	
+	private Target() {
+	    this.gob = null;
+	    this.item = null;
+	    this.contained = null;
+	}
 	
 	public Target(Gob gob) {
 	    this.gob = gob;
 	    this.item = null;
+	    this.contained = null;
 	}
 	
 	public Target(WItem item) {
 	    this.item = item;
 	    this.gob = null;
+	    this.contained = null;
 	}
 	
+	private Target(ContainedItem contained) {
+	    this.item = null;
+	    this.gob = null;
+	    this.contained = contained;
+	}
+	
+	public void rclick(Bot b) {rclick();}
+	
 	public void rclick() {
+	    rclick(0);
+	}
+	
+	public void rclick_shift(Bot b) {rclick_shift();}
+	
+	public void rclick_shift() {
+	    rclick(UI.MOD_SHIFT);
+	}
+    
+	public void rclick(int modflags) {
 	    if(!disposed()) {
-		if(gob != null) {gob.rclick();}
-		if(item != null) {item.rclick();}
+		if(gob != null) {gob.rclick(modflags);}
+		if(item != null) {item.rclick(modflags);}
+		if(contained != null) {contained.item.rclick(modflags);}
 	    }
 	}
     
@@ -413,10 +524,26 @@ public class Bot implements Defer.Callable<Void> {
 		if(gob != null) {gob.highlight();}
 	    }
 	}
+	
+	public void take(Bot b) {take();}
+	
+	public void take() {
+	    if(contained != null && !contained.itemDisposed()) {
+		contained.take();
+	    }
+	}
+	
+	public void putBack(Bot b) {putBack();}
+	
+	public void putBack() {
+	    if(contained != null && !contained.containerDisposed()) {
+		contained.putBack();
+	    }
+	}
     
 	public boolean hasMenu() {
 	    if(gob != null) {return gob.is(GobTag.MENU);}
-	    return item != null;
+	    return item != null || contained != null;
 	}
     
 	public boolean disposed() {

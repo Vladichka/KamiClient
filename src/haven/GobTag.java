@@ -17,10 +17,12 @@ public enum GobTag {
     PIG, SOW, HOG, PIGLET,
     SHEEP, EWE, RAM, LAMB,
     
-    GEM,
+    GEM, ARROW,
     VEHICLE, PUSHED, //vehicle that is pushed (wheelbarrow, plow)
     
-    CONTAINER, DRACK,
+    CONTAINER, PROGRESSING, GATE,
+    
+    HAS_WATER,
     
     PLAYER, ME, FRIEND, FOE,
     KO, DEAD, EMPTY, READY, FULL,
@@ -51,7 +53,8 @@ public enum GobTag {
         "/rat/rat", "/swan", "/squirrel", "/silkmoth", "/frog", "/rockdove", "/quail", "/toad", "/grasshopper",
         "/ladybug", "/forestsnail", "/dragonfly", "/forestlizard", "/waterstrider", "/firefly", "/sandflea",
         "/rabbit", "/crab", "/cavemoth", "/hedgehog", "/stagbeetle", "jellyfish", "/mallard", "/chicken", "/irrbloss",
-        "/cavecentipede", "/bogturtle", "/moonmoth", "/monarchbutterfly", "/items/grub", "/springbumblebee"
+        "/cavecentipede", "/bogturtle", "/moonmoth", "/monarchbutterfly", "/items/grub", "/springbumblebee", "/bayshrimp",
+        "/mole" , "/lobster",
     };
     
     private static final String[] VEHICLES = {"/wheelbarrow", "/plow", "/cart", "/dugout", "/rowboat", "/vehicle/snekkja", "/vehicle/knarr", "/vehicle/wagon", "/vehicle/coracle", "/horse/mare", "/horse/stallion", "/vehicle/spark"};
@@ -130,12 +133,29 @@ public enum GobTag {
                         tags.add(AGGRESSIVE);
                     }
                 }
+            } else if(name.startsWith("gfx/terobjs/arch/") && name.endsWith("gate")) {
+                tags.add(GATE);
             } else if(name.endsWith("/dframe")) {
-                tags.add(DRACK);
+                tags.add(CONTAINER);
+                tags.add(PROGRESSING);
                 boolean empty = ols.isEmpty();
                 boolean done = !empty && ols.stream().noneMatch(GobTag::isDrying);
                 if(empty) { tags.add(EMPTY); }
                 if(done) { tags.add(READY); }
+            } else if(name.endsWith("/ttub")) {
+                tags.add(CONTAINER);
+                tags.add(PROGRESSING);
+                //sdt bits: 0 - water, 1 - tannin, 2 - hide, 3 - leather
+                boolean empty = sdt < 4; //has no hide nor leather
+                boolean done = sdt >= 8; //has leather
+                if(empty) { tags.add(EMPTY); }
+                if(done) { tags.add(READY); }
+            } else if(name.endsWith("/beehive")) {
+                tags.add(PROGRESSING);
+                //sdt bits: 0 - honey, 1 - bees?, 2 - wax
+                //boolean noHoney = (sdt & 1) == 0; //has no honey
+                boolean hasWax = (sdt & 4) != 0; //has wax
+                if(hasWax) {tags.add(READY);}
             } else if(name.endsWith("/gems/gemstone")) {
                 tags.add(GEM);
             } else if(name.endsWith("/wheelbarrow") || name.endsWith("/plow")) {
@@ -144,8 +164,14 @@ public enum GobTag {
             if(ofType(name, VEHICLES)) {
                 tags.add(VEHICLE);
             }
+            if(name.equals("gfx/terobjs/items/arrow")) {
+                tags.add(ARROW);
+            }
             
-            if(anyOf(tags, HERB, CRITTER, GEM)) {
+            if("Water".equals(gob.contents())) {
+                tags.add(HAS_WATER);
+            }
+            if(anyOf(tags, HERB, CRITTER, GEM, ARROW)) {
                 tags.add(PICKUP);
             }
             

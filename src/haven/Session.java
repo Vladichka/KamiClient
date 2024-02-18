@@ -209,6 +209,13 @@ public class Session implements Resource.Resolver {
 	return(res.get());
     }
     
+    public Indir<Resource> getres2(int id) {
+	synchronized (rescache) {
+	    CachedRes ret = rescache.get(id);
+	    return ret != null ? (ret.get()) : null;
+	}
+    }
+    
     private int cacheres(String resname){
 	return cacheres(Resource.local().loadwait(resname));
     }

@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import static haven.QualityList.SingleType.*;
 
 public class ItemData {
+    public static final String INFO_CLASS_GILDING = "haven.res.ui.tt.slot.Slotted";
     private static final ItemData EMPTY = new ItemData();
     private static Gson gson;
     private static Map<String, ItemData> item_data = new LinkedHashMap<String, ItemData>(9, 0.75f, true) {

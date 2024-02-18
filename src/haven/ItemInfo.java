@@ -26,6 +26,7 @@
 
 package haven;
 
+import me.ender.DamageTip;
 import me.ender.Reflect;
 
 import java.awt.*;
@@ -39,6 +40,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public abstract class ItemInfo {
+    public static final int LEFT = 0;
+    public static final int CENTER = 1;
+    public static final int RIGHT = 2;
     public static final Resource armor_hard = Resource.local().loadwait("gfx/hud/chr/custom/ahard");
     public static final Resource armor_soft = Resource.local().loadwait("gfx/hud/chr/custom/asoft");
     public static final Resource detection = Resource.local().loadwait("gfx/hud/chr/custom/detect");
@@ -56,21 +60,21 @@ public abstract class ItemInfo {
     public interface Owner extends OwnerContext {
 	public List<ItemInfo> info();
     }
-
+    
     private static class SessOwner implements ItemInfo.Owner {
 	private final OwnerContext.ClassResolver<SessOwner> ctxr;
-
+	
 	public SessOwner(Session sess) {
 	    ctxr = new OwnerContext.ClassResolver<SessOwner>()
 		.add(Glob.class, x -> sess.glob)
 		.add(Session.class, x -> sess);
 	}
-
+	
 	@Override
 	public List<ItemInfo> info() {
 	    return null;
 	}
-
+	
 	@Override
 	public <T> T context(Class<T> cl) {
 	    return (ctxr.context(cl, this));
@@ -80,75 +84,75 @@ public abstract class ItemInfo {
     public interface ResOwner extends Owner {
 	Resource resource();
     }
-
+    
     public interface SpriteOwner extends ResOwner {
 	GSprite sprite();
     }
-
+    
     public static class Raw {
 	public final Object[] data;
 	public final double time;
-
+	
 	public Raw(Object[] data, double time) {
 	    this.data = data;
 	    this.time = time;
 	}
-
+	
 	public Raw(Object[] data) {
 	    this(data, Utils.rtime());
 	}
     }
-
+    
     @Resource.PublishedCode(name = "tt", instancer = FactMaker.class)
     public static interface InfoFactory {
 	public ItemInfo build(Owner owner, Raw raw, Object... args);
     }
-
+    
     public static class FactMaker extends Resource.PublishedCode.Instancer.Chain<InfoFactory> {
 	public FactMaker() {super(InfoFactory.class);}
 	{
 	    add(new Direct<>(InfoFactory.class));
 	    add(new StaticCall<>(InfoFactory.class, "mkinfo", ItemInfo.class, new Class<?>[] {Owner.class, Object[].class},
-				 (make) -> new InfoFactory() {
-					 public ItemInfo build(Owner owner, Raw raw, Object... args) {
-					     return(make.apply(new Object[]{owner, args}));
-					 }
-				     }));
+		(make) -> new InfoFactory() {
+		    public ItemInfo build(Owner owner, Raw raw, Object... args) {
+			return(make.apply(new Object[]{owner, args}));
+		    }
+		}));
 	    add(new StaticCall<>(InfoFactory.class, "mkinfo", ItemInfo.class, new Class<?>[] {Owner.class, Raw.class, Object[].class},
-				 (make) -> new InfoFactory() {
-					 public ItemInfo build(Owner owner, Raw raw, Object... args) {
-					     return(make.apply(new Object[]{owner, raw, args}));
-					 }
-				     }));
+		(make) -> new InfoFactory() {
+		    public ItemInfo build(Owner owner, Raw raw, Object... args) {
+			return(make.apply(new Object[]{owner, raw, args}));
+		    }
+		}));
 	    add(new Construct<>(InfoFactory.class, ItemInfo.class, new Class<?>[] {Owner.class, Object[].class},
-				(cons) -> new InfoFactory() {
-					public ItemInfo build(Owner owner, Raw raw, Object... args) {
-					    return(cons.apply(new Object[] {owner, args}));
-					}
-				    }));
+		(cons) -> new InfoFactory() {
+		    public ItemInfo build(Owner owner, Raw raw, Object... args) {
+			return(cons.apply(new Object[] {owner, args}));
+		    }
+		}));
 	    add(new Construct<>(InfoFactory.class, ItemInfo.class, new Class<?>[] {Owner.class, Raw.class, Object[].class},
-				(cons) -> new InfoFactory() {
-					public ItemInfo build(Owner owner, Raw raw, Object... args) {
-					    return(cons.apply(new Object[] {owner, raw, args}));
-					}
-				    }));
+		(cons) -> new InfoFactory() {
+		    public ItemInfo build(Owner owner, Raw raw, Object... args) {
+			return(cons.apply(new Object[] {owner, raw, args}));
+		    }
+		}));
 	}
     }
-
+    
     public ItemInfo(Owner owner) {
 	this.owner = owner;
     }
-
+    
     public static class Layout {
 	private final List<Tip> tips = new ArrayList<Tip>();
 	private final Map<ID, Tip> itab = new HashMap<ID, Tip>();
 	public final CompImage cmp = new CompImage();
 	public int width = 0;
-
+	
 	public interface ID<T extends Tip> {
 	    T make();
 	}
-
+	
 	@SuppressWarnings("unchecked")
 	public <T extends Tip> T intern(ID<T> id) {
 	    T ret = (T)itab.get(id);
@@ -158,12 +162,12 @@ public abstract class ItemInfo {
 	    }
 	    return(ret);
 	}
-
+	
 	public void add(Tip tip) {
 	    tips.add(tip);
 	    tip.prepare(this);
 	}
-
+	
 	public BufferedImage render() {
 	    Collections.sort(tips, (a, b) -> (a.order() - b.order()));
 	    for(Tip tip : tips)
@@ -171,12 +175,12 @@ public abstract class ItemInfo {
 	    return(cmp.compose());
 	}
     }
-
+    
     public static abstract class Tip extends ItemInfo {
 	public Tip(Owner owner) {
 	    super(owner);
 	}
-
+	
 	public BufferedImage tipimg() {return(null);}
 	public BufferedImage tipimg(int w) {return(tipimg());}
 	public Tip shortvar() {return(null);}
@@ -188,20 +192,20 @@ public abstract class ItemInfo {
 	}
 	public int order() {return(100);}
     }
-
+    
     public static class AdHoc extends Tip {
 	public final Text str;
-
+	
 	public AdHoc(Owner owner, String str) {
 	    super(owner);
 	    this.str = Text.render(str);
 	}
-
+	
 	public BufferedImage tipimg() {
 	    return(str.img);
 	}
     }
-
+    
     public static class Name extends Tip {
 	public final Text str;
 	public final String original;
@@ -211,7 +215,7 @@ public abstract class ItemInfo {
 	    original = orig;
 	    this.str = str;
 	}
- 
+	
 	public Name(Owner owner, Text str) {
 	    this(owner, str, str.text);
 	}
@@ -219,28 +223,28 @@ public abstract class ItemInfo {
 	public Name(Owner owner, String str) {
 	    this(owner, Text.render(str), str);
 	}
- 
+	
 	public Name(Owner owner, String str, String orig) {
 	    this(owner, Text.render(str), orig);
 	}
-
+	
 	public BufferedImage tipimg() {
 	    return(str.img);
 	}
-
+	
 	public int order() {return(0);}
-
+	
 	public Tip shortvar() {
 	    return(new Tip(owner) {
-		    public BufferedImage tipimg() {return(str.img);}
-		    public int order() {return(0);}
-		});
+		public BufferedImage tipimg() {return(str.img);}
+		public int order() {return(0);}
+	    });
 	}
-
+	
 	public static interface Dynamic {
 	    public String name();
 	}
-
+	
 	public static class Default implements InfoFactory {
 	    public static String get(Owner owner) {
 		if(owner instanceof SpriteOwner) {
@@ -256,37 +260,37 @@ public abstract class ItemInfo {
 		    throw(new RuntimeException("Item resource " + res + " is missing default tooltip"));
 		return(tt.t);
 	    }
-
+	    
 	    public ItemInfo build(Owner owner, Raw raw, Object... args) {
 		String nm = get(owner);
 		return((nm == null) ? null : new Name(owner, nm));
 	    }
 	}
     }
-
+    
     public static class Pagina extends Tip {
 	public final String str;
-
+	
 	public Pagina(Owner owner, String str) {
 	    super(owner);
 	    this.str = str;
 	}
-
+	
 	public BufferedImage tipimg(int w) {
 	    return(RichText.render(str, w).img);
 	}
-
+	
 	public void layout(Layout l) {
 	    BufferedImage t = tipimg((l.width == 0) ? UI.scale(200) : l.width);
 	    if(t != null)
 		l.cmp.add(t, new Coord(0, l.cmp.sz.y + UI.scale(10)));
 	}
-
+	
 	public int order() {return(10000);}
     }
-
+    
     public static class Contents extends Tip {
-        private static final Pattern PARSE = Pattern.compile("([\\d.]*) ([\\w]+) of (.*)");
+	private static final Pattern PARSE = Pattern.compile("([\\d.]*) ([\\w]+) of (.*)");
 	public final List<ItemInfo> sub;
 	private static final Text.Line ch = Text.render("Contents:");
 	
@@ -304,14 +308,14 @@ public abstract class ItemInfo {
 	    g.dispose();
 	    return(img);
 	}
-
+	
 	public Tip shortvar() {
 	    return(new Tip(owner) {
-		    public BufferedImage tipimg() {return(shorttip(sub));}
-		    public int order() {return(100);}
-		});
+		public BufferedImage tipimg() {return(shorttip(sub));}
+		public int order() {return(100);}
+	    });
 	}
- 
+	
 	public Content content() {
 	    QualityList q = QualityList.make(sub);
 	    for (ItemInfo i : sub) {
@@ -335,9 +339,9 @@ public abstract class ItemInfo {
 		} catch (Exception ignored) {}
 		return new Content(m.group(3), m.group(2), count, q);
 	    }
-	    return Content.EMPTY;
+	    return new Content(name, "", 1, q);
 	}
- 
+	
 	public static class Content {
 	    public final String name;
 	    public final String unit;
@@ -361,7 +365,7 @@ public abstract class ItemInfo {
 		}
 		return name;
 	    }
-	
+	    
 	    public boolean is(String what) {
 		if(name == null || what == null) {
 		    return false;
@@ -370,16 +374,21 @@ public abstract class ItemInfo {
 	    }
 	    
 	    public boolean empty() {return count == 0 || name == null;}
-	
+	    
 	    public static final Content EMPTY = new Content(null, null, 0);
 	}
     }
-
+    
     public static BufferedImage catimgs(int margin, BufferedImage... imgs) {
-	return catimgs(margin, false, imgs);
+	return catimgs(margin, LEFT, imgs);
     }
-
+    
     public static BufferedImage catimgs(int margin, boolean right, BufferedImage... imgs) {
+	return catimgs(margin, right ? RIGHT : LEFT, imgs);
+	
+    }
+    
+    public static BufferedImage catimgs(int margin, int align, BufferedImage... imgs) {
 	int w = 0, h = -margin;
 	for(BufferedImage img : imgs) {
 	    if(img == null)
@@ -394,13 +403,19 @@ public abstract class ItemInfo {
 	for(BufferedImage img : imgs) {
 	    if(img == null)
 		continue;
-	    g.drawImage(img, right ? w - img.getWidth() : 0, y, null);
+	    int x = 0;
+	    if(align == RIGHT) {
+		x = w - img.getWidth();
+	    } else if(align == CENTER) {
+		x = (w - img.getWidth()) / 2;
+	    }
+	    g.drawImage(img, x, y, null);
 	    y += img.getHeight() + margin;
 	}
 	g.dispose();
 	return(ret);
     }
-
+    
     public static BufferedImage catimgsh(int margin, BufferedImage... imgs) {
 	return catimgsh(margin, 0, null, imgs);
     }
@@ -430,7 +445,7 @@ public abstract class ItemInfo {
 	g.dispose();
 	return(ret);
     }
-
+    
     public static BufferedImage longtip(List<ItemInfo> info) {
 	Layout l = new Layout();
 	for(ItemInfo ii : info) {
@@ -443,7 +458,7 @@ public abstract class ItemInfo {
 	    return(null);
 	return(l.render());
     }
-
+    
     public static BufferedImage shorttip(List<ItemInfo> info) {
 	Layout l = new Layout();
 	for(ItemInfo ii : info) {
@@ -457,7 +472,7 @@ public abstract class ItemInfo {
 	    return(null);
 	return(l.render());
     }
-
+    
     public static <T> T find(Class<T> cl, List<ItemInfo> il) {
 	for(ItemInfo inf : il) {
 	    if(cl.isInstance(inf))
@@ -465,7 +480,7 @@ public abstract class ItemInfo {
 	}
 	return(null);
     }
-
+    
     public static <T> List<T> findall(Class<T> cl, List<ItemInfo> il) {
 	List<T> ret = new LinkedList<>();
 	for(ItemInfo inf : il) {
@@ -474,13 +489,13 @@ public abstract class ItemInfo {
 	}
 	return ret;
     }
-
+    
     public static List<ItemInfo> findall(String cl, List<ItemInfo> infos){
 	return infos.stream()
 	    .filter(inf -> Reflect.is(inf, cl))
 	    .collect(Collectors.toCollection(LinkedList::new));
     }
-
+    
     public static List<ItemInfo> buildinfo(Owner owner, Raw raw) {
 	List<ItemInfo> ret = new ArrayList<ItemInfo>();
 	Resource.Resolver rr = owner.context(Resource.Resolver.class);
@@ -512,14 +527,15 @@ public abstract class ItemInfo {
 		throw(new ClassCastException("Unexpected object type " + o.getClass() + " in item info array."));
 	    }
 	}
+	DamageTip.process(ret, owner);
 	return(ret);
     }
-
+    
     public static List<ItemInfo> buildinfo(Owner owner, Object[] rawinfo) {
 	return(buildinfo(owner, new Raw(rawinfo)));
     }
     
-
+    
     public static String getCount(List<ItemInfo> infos) {
 	String res = null;
 	for (ItemInfo info : infos) {
@@ -554,9 +570,21 @@ public abstract class ItemInfo {
     
     public static Contents.Content getContent(List<ItemInfo> infos) {
 	for (ItemInfo info : infos) {
-	    if(info instanceof Contents) {
-		return ((Contents) info).content();
-	    }
+	    Contents.Content content = getContent(info);
+	    if(!content.empty()) {return content;}
+	}
+	return Contents.Content.EMPTY;
+    }
+    
+    public static Contents.Content getContent(ItemInfo info) {
+	if(info instanceof Contents) {
+	    return ((Contents) info).content();
+	} else if(Reflect.is(info, "NamedContents")) {
+	    //noinspection unchecked
+	    List<ItemInfo> sub = (List<ItemInfo>) Reflect.getFieldValue(info, "sub");
+	    Text.Line ch = Reflect.getFieldValue(info, "ch", Text.Line.class);
+	    if(ch == null || sub == null) {return Contents.Content.EMPTY;}
+	    return Contents.content(ch.text, QualityList.make(sub));
 	}
 	return Contents.Content.EMPTY;
     }
@@ -570,7 +598,7 @@ public abstract class ItemInfo {
 	}
 	return null;
     }
-
+    
     public static Pair<Integer, Integer> getArmor(List<ItemInfo> infos) {
 	infos = findall("Armor", infos);
 	for (ItemInfo info : infos) {
@@ -580,13 +608,13 @@ public abstract class ItemInfo {
 	}
 	return null;
     }
-
+    
     private final static String[] mining_tools = {"Pickaxe", "Stone Axe", "Metal Axe", "Woodsman's Axe"};
     
     @SuppressWarnings("unchecked")
     public static Map<Resource, Integer> getBonuses(List<ItemInfo> infos, Map<String, Glob.CAttr> attrs) {
 	List<ItemInfo> slotInfos = ItemInfo.findall("ISlots", infos);
-	List<ItemInfo> gilding = ItemInfo.findall("Slotted", infos);
+	List<ItemInfo> gilding = ItemInfo.findall(ItemData.INFO_CLASS_GILDING, infos);
 	Map<Resource, Integer> bonuses = new HashMap<>();
 	try {
 	    for (ItemInfo islots : slotInfos) {
@@ -601,10 +629,11 @@ public abstract class ItemInfo {
 	    }
 	    parseAttrMods(bonuses, ItemInfo.findall("haven.res.ui.tt.attrmod.AttrMod", infos));
 	} catch (Exception ignored) {}
-	Pair<Integer, Integer> wear = ItemInfo.getArmor(infos);
-	if (wear != null) {
-	    bonuses.put(armor_hard, wear.a);
-	    bonuses.put(armor_soft, wear.b);
+	Pair<Integer, Integer> wear = ItemInfo.getWear(infos);
+	Pair<Integer, Integer> armor = ItemInfo.getArmor(infos);
+	if (wear != null && armor != null && !Objects.equals(wear.a, wear.b)) {
+	    bonuses.put(armor_hard, armor.a);
+	    bonuses.put(armor_soft, armor.b);
 	}
 	if(attrs != null) {
 	    Glob.CAttr str = attrs.get("str");
@@ -640,8 +669,8 @@ public abstract class ItemInfo {
 	} catch (Exception ignored) {}
 	return result;
     }
-
-
+    
+    
     @SuppressWarnings("unchecked")
     public static void parseAttrMods(Map<Resource, Integer> bonuses, List infos) {
 	for (Object inf : infos) {
@@ -657,7 +686,7 @@ public abstract class ItemInfo {
 	    }
 	}
     }
-
+    
     @SuppressWarnings("unchecked")
     private static Map<Resource, Integer> parseAttrMods2(List infos) {
 	Map<Resource, Integer> bonuses = new HashMap<>();
@@ -675,7 +704,7 @@ public abstract class ItemInfo {
 	}
 	return bonuses;
     }
-
+    
     private static String dump(Object arg) {
 	if(arg instanceof Object[]) {
 	    StringBuilder buf = new StringBuilder();
@@ -693,28 +722,28 @@ public abstract class ItemInfo {
 	    return(arg.toString());
 	}
     }
-
+    
     public static class AttrCache<R> implements Indir<R> {
 	private final Supplier<List<ItemInfo>> from;
 	private final Function<List<ItemInfo>, Supplier<R>> data;
 	private final R def;
 	private List<ItemInfo> forinfo = null;
 	private Supplier<R> save;
-
+	
 	public AttrCache(Supplier<List<ItemInfo>> from, Function<List<ItemInfo>, Supplier<R>> data, R def) {
 	    this.from = from;
 	    this.data = data;
 	    this.def = def;
 	}
- 
+	
 	public AttrCache(Supplier<List<ItemInfo>> from, Function<List<ItemInfo>, Supplier<R>> data) {
 	    this(from, data, null);
 	}
-
+	
 	public R get() {
 	    return get(def);
 	}
- 
+	
 	public R get(R def) {
 	    try {
 		List<ItemInfo> info = from.get();
@@ -727,26 +756,26 @@ public abstract class ItemInfo {
 		return(def);
 	    }
 	}
-
+	
 	public static <I, R> Function<List<ItemInfo>, Supplier<R>> map1(Class<I> icl, Function<I, Supplier<R>> data) {
 	    return(info -> {
-		    I inf = find(icl, info);
-		    if(inf == null)
-			return(() -> null);
-		    return(data.apply(inf));
-		});
+		I inf = find(icl, info);
+		if(inf == null)
+		    return(() -> null);
+		return(data.apply(inf));
+	    });
 	}
-
+	
 	public static <I, R> Function<List<ItemInfo>, Supplier<R>> map1s(Class<I> icl, Function<I, R> data) {
 	    return(info -> {
-		    I inf = find(icl, info);
-		    if(inf == null)
-			return(() -> null);
-		    R ret = data.apply(inf);
-		    return(() -> ret);
-		});
+		I inf = find(icl, info);
+		if(inf == null)
+		    return(() -> null);
+		R ret = data.apply(inf);
+		return(() -> ret);
+	    });
 	}
- 
+	
 	public static <R> Function<List<ItemInfo>, Supplier<R>> cache(Function<List<ItemInfo>, R> data) {
 	    return (info -> {
 		R result = data.apply(info);
@@ -754,7 +783,7 @@ public abstract class ItemInfo {
 	    });
 	}
     }
-
+    
     public static interface InfoTip {
 	public List<ItemInfo> info();
     }

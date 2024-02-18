@@ -33,6 +33,7 @@ import java.awt.datatransfer.Transferable;
 import java.util.HashSet;
 import java.util.LinkedList;
 import haven.render.*;
+import me.ender.GobInfoOpts;
 import java.awt.event.KeyEvent;
 import java.util.Set;
 import integrations.mapv4.MappingClient;
@@ -1089,7 +1090,18 @@ public class OptWnd extends WindowX {
 	panel.add(new CFGBox("Show task status messages", CFG.SHOW_BOT_MESSAGES, "Will log task (like auto-pickup or auto-drink) status to system log"), x, y);
 	
 	y += STEP;
-	panel.add(new CFGBox("Show object info", CFG.DISPLAY_GOB_INFO, "Enables damage and crop/tree growth stage displaying", true), x, y);
+	tx = panel.add(new CFGBox("Show object info", CFG.DISPLAY_GOB_INFO, "Enables damage and crop/tree growth stage displaying", true), x, y).sz.x;
+	panel.add(new IButton("gfx/hud/opt", "", "-d", "-h") {
+	    @Override
+	    public void click() {
+		if(ui.gui != null) {
+		    GobInfoOpts.toggle(ui.gui);
+		} else {
+		    GobInfoOpts.toggle(ui.root);
+		}
+	    }
+	    
+	}, x + tx + UI.scale(10), y + UI.scale(1)).settip("Configure types of info that is shown");
 	
 	y += STEP;
 	panel.add(new CFGBox("Display container fullness", CFG.SHOW_CONTAINER_FULLNESS, "Makes containers tint different colors when they are empty or full", true), x, y);

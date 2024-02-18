@@ -75,10 +75,12 @@ public class KeyBinder {
 	add(KeyEvent.VK_2, CTRL,  ACT_HAND_1);
 	add(KeyEvent.VK_3, CTRL,  ACT_BELT);
     	add(KeyEvent.VK_D, ALT,   ACT_DRINK);
+	add(ACT_REFILL_DRINKS);
 	add(KeyEvent.VK_C, ALT,   OPEN_QUICK_CRAFT);
 	add(KeyEvent.VK_B, ALT,   OPEN_QUICK_BUILD);
 	add(KeyEvent.VK_A, ALT,   OPEN_QUICK_ACTION);
 	add(KeyEvent.VK_X, ALT,   OPEN_CRAFT_DB);
+	add(OPEN_QUEST_HELP);
 	add(KeyEvent.VK_H, ALT,   TOGGLE_CURSOR);
 	add(KeyEvent.VK_S, ALT,   TOGGLE_STUDY);
 	add(KeyEvent.VK_F, ALT,   FILTER);
@@ -87,6 +89,7 @@ public class KeyBinder {
 	add(KeyEvent.VK_R, ALT,   TOGGLE_GOB_RADIUS);
 	add(KeyEvent.VK_Z, CTRL,  TOGGLE_TILE_CENTERING);
 	add(KeyEvent.VK_Q, ALT,   BOT_PICK_ALL_HERBS);
+	add(KeyEvent.VK_W, ALT,   BOT_OPEN_GATE);
 	
 	//Camera controls
 	add(KeyEvent.VK_ADD, NONE, CAM_ZOOM_IN);

@@ -158,12 +158,12 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 		}
 	    }
 	}, 0, PANEL_H + UI.scale(5));
-	addtwdg(add(new IButton("gfx/hud/btn-help", "", "-d", "-h") {
+	addtwdg(new IButton("gfx/hud/btn-help", "", "-d", "-h") {
 	    @Override
 	    public void click() {
 		ItemFilter.showHelp(ui, HELP_SIMPLE, HELP_CURIO, HELP_FEP, HELP_ARMOR, HELP_SYMBEL, HELP_ATTR, HELP_INPUTS);
 	    }
-	}));
+	});
 	btnFavourite = add(new ToggleButton(
 	    "gfx/hud/btn-star-e", "", "-d", "-h",
 	    "gfx/hud/btn-star-f", "", "-d", "-h"

@@ -31,14 +31,17 @@ import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.function.*;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 
 import static haven.ExtInventory.*;
 import static haven.PUtils.*;
+
 import haven.resutil.FoodInfo;
 import haven.resutil.Curiosity;
-import static haven.PUtils.*;
+import me.ender.WoundTreatment;
 
 /* XXX: There starts to seem to be reason to split the while character
  * sheet into some more modular structure, as it is growing quite
@@ -76,7 +79,7 @@ public class CharWnd extends WindowX {
     private final Tabs.Tab sattr, fgt;
     private final Coord studyc;
     private int scost;
-
+    
     public static class FoodMeter extends Widget {
 	public static final Tex frame =  Resource.loadtex("gfx/hud/chr/foodm");
 	public static final Coord marg = new Coord(5, 5), trmg = new Coord(10, 10);
@@ -86,13 +89,13 @@ public class CharWnd extends WindowX {
 	private Indir<Resource> trev = null;
 	private Tex trol;
 	private double trtm = 0;
-
+	
 	@Resource.LayerName("foodev")
 	public static class Event extends Resource.Layer {
 	    public final Color col;
 	    public final String nm;
 	    public final int sort;
-
+	    
 	    public Event(Resource res, Message buf) {
 		res.super();
 		int ver = buf.uint8();
@@ -104,16 +107,16 @@ public class CharWnd extends WindowX {
 		    throw(new Resource.LoadException("unknown foodev version: " + ver, res));
 		}
 	    }
-
+	    
 	    public void init() {}
 	}
-
+	
 	public static class El {
 	    public final Indir<Resource> res;
 	    public double a;
-
+	    
 	    public El(Indir<Resource> res, double a) {this.res = res; this.a = a;}
-
+	    
 	    private Event ev = null;
 	    public Event ev() {
 		if(ev == null)
@@ -129,11 +132,11 @@ public class CharWnd extends WindowX {
 		return(a.ev().nm.compareTo(b.ev().nm));
 	    }
 	};
-
+	
 	public FoodMeter() {
 	    super(frame.sz());
 	}
-
+	
 	private BufferedImage mktrol(List<El> els, Indir<Resource> trev) {
 	    BufferedImage buf = TexI.mkbuf(sz.add(trmg.mul(2)));
 	    Coord marg2 = marg.add(trmg);
@@ -151,7 +154,7 @@ public class CharWnd extends WindowX {
 	    imgblur(buf.getRaster(), trmg.x, trmg.y);
 	    return(buf);
 	}
-
+	
 	private void drawels(GOut g, List<El> els, int alpha) {
 	    double x = 0;
 	    int w = sz.x - (marg.x * 2);
@@ -166,7 +169,7 @@ public class CharWnd extends WindowX {
 		}
 	    }
 	}
-
+	
 	public void tick(double dt) {
 	    if(enew != null) {
 		try {
@@ -188,7 +191,7 @@ public class CharWnd extends WindowX {
 		} catch(Loading l) {}
 	    }
 	}
-
+	
 	public void draw(GOut g) {
 	    double d = (trtm > 0)?(Utils.rtime() - trtm):Double.POSITIVE_INFINITY;
 	    g.chcolor(0, 0, 0, 255);
@@ -206,7 +209,7 @@ public class CharWnd extends WindowX {
 		trtm = 0;
 	    }
 	}
-
+	
 	public void update(Object... args) {
 	    int n = 0;
 	    this.cap = Utils.fv(args[n++]);
@@ -218,12 +221,12 @@ public class CharWnd extends WindowX {
 	    }
 	    this.enew = enew;
 	}
-
+	
 	public void trig(Indir<Resource> ev) {
 	    etr = (enew != null)?enew:els;
 	    trev = ev;
 	}
-
+	
 	private Tex rtip = null;
 	public Object tooltip(Coord c, Widget prev) {
 	    if(rtip == null) {
@@ -246,18 +249,18 @@ public class CharWnd extends WindowX {
 	    return(rtip);
 	}
     }
-
+    
     public static class GlutMeter extends Widget {
 	public static final Tex frame = Resource.loadtex("gfx/hud/chr/glutm");
 	public static final Coord marg = new Coord(5, 5);
 	public Color fg = Color.BLACK, bg = Color.BLACK;
 	public double glut, lglut, gmod;
 	public String lbl;
-
+	
 	public GlutMeter() {
 	    super(frame.sz());
 	}
-
+	
 	public void draw(GOut g) {
 	    Coord isz = sz.sub(marg.mul(2));
 	    g.chcolor(bg);
@@ -267,7 +270,7 @@ public class CharWnd extends WindowX {
 	    g.chcolor();
 	    g.image(frame, Coord.z);
 	}
-
+	
 	public void update(Object... args) {
 	    int a = 0;
 	    this.glut = ((Number)args[a++]).doubleValue();
@@ -278,7 +281,7 @@ public class CharWnd extends WindowX {
 	    this.fg = (Color)args[a++];
 	    rtip = null;
 	}
-
+	
 	private Tex rtip = null;
 	public Object tooltip(Coord c, Widget prev) {
 	    if(rtip == null) {
@@ -287,7 +290,7 @@ public class CharWnd extends WindowX {
 	    return(rtip);
 	}
     }
-
+    
     public static class Constipations extends Listbox<Constipations.El> {
 	public static final Color hilit = new Color(255, 255, 0, 48);
 	public static final Text.Foundry elf = attrf;
@@ -298,7 +301,7 @@ public class CharWnd extends WindowX {
 	public static final Color buffed = new Color(160, 255, 160), full = new Color(250, 230, 64), none = new Color(250, 19, 43);
 	public final List<El> els = new ArrayList<El>();
 	private Integer[] order = {};
-
+	
 	public static Color color(double a) {
 	    return (a > 1.0)?buffed:Utils.blendcol(none, full, a);
 	}
@@ -310,10 +313,10 @@ public class CharWnd extends WindowX {
 	    private BufferedImage tip;
 	    private String name;
 	    private boolean hl;
-
+	    
 	    public El(ResData t, double a) {this.t = t; this.a = a;}
 	    public void update(double a) {this.a = a; at = null; tip = null;}
-
+	    
 	    public Tex tt() {
 		if(tt == null) {
 		    ItemSpec spec = new ItemSpec(OwnerContext.uictx.curry(ui), t, null);
@@ -337,7 +340,7 @@ public class CharWnd extends WindowX {
 	    }
 	    
 	    String tip() {return name != null ? String.format("%s %d%%", name, ((int) (100 * (1 - a)))) : null;}
-
+	    
 	    public Tex at() {
 		if(at == null) {
 		    Color c= color(a);
@@ -346,7 +349,7 @@ public class CharWnd extends WindowX {
 		return(at);
 	    }
 	}
-
+	
 	private ItemInfo.InfoTip lasttip = null;
 	public void draw(GOut g) {
 	    ItemInfo.InfoTip tip = null;
@@ -376,7 +379,7 @@ public class CharWnd extends WindowX {
 	    }
 	    super.draw(g);
 	}
-
+	
 	public static final Comparator<El> ecmp = new Comparator<El>() {
 	    public int compare(El a, El b) {
 		if(a.a < b.a)
@@ -386,15 +389,15 @@ public class CharWnd extends WindowX {
 		return(0);
 	    }
 	};
-
+	
 	public Constipations(int w, int h) {
 	    super(w, h, elh);
 	}
-
+	
 	protected void drawbg(GOut g) {}
 	protected El listitem(int i) {return(els.get(order[i]));}
 	protected int listitems() {return(order.length);}
-
+	
 	protected void drawitem(GOut g, El el, int idx) {
 	    g.chcolor(el.hl?hilit:(((idx % 2) == 0)?every:other));
 	    g.frect(Coord.z, g.sz());
@@ -405,24 +408,24 @@ public class CharWnd extends WindowX {
 	    Tex at = el.at();
 	    g.image(at, new Coord(sz.x - at.sz().x - sb.sz.x, (elh - at.sz().y) / 2));
 	}
-
+	
 	private void order() {
 	    int n = els.size();
 	    order = new Integer[n];
 	    for(int i = 0; i < n; i++)
 		order[i] = i;
 	    Arrays.sort(order, new Comparator<Integer>() {
-		    public int compare(Integer a, Integer b) {
-			return(ecmp.compare(els.get(a), els.get(b)));
-		    }
-		});
+		public int compare(Integer a, Integer b) {
+		    return(ecmp.compare(els.get(a), els.get(b)));
+		}
+	    });
 	}
-    
+	
 	@Override
 	protected Object itemtip(El item) {
 	    return item.tip();
 	}
-    
+	
 	public void update(ResData t, double a) {
 	    prev: {
 		for(Iterator<El> i = els.iterator(); i.hasNext();) {
@@ -439,11 +442,11 @@ public class CharWnd extends WindowX {
 	    }
 	    order();
 	}
-
+	
 	protected void itemclick(El item, int button) {
 	}
     }
-
+    
     public static final int attrw = FoodMeter.frame.sz().x - wbox.bisz().x;
     public class Attr extends Widget {
 	public final String nm;
@@ -455,7 +458,7 @@ public class CharWnd extends WindowX {
 	private double lvlt = 0.0;
 	private Text ct, bt;
 	private int cbv = -1, ccv = -1;
-
+	
 	private Attr(Glob glob, String attr, Color bg) {
 	    super(new Coord(attrw, attrf.height() + UI.scale(2)));
 	    res = Resource.local().loadwait("gfx/hud/chr/" + attr);
@@ -465,7 +468,7 @@ public class CharWnd extends WindowX {
 	    this.attr = glob.getcattr(attr);
 	    this.bg = bg;
 	}
-
+	
 	public void tick(double dt) {
 	    if((attr.base != cbv) || (attr.comp != ccv)) {
 		cbv = attr.base; ccv = attr.comp;
@@ -485,7 +488,7 @@ public class CharWnd extends WindowX {
 	    if((lvlt > 0.0) && ((lvlt -= dt) < 0))
 		lvlt = 0.0;
 	}
-
+	
 	public void draw(GOut g) {
 	    if(lvlt != 0.0)
 		g.chcolor(Utils.blendcol(bg, new Color(128, 255, 128, 128), lvlt));
@@ -499,9 +502,9 @@ public class CharWnd extends WindowX {
 	    if(ct != null)
 		g.aimage(ct.tex(), cn.add(sz.x - UI.scale(7), 1), 1, 0.5);
 	    if(bt != null)
-	        g.aimage(bt.tex(), cn.add(sz.x - UI.scale(7), 1), 2, 0.5);
+		g.aimage(bt.tex(), cn.add(sz.x - UI.scale(7), 1), 2, 0.5);
 	}
-
+	
 	public void lvlup() {
 	    lvlt = 1.0;
 	    if(ui != null){
@@ -509,7 +512,7 @@ public class CharWnd extends WindowX {
 	    }
 	}
     }
-
+    
     public class SAttr extends Widget {
 	public final String nm;
 	public final Text rnm;
@@ -520,7 +523,7 @@ public class CharWnd extends WindowX {
 	public int tbv, cost;
 	private Text ct;
 	private int cbv, ccv;
-
+	
 	private SAttr(Glob glob, String attr, Color bg) {
 	    super(new Coord(attrw, attrf.height() + UI.scale(2)));
 	    res = Resource.local().loadwait("gfx/hud/chr/" + attr);
@@ -530,13 +533,13 @@ public class CharWnd extends WindowX {
 	    this.attr = glob.getcattr(attr);
 	    this.bg = bg;
 	    adda(new IButton("gfx/hud/buttons/add", "u", "d", "h") {
-		    public void click() {if(ui.modshift){adj(5);}else if(ui.modctrl){adj(10);}else{adj(1);}}
-		}, sz.x - margin1, sz.y / 2, 1, 0.5);
+		public void click() {if(ui.modshift){adj(5);}else if(ui.modctrl){adj(10);}else{adj(1);}}
+	    }, sz.x - margin1, sz.y / 2, 1, 0.5);
 	    adda(new IButton("gfx/hud/buttons/sub", "u", "d", "h") {
-		    public void click() {if(ui.modshift){adj(-5);}else if(ui.modctrl){adj(-10);}else{adj(-1);}}
-		}, sz.x - margin3, sz.y / 2, 1, 0.5);
+		public void click() {if(ui.modshift){adj(-5);}else if(ui.modctrl){adj(-10);}else{adj(-1);}}
+	    }, sz.x - margin3, sz.y / 2, 1, 0.5);
 	}
-
+	
 	public void tick(double dt) {
 	    if(attr.base != cbv) {
 		tbv = 0;
@@ -561,7 +564,7 @@ public class CharWnd extends WindowX {
 		updcost();
 	    }
 	}
-
+	
 	public void draw(GOut g) {
 	    g.chcolor(bg);
 	    g.frect(Coord.z, sz);
@@ -572,33 +575,33 @@ public class CharWnd extends WindowX {
 	    g.aimage(rnm.tex(), cn.add(img.sz().x + margin2, 1), 0, 0.5);
 	    g.aimage(ct.tex(), cn.add(sz.x - UI.scale(40), 1), 1, 0.5);
 	}
-
+	
 	private void updcost() {
 	    int cv = attr.base, nv = cv + tbv;
 	    int cost = 100 * ((nv + (nv * nv)) - (cv + (cv * cv))) / 2;
 	    scost += cost - this.cost;
 	    this.cost = cost;
 	}
-
+	
 	public void adj(int a) {
 	    if(tbv + a < 0) a = -tbv;
 	    tbv += a;
 	    ccv = 0;
 	    updcost();
 	}
-
+	
 	public void reset() {
 	    tbv = 0;
 	    ccv = 0;
 	    updcost();
 	}
-
+	
 	public boolean mousewheel(Coord c, int a) {
 	    adj(-a);
 	    return(true);
 	}
     }
-
+    
     public static class RLabel<V> extends Label {
 	private final Supplier<V> val;
 	private final Function<V, String> fmt;
@@ -606,42 +609,42 @@ public class CharWnd extends WindowX {
 	private Coord oc;
 	private Color lc;
 	private V lv;
-
-        private RLabel(Supplier<V> val, Function<V, String> fmt, Function<V, Color> col, V ival) {
-            super(fmt.apply(ival));
+	
+	private RLabel(Supplier<V> val, Function<V, String> fmt, Function<V, Color> col, V ival) {
+	    super(fmt.apply(ival));
 	    this.val = val;
 	    this.fmt = fmt;
 	    this.col = col;
 	    this.lv = ival;
-            this.oc = oc;
+	    this.oc = oc;
 	    if(col != null)
 		setcolor(lc = col.apply(ival));
-        }
-
-        public RLabel(Supplier<V> val, Function<V, String> fmt, Function<V, Color> col) {
+	}
+	
+	public RLabel(Supplier<V> val, Function<V, String> fmt, Function<V, Color> col) {
 	    this(val, fmt, col, val.get());
 	}
-
-        public RLabel(Supplier<V> val, Function<V, String> fmt, Color col) {
+	
+	public RLabel(Supplier<V> val, Function<V, String> fmt, Color col) {
 	    this(val, fmt, (Function<V, Color>)null);
 	    setcolor(col);
 	}
-
+	
 	protected void added() {
 	    if(oc == null) {
 		oc = new Coord(c.x + sz.x, c.y);
 	    }
 	    move(oc.add(-sz.x, 0));
 	}
-
+	
 	public void settext(String text) {
 	    super.settext(text);
 	    move(oc.add(-sz.x, 0));
 	}
-    
+	
 	@Override
 	protected boolean i10n() {return false;}
-
+	
 	public void tick(double dt) {
 	    V v = val.get();
 	    if(!Utils.eq(v, lv)) {
@@ -657,31 +660,31 @@ public class CharWnd extends WindowX {
 	    }
 	}
     }
-
+    
     public RLabel<?> explabel() {
 	return(new RLabel<Integer>(() -> exp, Utils::thformat, new Color(192, 192, 255)));
     }
-
+    
     public RLabel<?> enclabel() {
 	return(new RLabel<Integer>(() -> enc, Utils::thformat, new Color(255, 255, 192)));
     }
-
+    
     public static class StudyInfo extends Widget {
 	public final Inventory study;
 	public int texp, tw, tenc, tlph;
-
+	
 	private StudyInfo(Coord sz, final Widget study) {
 	    super(sz);
 	    this.study = inventory(study);
 	    Widget plbl, pval;
 	    plbl = add(new Label("Attention:"), UI.scale(2, 2));
 	    pval = adda(new RLabel<Pair<Integer, Integer>>(() -> new Pair<>(tw, (ui == null) ? 0 : ui.sess.glob.getcattr("int").comp),
-							   n -> String.format("%,d/%,d", n.a, n.b),
-							   new Color(255, 192, 255, 255)),
-			plbl.pos("br").adds(0, 2).x(sz.x - UI.scale(2)), 1.0, 0.0);
+		    n -> String.format("%,d/%,d", n.a, n.b),
+		    new Color(255, 192, 255, 255)),
+		plbl.pos("br").adds(0, 2).x(sz.x - UI.scale(2)), 1.0, 0.0);
 	    plbl = add(new Label("Experience cost:"), pval.pos("bl").adds(0, 2).xs(2));
 	    pval = adda(new RLabel<Integer>(() -> tenc, Utils::thformat, new Color(255, 255, 192, 255)),
-			plbl.pos("br").adds(0, 2).x(sz.x - UI.scale(2)), 1.0, 0.0);
+		plbl.pos("br").adds(0, 2).x(sz.x - UI.scale(2)), 1.0, 0.0);
 	    plbl = add(new Label("Learning points:"), pval.pos("bl").adds(0, 2).xs(2));
 	    pval = adda(new RLabel<Integer>(() -> texp, Utils::thformat, new Color(192, 192, 255, 255)),
 		plbl.pos("br").adds(0, 2).x(sz.x - UI.scale(2)), 1.0, 0.0);
@@ -698,9 +701,9 @@ public class CharWnd extends WindowX {
 	    }, pval.pos("bl").adds(0, 5).xs(2));
 	    pack();
 	}
- 
+	
 	public Coord contentsz() { return super.contentsz().add(UI.scale(5, 2)); }
-
+	
 	private void upd() {
 	    int texp = 0, tw = 0, tenc = 0, tlph = 0;
 	    for(GItem item : study.children(GItem.class)) {
@@ -717,23 +720,23 @@ public class CharWnd extends WindowX {
 	    }
 	    this.texp = texp; this.tw = tw; this.tenc = tenc; this.tlph = Curiosity.lph(tlph);
 	}
-
+	
 	public void tick(double dt) {
 	    upd();
 	    super.tick(dt);
 	}
     }
-
+    
     public static class LoadingTextBox extends RichTextBox {
 	private Indir<String> text = null;
-
+	
 	public LoadingTextBox(Coord sz, String text, RichText.Foundry fnd) {super(sz, text, fnd);}
 	public LoadingTextBox(Coord sz, String text, Object... attrs) {super(sz, text, attrs);}
-
+	
 	public void settext(Indir<String> text) {
 	    this.text = text;
 	}
-
+	
 	public void draw(GOut g) {
 	    if(text != null) {
 		try {
@@ -745,7 +748,7 @@ public class CharWnd extends WindowX {
 	    super.draw(g);
 	}
     }
-
+    
     public static final PUtils.Convolution iconfilter = new PUtils.Lanczos(3);
     public class Skill {
 	public final String nm;
@@ -763,7 +766,7 @@ public class CharWnd extends WindowX {
 		}
 	    }
 	};
-
+	
 	private Skill(String nm, Indir<Resource> res, int cost, boolean has) {
 	    this.nm = nm;
 	    this.res = res;
@@ -771,7 +774,7 @@ public class CharWnd extends WindowX {
 	    this.has = has;
 	    this.sortkey = nm;
 	}
-
+	
 	public String rendertext() {
 	    StringBuilder buf = new StringBuilder();
 	    Resource res = this.res.get();
@@ -782,7 +785,7 @@ public class CharWnd extends WindowX {
 	    buf.append(res.flayer(Resource.pagina).text);
 	    return(buf.toString());
 	}
-
+	
 	private Text tooltip = null;
 	public Text tooltip() {
 	    if(tooltip == null)
@@ -790,30 +793,64 @@ public class CharWnd extends WindowX {
 	    return(tooltip);
 	}
     }
-
+    
     public class Credo {
 	public final String nm;
 	public final Indir<Resource> res;
 	public boolean has = false;
 	private String sortkey;
 	private Tex small;
-
+	
+	public final Pattern pat = Pattern.compile("(• [^•\\n}]*)+");
+	
 	private Credo(String nm, Indir<Resource> res, boolean has) {
 	    this.nm = nm;
 	    this.res = res;
 	    this.has = has;
 	    this.sortkey = nm;
 	}
-
-	public String rendertext() {
+	
+	public String rendertext(CredoGrid credoGrid) {
 	    StringBuilder buf = new StringBuilder();
 	    Resource res = this.res.get();
 	    buf.append("$img[" + res.name + "]\n\n");
 	    buf.append("$b{$font[serif,16]{" + res.flayer(Resource.tooltip).t + "}}\n\n\n");
-	    buf.append(res.flayer(Resource.pagina).text);
+	    buf.append(format(res.flayer(Resource.pagina).text, credoGrid));
 	    return(buf.toString());
 	}
-
+	
+	private String format(String text, CredoGrid credoGrid) {
+	    if(credoGrid.pcr == this) {
+		return format(text, credoGrid.pcl - 1);
+	    }
+	    
+	    if(credoGrid.ccr != null && credoGrid.ccr.contains(this)) {
+		return format(text, Integer.MAX_VALUE);
+	    }
+	    
+	    return text;
+	}
+	
+	private String format(String text, int level) {
+	    if(level < 1) {return text;}
+	    
+	    try {
+		Matcher m = pat.matcher(text);
+		while (level > 0 && m.find()) {
+		    String group = m.group(1);
+		    
+		    level--;
+		    text = text.replaceFirst(Pattern.quote(group), Matcher.quoteReplacement(markDone(group)));
+		}
+		
+	    } catch (Exception ignored) {}
+	    return text;
+	}
+	
+	private String markDone(String txt) {
+	    return String.format("$col[64,255,64]{%s}", txt.replace("•", "✓"));
+	}
+	
 	private Text tooltip = null;
 	public Text tooltip() {
 	    if(tooltip == null)
@@ -821,7 +858,7 @@ public class CharWnd extends WindowX {
 	    return(tooltip);
 	}
     }
-
+    
     public class Experience {
 	public final Indir<Resource> res;
 	public final int mtime, score;
@@ -836,13 +873,13 @@ public class CharWnd extends WindowX {
 		}
 	    }
 	};
-
+	
 	private Experience(Indir<Resource> res, int mtime, int score) {
 	    this.res = res;
 	    this.mtime = mtime;
 	    this.score = score;
 	}
-
+	
 	public String rendertext() {
 	    StringBuilder buf = new StringBuilder();
 	    Resource res = this.res.get();
@@ -853,7 +890,7 @@ public class CharWnd extends WindowX {
 	    buf.append(res.flayer(Resource.pagina).text);
 	    return(buf.toString());
 	}
-
+	
 	private Text tooltip = null;
 	public Text tooltip() {
 	    if(tooltip == null)
@@ -861,7 +898,7 @@ public class CharWnd extends WindowX {
 	    return(tooltip);
 	}
     }
-
+    
     public static class Wound {
 	public final int id, parentid;
 	public Indir<Resource> res;
@@ -878,7 +915,7 @@ public class CharWnd extends WindowX {
 		    return("...");
 		}
 	    }
-
+	    
 	    public Text render(String text) {
 		Text.Foundry fnd = (Text.Foundry)this.fnd;
 		Text.Line full = fnd.render(text);
@@ -909,18 +946,18 @@ public class CharWnd extends WindowX {
 		return(qdata);
 	    }
 	};
-
+	
 	private Wound(int id, Indir<Resource> res, Object qdata, int parentid) {
 	    this.id = id;
 	    this.res = res;
 	    this.qdata = qdata;
 	    this.parentid = parentid;
 	}
-
+	
 	public static class Box extends LoadingTextBox implements Info {
 	    public final int id;
 	    public final Indir<Resource> res;
-
+	    
 	    public Box(int id, Indir<Resource> res) {
 		super(Coord.z, "", ifnd);
 		bg = null;
@@ -928,23 +965,24 @@ public class CharWnd extends WindowX {
 		this.res = res;
 		settext(new Indir<String>() {public String get() {return(rendertext());}});
 	    }
-
+	    
 	    protected void added() {
 		resize(parent.sz);
 	    }
-
+	    
 	    public String rendertext() {
 		StringBuilder buf = new StringBuilder();
 		Resource res = this.res.get();
 		buf.append("$img[" + res.name + "]\n\n");
 		buf.append("$b{$font[serif,16]{" + res.flayer(Resource.tooltip).t + "}}\n\n\n");
 		buf.append(res.flayer(Resource.pagina).text);
+		buf.append(WoundTreatment.treatment(res));
 		return(buf.toString());
 	    }
-
+	    
 	    public int woundid() {return(id);}
 	}
-
+	
 	@RName("wound")
 	public static class $wound implements Factory {
 	    public Widget create(UI ui, Object[] args) {
@@ -957,7 +995,7 @@ public class CharWnd extends WindowX {
 	    public int woundid();
 	}
     }
-
+    
     public static class Quest {
 	public static final int QST_PEND = 0, QST_DONE = 1, QST_FAIL = 2, QST_DISABLED = 3;
 	public static final Color[] stcol = {
@@ -979,7 +1017,7 @@ public class CharWnd extends WindowX {
 		}
 	    }
 	};
-
+	
 	private Quest(int id, Indir<Resource> res, String title, int done, int mtime) {
 	    this.id = id;
 	    this.res = res;
@@ -987,99 +1025,99 @@ public class CharWnd extends WindowX {
 	    this.done = done;
 	    this.mtime = mtime;
 	}
-
+	
 	public String title() {
 	    if(title != null)
 		return(title);
 	    return(res.get().flayer(Resource.tooltip).t);
 	}
-
+	
 	public static class Condition {
 	    public final String desc;
 	    public int done;
 	    public String status;
 	    public Object[] wdata = null;
-
+	    
 	    public Condition(String desc, int done, String status) {
 		this.desc = desc;
 		this.done = done;
 		this.status = status;
 	    }
 	}
-
+	
 	private static final Tex qcmp = catf.i10n_label("Quest completed").tex();
 	private static final Tex qfail = failf.render("Quest failed").tex();
 	public void done(GameUI parent) {
 	    parent.add(new Widget() {
-		    double a = 0.0;
-		    Tex img, title, msg;
-
-		    public void draw(GOut g) {
-			if(img != null) {
-			    if(a < 0.2)
-				g.chcolor(255, 255, 255, (int)(255 * Utils.smoothstep(a / 0.2)));
-			    else if(a > 0.8)
-				g.chcolor(255, 255, 255, (int)(255 * Utils.smoothstep(1.0 - ((a - 0.8) / 0.2))));
+		double a = 0.0;
+		Tex img, title, msg;
+		
+		public void draw(GOut g) {
+		    if(img != null) {
+			if(a < 0.2)
+			    g.chcolor(255, 255, 255, (int)(255 * Utils.smoothstep(a / 0.2)));
+			else if(a > 0.8)
+			    g.chcolor(255, 255, 255, (int)(255 * Utils.smoothstep(1.0 - ((a - 0.8) / 0.2))));
 			    /*
 			    g.image(img, new Coord(0, (Math.max(img.sz().y, title.sz().y) - img.sz().y) / 2));
 			    g.image(title, new Coord(img.sz().x + 25, (Math.max(img.sz().y, title.sz().y) - title.sz().y) / 2));
 			    g.image(msg, new Coord((sz.x - msg.sz().x) / 2, Math.max(img.sz().y, title.sz().y) + 25));
 			    */
-			    int y = 0;
-			    g.image(img, new Coord((sz.x - img.sz().x) / 2, y)); y += img.sz().y + 15;
-			    g.image(title, new Coord((sz.x - title.sz().x) / 2, y)); y += title.sz().y + 15;
-			    g.image(msg, new Coord((sz.x - msg.sz().x) / 2, y));
-			}
+			int y = 0;
+			g.image(img, new Coord((sz.x - img.sz().x) / 2, y)); y += img.sz().y + 15;
+			g.image(title, new Coord((sz.x - title.sz().x) / 2, y)); y += title.sz().y + 15;
+			g.image(msg, new Coord((sz.x - msg.sz().x) / 2, y));
 		    }
-
-		    public void tick(double dt) {
-			if(img == null) {
-			    try {
-				title = (done == QST_DONE?catf:failf).render(title()).tex();
-				img = res.get().flayer(Resource.imgc).tex();
-				msg = (done == QST_DONE)?qcmp:qfail;
+		}
+		
+		public void tick(double dt) {
+		    if(img == null) {
+			try {
+			    title = (done == QST_DONE?catf:failf).render(title()).tex();
+			    img = res.get().flayer(Resource.imgc).tex();
+			    msg = (done == QST_DONE)?qcmp:qfail;
 				/*
 				resize(new Coord(Math.max(img.sz().x + 25 + title.sz().x, msg.sz().x),
 						 Math.max(img.sz().y, title.sz().y) + 25 + msg.sz().y));
 				*/
-				resize(new Coord(Math.max(Math.max(img.sz().x, title.sz().x), msg.sz().x),
-						 img.sz().y + 15 + title.sz().y + 15 + msg.sz().y));
-				presize();
-			    } catch(Loading l) {
-				return;
-			    }
+			    resize(new Coord(Math.max(Math.max(img.sz().x, title.sz().x), msg.sz().x),
+				img.sz().y + 15 + title.sz().y + 15 + msg.sz().y));
+			    presize();
+			} catch(Loading l) {
+			    return;
 			}
-			if((a += (dt * 0.2)) > 1.0)
-			    destroy();
 		    }
-
-		    public void presize() {
-			c = parent.sz.sub(sz).div(2);
-		    }
-
-		    protected void added() {
-			presize();
-		    }
-		});
+		    if((a += (dt * 0.2)) > 1.0)
+			destroy();
+		}
+		
+		public void presize() {
+		    c = parent.sz.sub(sz).div(2);
+		}
+		
+		protected void added() {
+		    presize();
+		}
+	    });
 	}
-
+	
 	public abstract static class CondWidget extends Widget {
 	    public final Condition cond;
-
+	    
 	    public CondWidget(Condition cond) {
 		this.cond = cond;
 	    }
-
+	    
 	    public boolean update() {
 		return(false);
 	    }
 	}
-
+	
 	public static class DefaultCond extends CondWidget {
 	    public Text text;
-
+	    
 	    public DefaultCond(Condition cond) {super(cond);}
-
+	    
 	    protected void added() {
 		super.added();
 		StringBuilder buf = new StringBuilder();
@@ -1092,41 +1130,45 @@ public class CharWnd extends WindowX {
 		text = ifnd.render(buf.toString(), parent.sz.x - 20);
 		resize(text.sz().add(15, 1));
 	    }
-
+	    
 	    public void draw(GOut g) {
 		g.image(text.tex(), new Coord(15, 0));
 	    }
 	}
-
+	
 	public static class Box extends Widget implements Info, QView.QVInfo {
 	    public final int id;
 	    public final Indir<Resource> res;
 	    public final String title;
 	    public Condition[] cond = {};
 	    private QView cqv;
-
+	    
 	    public Box(int id, Indir<Resource> res, String title) {
 		super(Coord.z);
 		this.id = id;
 		this.res = res;
 		this.title = title;
 	    }
-
+	    
 	    protected void added() {
 		resize(parent.sz);
 	    }
-
+	    
 	    public String title() {
 		if(title != null)
 		    return(title);
 		return(res.get().flayer(Resource.tooltip).t);
 	    }
-
+	    
 	    public Condition[] conds() {
 		return(cond);
 	    }
-
+	    
 	    private CharWnd cw = null;
+	    private CharWnd cw() {
+		if(cw == null) {cw = getparent(CharWnd.class);}
+		return cw;
+	    }
 	    public int done() {
 		if(cw == null)
 		    cw = getparent(CharWnd.class);
@@ -1139,10 +1181,10 @@ public class CharWnd extends WindowX {
 		    return(qst.done);
 		return(Quest.QST_PEND);
 	    }
-
+	    
 	    public void refresh() {
 	    }
-
+	    
 	    public String rendertext() {
 		StringBuilder buf = new StringBuilder();
 		Resource res = this.res.get();
@@ -1156,7 +1198,7 @@ public class CharWnd extends WindowX {
 		}
 		return(buf.toString());
 	    }
-
+	    
 	    public Condition findcond(String desc) {
 		for(Condition cond : this.cond) {
 		    if(cond.desc.equals(desc))
@@ -1164,7 +1206,7 @@ public class CharWnd extends WindowX {
 		}
 		return(null);
 	    }
-
+	    
 	    public void uimsg(String msg, Object... args) {
 		if(msg == "conds") {
 		    int a = 0;
@@ -1191,6 +1233,9 @@ public class CharWnd extends WindowX {
 			ncond.add(cond);
 		    }
 		    this.cond = ncond.toArray(new Condition[0]);
+		    CharWnd cw = cw();
+		    boolean isCredo = cw != null && cw.credos.pqid == questid();
+		    this.ui.gui.questHelper.processQuest(ncond, questid(), isCredo);
 		    refresh();
 		    if(cqv != null)
 			cqv.update();
@@ -1198,20 +1243,20 @@ public class CharWnd extends WindowX {
 		    super.uimsg(msg, args);
 		}
 	    }
-
+	    
 	    public void destroy() {
 		super.destroy();
 		if(cqv != null)
 		    cqv.reqdestroy();
 	    }
-
+	    
 	    public int questid() {return(id);}
-
+	    
 	    public Widget qview() {
 		return(cqv = new QView(this));
 	    }
 	}
-
+	
 	public static class QView extends Widget {
 	    public static final Text.Furnace qtfnd = new BlurFurn(new Text.Foundry(Text.serif.deriveFont(java.awt.Font.BOLD), 16).aa(true), 2, 1, Color.BLACK);
 	    public static final Text.Foundry qcfnd = new Text.Foundry(Text.sans, 12).aa(true);
@@ -1221,17 +1266,17 @@ public class CharWnd extends WindowX {
 	    private Tex rtitle = null;
 	    private Tex glow, glowon;
 	    private double glowt = -1;
-
+	    
 	    public interface QVInfo {
 		public String title();
 		public Condition[] conds();
 		public int done();
 	    }
-
+	    
 	    public QView(QVInfo info) {
 		this.info = info;
 	    }
-
+	    
 	    private void resize() {
 		Coord sz = new Coord(0, 0);
 		if(rtitle != null) {
@@ -1245,7 +1290,7 @@ public class CharWnd extends WindowX {
 		sz.x += UI.scale(3);
 		resize(sz);
 	    }
-
+	    
 	    public void draw(GOut g) {
 		int y = 0;
 		if(rtitle != null) {
@@ -1268,7 +1313,7 @@ public class CharWnd extends WindowX {
 		    y += c.sz().y;
 		}
 	    }
-
+	    
 	    public boolean mousedown(Coord c, int btn) {
 		if((rtitle != null) && c.isect(Coord.z, rtitle.sz())) {
 		    CharWnd cw = getparent(GameUI.class).chrwdg;
@@ -1280,7 +1325,7 @@ public class CharWnd extends WindowX {
 		}
 		return(super.mousedown(c, btn));
 	    }
-
+	    
 	    public void tick(double dt) {
 		if(rtitle == null) {
 		    try {
@@ -1296,11 +1341,11 @@ public class CharWnd extends WindowX {
 		    }
 		}
 	    }
-
+	    
 	    private Text ct(Condition c) {
 		return(qcfnd.render(" " + stsym[c.done] + " " + c.desc + ((c.status != null)?(" " + c.status):""), stcol[c.done]));
 	    }
-
+	    
 	    void update() {
 		Condition[] cond = info.conds();
 		Tex[] rcond = new Tex[cond.length];
@@ -1326,7 +1371,7 @@ public class CharWnd extends WindowX {
 		this.rcond = rcond;
 		resize();
 	    }
-
+	    
 	    void update(Condition c) {
 		glow = new TexI(rasterimg(blurmask2(ct(c).img.getRaster(), 3, 2, stcol[c.done])));
 		for(int i = 0; i < ccond.length; i++) {
@@ -1338,22 +1383,22 @@ public class CharWnd extends WindowX {
 		glowt = 0.0;
 	    }
 	}
-
+	
 	public static class DefaultBox extends Box {
 	    private Widget current;
 	    private boolean refresh = true;
 	    public List<Pair<String, String>> options = Collections.emptyList();
 	    public CondWidget[] condw = {};
-
+	    
 	    public DefaultBox(int id, Indir<Resource> res, String title) {
 		super(id, res, title);
 	    }
-
+	    
 	    protected void layouth(Widget cont) {
 		RichText text = ifnd.render(rendertext(), cont.sz.x - margin3);
 		cont.add(new Img(text.tex()), UI.scale(new Coord(10, 10)));
 	    }
-
+	    
 	    protected void layoutc(Widget cont) {
 		int y = cont.contentsz().y + margin2;
 		CondWidget[] nw = new CondWidget[cond.length];
@@ -1380,24 +1425,24 @@ public class CharWnd extends WindowX {
 		}
 		condw = nw;
 	    }
-
+	    
 	    protected void layouto(Widget cont) {
 		int y = cont.contentsz().y + margin2;
 		for(Pair<String, String> opt : options) {
 		    y += cont.add(new Button(cont.sz.x - margin3, opt.b, false) {
-			    public void click() {
-				DefaultBox.this.wdgmsg("opt", opt.a);
-			    }
-			}, new Coord(margin2, y)).sz.y + margin1;
+			public void click() {
+			    DefaultBox.this.wdgmsg("opt", opt.a);
+			}
+		    }, new Coord(margin2, y)).sz.y + margin1;
 		}
 	    }
-
+	    
 	    protected void layout(Widget cont) {
 		layouth(cont);
 		layoutc(cont);
 		layouto(cont);
 	    }
-
+	    
 	    public void draw(GOut g) {
 		refresh: if(refresh) {
 		    Scrollport newch = new Scrollport(sz);
@@ -1413,11 +1458,11 @@ public class CharWnd extends WindowX {
 		}
 		super.draw(g);
 	    }
-
+	    
 	    public void refresh() {
 		refresh = true;
 	    }
-
+	    
 	    public void uimsg(String msg, Object... args) {
 		if(msg == "opts") {
 		    List<Pair<String, String>> opts = new ArrayList<>();
@@ -1430,7 +1475,7 @@ public class CharWnd extends WindowX {
 		}
 	    }
 	}
-
+	
 	@RName("quest")
 	public static class $quest implements Factory {
 	    public Widget create(UI ui, Object[] args) {
@@ -1445,29 +1490,29 @@ public class CharWnd extends WindowX {
 	    public Widget qview();
 	}
     }
-
+    
     public class SkillGrid extends GridList<Skill> {
 	public final Group nsk, csk;
 	private boolean loading = false;
-
+	
 	public SkillGrid(Coord sz) {
 	    super(sz);
 	    nsk = new Group(UI.scale(new Coord(40, 40)), new Coord(-1, 5), "Available Skills", Collections.emptyList());
 	    csk = new Group(UI.scale(new Coord(40, 40)), new Coord(-1, 5), "Known Skills", Collections.emptyList());
 	    itemtooltip = Skill::tooltip;
 	}
-
+	
 	protected void drawitem(GOut g, Skill sk) {
 	    if(sk.small == null)
 		sk.small = new TexI(convolvedown(sk.res.get().flayer(Resource.imgc).img, UI.scale(new Coord(40, 40)), iconfilter));
 	    g.image(sk.small, Coord.z);
 	}
-
+	
 	protected void update() {
 	    super.update();
 	    loading = true;
 	}
-
+	
 	private void sksort(List<Skill> skills) {
 	    for(Skill sk : skills) {
 		try {
@@ -1479,7 +1524,7 @@ public class CharWnd extends WindowX {
 	    }
 	    Collections.sort(skills, (a, b) -> a.sortkey.compareTo(b.sortkey));
 	}
-
+	
 	public void tick(double dt) {
 	    super.tick(dt);
 	    if(loading) {
@@ -1489,7 +1534,7 @@ public class CharWnd extends WindowX {
 	    }
 	}
     }
-
+    
     public class CredoGrid extends Scrollport {
 	public final Coord crsz = UI.scale(new Coord(70, 88));
 	public final int btnw = UI.scale(100);
@@ -1503,46 +1548,46 @@ public class CharWnd extends WindowX {
 	private final Img pcrc, ncrc, ccrc;
 	private final Button pbtn, qbtn;
 	private boolean loading = false;
-
+	
 	public CredoGrid(Coord sz) {
 	    super(sz);
 	    pcrc = new Img(GridList.dcatf.i10n_label("Pursuing").tex());
 	    ncrc = new Img(GridList.dcatf.i10n_label("Credos Available").tex());
 	    ccrc = new Img(GridList.dcatf.i10n_label("Credos Acquired").tex());
 	    pbtn = new Button(btnw, "Pursue", false) {
-		    public void click() {
-			if(sel != null)
-			    CharWnd.this.wdgmsg("crpursue", sel.nm);
-		    }
-		};
+		public void click() {
+		    if(sel != null)
+			CharWnd.this.wdgmsg("crpursue", sel.nm);
+		}
+	    };
 	    qbtn = new Button(btnw, "Show quest", false) {
-		    public void click() {
-			CharWnd.this.wdgmsg("qsel", pqid);
-			questtab.showtab();
-		    }
-		};
+		public void click() {
+		    CharWnd.this.wdgmsg("qsel", pqid);
+		    questtab.showtab();
+		}
+	    };
 	}
-
+	
 	private Tex crtex(Credo cr) {
 	    if(cr.small == null)
 		cr.small = new TexI(convolvedown(cr.res.get().flayer(Resource.imgc).img, crsz, iconfilter));
 	    return(cr.small);
 	}
-
+	
 	private class CredoImg extends Img {
 	    private final Credo cr;
-
+	    
 	    CredoImg(Credo cr) {
 		super(crtex(cr));
 		this.cr = cr;
 		this.tooltip = Text.render(cr.res.get().flayer(Resource.tooltip).t);
 	    }
-
+	    
 	    public void draw(GOut g) {
 		super.draw(g);
 		g.image((cr == sel) ? credosfr : credoufr, Coord.z);
 	    }
-
+	    
 	    public boolean mousedown(Coord c, int button) {
 		if(button == 1) {
 		    change(cr);
@@ -1550,7 +1595,7 @@ public class CharWnd extends WindowX {
 		return(true);
 	    }
 	}
-
+	
 	private int crgrid(int y, Collection<Credo> crs) {
 	    int col = 0;
 	    for(Credo cr : crs) {
@@ -1563,11 +1608,11 @@ public class CharWnd extends WindowX {
 	    }
 	    return(y + crsz.y + margin1);
 	}
-
+	
 	private void sort(List<Credo> buf) {
 	    Collections.sort(buf, Comparator.comparing(cr -> cr.res.get().flayer(Resource.tooltip).t));
 	}
-
+	
 	private void update() {
 	    sort(ccr); sort(ncr);
 	    for(Widget ch = cont.child; ch != null; ch = cont.child)
@@ -1583,7 +1628,7 @@ public class CharWnd extends WindowX {
 		y += pcrim.sz.y;
 		y += margin2;
 	    }
-
+	    
 	    if(ncr.size() > 0) {
 		cont.add(ncrc, margin1, y);
 		y += ncrc.sz.y + 5;
@@ -1596,7 +1641,7 @@ public class CharWnd extends WindowX {
 		}
 		y += margin2;
 	    }
-
+	    
 	    if(ccr.size() > 0) {
 		cont.add(ccrc, margin1, y);
 		y += ccrc.sz.y + margin1;
@@ -1604,7 +1649,7 @@ public class CharWnd extends WindowX {
 	    }
 	    cont.update();
 	}
-
+	
 	public void tick(double dt) {
 	    if(loading) {
 		loading = false;
@@ -1615,11 +1660,11 @@ public class CharWnd extends WindowX {
 		}
 	    }
 	}
-
+	
 	public void change(Credo cr) {
 	    sel = cr;
 	}
-
+	
 	public void pcr(Credo cr, int crl, int crlt, int crql, int crqlt, int qid) {
 	    this.pcr = cr;
 	    this.pcl = crl;
@@ -1629,17 +1674,17 @@ public class CharWnd extends WindowX {
 	    this.pqid = qid;
 	    loading = true;
 	}
-
+	
 	public void ncr(List<Credo> cr) {
 	    this.ncr = cr;
 	    loading = true;
 	}
-
+	
 	public void ccr(List<Credo> cr) {
 	    this.ccr = cr;
 	    loading = true;
 	}
-
+	
 	public boolean mousedown(Coord c, int button) {
 	    if(super.mousedown(c, button))
 		return(true);
@@ -1647,28 +1692,28 @@ public class CharWnd extends WindowX {
 	    return(true);
 	}
     }
-
+    
     public class ExpGrid extends GridList<Experience> {
 	public final Group seen;
 	private boolean loading = false;
-
+	
 	public ExpGrid(Coord sz) {
 	    super(sz);
 	    seen = new Group(UI.scale(new Coord(40, 40)), new Coord(-1, 5), null, Collections.emptyList());
 	    itemtooltip = Experience::tooltip;
 	}
-
+	
 	protected void drawitem(GOut g, Experience exp) {
 	    if(exp.small == null)
 		exp.small = new TexI(convolvedown(exp.res.get().flayer(Resource.imgc).img, UI.scale(new Coord(40, 40)), iconfilter));
 	    g.image(exp.small, Coord.z);
 	}
-
+	
 	protected void update() {
 	    super.update();
 	    loading = true;
 	}
-
+	
 	public void tick(double dt) {
 	    super.tick(dt);
 	    if(loading) {
@@ -1685,7 +1730,7 @@ public class CharWnd extends WindowX {
 	    }
 	}
     }
-
+    
     public class WoundList extends Listbox<Wound> implements DTarget {
 	public List<Wound> wounds = new ArrayList<Wound>();
 	private boolean loading = false;
@@ -1698,11 +1743,11 @@ public class CharWnd extends WindowX {
 		return c;
 	    }
 	};
-
+	
 	private WoundList(int w, int h) {
 	    super(w, h, attrf.height() + UI.scale(2));
 	}
-
+	
 	private List<Wound> treesort(List<Wound> from, int pid, int level) {
 	    List<Wound> direct = new ArrayList<>(from.size());
 	    for(Wound w : from) {
@@ -1719,7 +1764,7 @@ public class CharWnd extends WindowX {
 	    }
 	    return(ret);
 	}
-
+	
 	public void tick(double dt) {
 	    if(loading) {
 		loading = false;
@@ -1734,12 +1779,12 @@ public class CharWnd extends WindowX {
 		wounds = treesort(wounds, -1, 0);
 	    }
 	}
-
+	
 	protected Wound listitem(int idx) {return(wounds.get(idx));}
 	protected int listitems() {return(wounds.size());}
-
+	
 	protected void drawbg(GOut g) {}
-
+	
 	protected void drawitem(GOut g, Wound w, int idx) {
 	    if((wound != null) && (wound.woundid() == w.id))
 		drawsel(g);
@@ -1765,7 +1810,7 @@ public class CharWnd extends WindowX {
 	    }
 	    g.aimage(w.rnm.get().tex(), new Coord(x, itemh / 2), 0, 0.5);
 	}
-
+	
 	protected void itemclick(Wound item, int button) {
 	    if(button == 3) {
 		CharWnd.this.wdgmsg("wclick", item.id, button, ui.modflags());
@@ -1773,25 +1818,25 @@ public class CharWnd extends WindowX {
 		super.itemclick(item, button);
 	    }
 	}
-
+	
 	public boolean drop(Coord cc, Coord ul) {
 	    return(false);
 	}
-
+	
 	public boolean iteminteract(Coord cc, Coord ul) {
 	    Wound w = itemat(cc);
 	    if(w != null)
 		CharWnd.this.wdgmsg("wiact", w.id, ui.modflags());
 	    return(true);
 	}
-
+	
 	public void change(Wound w) {
 	    if(w == null)
 		CharWnd.this.wdgmsg("wsel", (Object)null);
 	    else
 		CharWnd.this.wdgmsg("wsel", w.id);
 	}
-
+	
 	public Wound get(int id) {
 	    for(Wound w : wounds) {
 		if(w.id == id)
@@ -1799,11 +1844,11 @@ public class CharWnd extends WindowX {
 	    }
 	    return(null);
 	}
-
+	
 	public void add(Wound w) {
 	    wounds.add(w);
 	}
-
+	
 	public Wound remove(int id) {
 	    for(Iterator<Wound> i = wounds.iterator(); i.hasNext();) {
 		Wound w = i.next();
@@ -1817,8 +1862,6 @@ public class CharWnd extends WindowX {
     }
     
     public int getObjectiveIndex(String name) {
-	if (name == null)
-	    return 0;
 	Set<Quest.Box> wdgs = children(Quest.Box.class);
 	if(!wdgs.isEmpty()) {
 	    for (Quest.Box wdg : wdgs) {
@@ -1831,7 +1874,7 @@ public class CharWnd extends WindowX {
 	}
 	return 0;
     }
-
+    
     public class QuestList extends Listbox<Quest> {
 	public List<Quest> quests = new ArrayList<Quest>();
 	private boolean loading = false;
@@ -1840,23 +1883,23 @@ public class CharWnd extends WindowX {
 		return(b.mtime - a.mtime);
 	    }
 	};
-
+	
 	private QuestList(int w, int h) {
 	    super(w, h, attrf.height() + 2);
 	}
-
+	
 	public void tick(double dt) {
 	    if(loading) {
 		loading = false;
 		Collections.sort(quests, comp);
 	    }
 	}
-
+	
 	protected Quest listitem(int idx) {return(quests.get(idx));}
 	protected int listitems() {return(quests.size());}
-
+	
 	protected void drawbg(GOut g) {}
-
+	
 	protected void drawitem(GOut g, Quest q, int idx) {
 	    if((quest != null) && (quest.questid() == q.id))
 		drawsel(g);
@@ -1875,14 +1918,14 @@ public class CharWnd extends WindowX {
 	    g.aimage(q.rnm.get().tex(), new Coord(itemh + margin1, itemh / 2), 0, 0.5);
 	    g.chcolor();
 	}
-
+	
 	public void change(Quest q) {
 	    if((q == null) || ((CharWnd.this.quest != null) && (q.id == CharWnd.this.quest.questid())))
 		CharWnd.this.wdgmsg("qsel", (Object)null);
 	    else
 		CharWnd.this.wdgmsg("qsel", q.id);
 	}
-
+	
 	public Quest get(int id) {
 	    for(Quest q : quests) {
 		if(q.id == id)
@@ -1890,11 +1933,11 @@ public class CharWnd extends WindowX {
 	    }
 	    return(null);
 	}
-
+	
 	public void add(Quest q) {
 	    quests.add(q);
 	}
-
+	
 	public Quest remove(int id) {
 	    for(Iterator<Quest> i = quests.iterator(); i.hasNext();) {
 		Quest q = i.next();
@@ -1905,30 +1948,30 @@ public class CharWnd extends WindowX {
 	    }
 	    return(null);
 	}
-
+	
 	public void remove(Quest q) {
 	    quests.remove(q);
 	}
     }
-
+    
     @RName("chr")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
 	    return(new CharWnd(ui.sess.glob));
 	}
     }
-
+    
     public static <T extends Widget> T settip(T wdg, String resnm) {
 	wdg.tooltip = new Widget.PaginaTip(new Resource.Spec(Resource.local(), resnm));
 	return(wdg);
     }
-
+    
     public CharWnd(Glob glob) {
 	super(UI.scale(new Coord(300, 290)), "Character Sheet");
-
+	
 	final Tabs tabs = new Tabs(new Coord(15, 10), Coord.z, this);
-        Tabs.Tab battr = tabs.add();
-        {
+	Tabs.Tab battr = tabs.add();
+	{
 	    Widget prev;
 	    prev = battr.add(settip(new Img(catf.i10n_label("Base Attributes").tex()), "gfx/hud/chr/tips/base"), Coord.z);
 	    base = new ArrayList<>();
@@ -1945,15 +1988,15 @@ public class CharWnd extends WindowX {
 	    prev = Frame.around(battr, base);
 	    prev = battr.add(settip(new Img(catf.i10n_label("Food Event Points").tex()), "gfx/hud/chr/tips/fep"), prev.pos("bl").x(0).adds(0, 10));
 	    feps = battr.add(new FoodMeter(), prev.pos("bl").adds(5, 2));
-
+	    
 	    prev = battr.add(settip(new Img(catf.i10n_label("Food Satiations").tex()), "gfx/hud/chr/tips/constip"), width, 0);
 	    cons = battr.add(new Constipations(attrw, base.size()), prev.pos("bl").adds(5, 0).add(wbox.btloff()));
 	    prev = Frame.around(battr, Collections.singletonList(cons));
 	    prev = battr.add(settip(new Img(catf.i10n_label("Hunger Level").tex()), "gfx/hud/chr/tips/hunger"), prev.pos("bl").x(width).adds(0, 10));
 	    glut = battr.add(new GlutMeter(), prev.pos("bl").adds(5, 2));
-        }
-
-        sattr = tabs.add();
+	}
+	
+	sattr = tabs.add();
 	{
 	    Widget prev;
 	    prev = sattr.add(settip(new Img(catf.i10n_label("Abilities").tex()), "gfx/hud/chr/tips/sattr"), Coord.z);
@@ -1973,7 +2016,7 @@ public class CharWnd extends WindowX {
 	    skill.add(aw = sattr.add(new SAttr(glob, "survive", other), aw.pos("bl")));
 	    skill.add(aw = sattr.add(new SAttr(glob, "lore", every), aw.pos("bl")));
 	    Widget lframe = Frame.around(sattr, skill);
-
+	    
 	    prev = sattr.add(settip(new Img(catf.i10n_label("Study Report").tex()), "gfx/hud/chr/tips/study"), width, 0);
 	    studyc = prev.pos("bl").adds(5, 0);
 	    Widget bframe = sattr.adda(new Frame(new Coord(attrw, UI.scale(105)), true), prev.pos("bl").adds(5, 0).x, lframe.pos("br").y, 0.0, 1.0);
@@ -1985,30 +2028,30 @@ public class CharWnd extends WindowX {
 	    prev = sattr.add(new Label("Learning cost:"), prev.pos("bl").adds(0, 2));
 	    sattr.adda(new RLabel<Integer>(() -> scost, Utils::thformat, n -> (n > exp) ? debuff : Color.WHITE), new Coord(rx, prev.pos("ul").y), 1.0, 0.0);
 	    prev = sattr.adda(new Button(UI.scale(75), "Buy").action(() -> {
-			ArrayList<Object> args = new ArrayList<>();
-			for (SAttr attr : skill) {
-			    if (attr.tbv > 0) {
-				args.add(attr.attr.nm);
-				args.add(attr.attr.base + attr.tbv);
-			    }
-			}
-			CharWnd.this.wdgmsg("sattr", args.toArray(new Object[0]));
+		ArrayList<Object> args = new ArrayList<>();
+		for (SAttr attr : skill) {
+		    if (attr.tbv > 0) {
+			args.add(attr.attr.nm);
+			args.add(attr.attr.base + attr.tbv);
+		    }
+		}
+		CharWnd.this.wdgmsg("sattr", args.toArray(new Object[0]));
 	    }), bframe.pos("ibr").subs(5, 5), 1.0, 1.0);
 	    sattr.adda(new Button(UI.scale(75), "Reset").action(() -> {
-			for (SAttr attr : skill)
-			    attr.reset();
+		for (SAttr attr : skill)
+		    attr.reset();
 	    }), prev.pos("bl").subs(5, 0), 1.0, 1.0);
 	}
-
+	
 	Tabs.Tab skills = tabs.add();
-        {
+	{
 	    Widget prev;
-
+	    
 	    prev = skills.add(settip(new Img(catf.i10n_label("Lore & Skills").tex()), "gfx/hud/chr/tips/skills"), Coord.z);
 	    LoadingTextBox info = skills.add(new LoadingTextBox(new Coord(attrw, height), "", ifnd), prev.pos("bl").adds(5, 0).add(wbox.btloff()));
 	    info.bg = new Color(0, 0, 0, 128);
 	    Frame.around(skills, Collections.singletonList(info));
-
+	    
 	    prev = skills.add(new Img(catf.i10n_label("Entries").tex()), width, 0);
 	    Tabs lists = new Tabs(prev.pos("bl").adds(5, 0), new Coord(attrw + wbox.bisz().x, 0), skills);
 	    int gh = UI.scale(241);
@@ -2017,114 +2060,114 @@ public class CharWnd extends WindowX {
 		Frame f = sktab.add(new Frame(new Coord(lists.sz.x, UI.scale(192)), false), 0, 0);
 		int y = f.sz.y + margin1;
 		skg = f.addin(new SkillGrid(Coord.z) {
-                        public void change(Skill sk) {
-                            Skill p = sel;
-                            super.change(sk);
-                            CharWnd.this.exps.sel = null;
-                            CharWnd.this.credos.sel = null;
-                            if (sk != null)
-                                info.settext(sk::rendertext);
-                            else if (p != null)
-                                info.settext("");
-                        }
-                    });
+		    public void change(Skill sk) {
+			Skill p = sel;
+			super.change(sk);
+			CharWnd.this.exps.sel = null;
+			CharWnd.this.credos.sel = null;
+			if (sk != null)
+			    info.settext(sk::rendertext);
+			else if (p != null)
+			    info.settext("");
+		    }
+		});
 		Widget bf = sktab.adda(new Frame(new Coord(f.sz.x, UI.scale(44)), false), f.c.x, gh, 0.0, 1.0);
 		int rx = attrw + wbox.btloff().x - margin2;
 		Button bbtn = sktab.adda(new Button(UI.scale(50), "Buy").action(() -> {
-                            if (skg.sel != null)
-                                CharWnd.this.wdgmsg("buy", skg.sel.nm);
+		    if (skg.sel != null)
+			CharWnd.this.wdgmsg("buy", skg.sel.nm);
 		}), bf.pos("ibr").subs(10, 0).y(bf.pos("mid").y), 1.0, 0.5);
 		Label clbl = sktab.adda(new Label("Cost:"), bf.pos("iul").adds(10, 0).y(bf.pos("mid").y), 0, 0.5);
 		sktab.adda(new RLabel<Pair<Integer, Integer>>(() -> new Pair<>(((skg.sel == null) || skg.sel.has) ? null : skg.sel.cost, exp),
-							      n -> (n.a == null) ? "N/A" : String.format("%,d / %,d LP", n.a, n.b),
-							      n -> ((n.a != null) && (n.a > n.b)) ? debuff : Color.WHITE),
-			   bbtn.pos("ul").subs(10, 0).y(bf.pos("mid").y), 1.0, 0.5);
+			n -> (n.a == null) ? "N/A" : String.format("%,d / %,d LP", n.a, n.b),
+			n -> ((n.a != null) && (n.a > n.b)) ? debuff : Color.WHITE),
+		    bbtn.pos("ul").subs(10, 0).y(bf.pos("mid").y), 1.0, 0.5);
 	    }
-
+	    
 	    Tabs.Tab credos = lists.add();
 	    {
 		Frame f = credos.add(new Frame(new Coord(lists.sz.x, gh), false), 0, 0);
 		this.credos = f.addin(new CredoGrid(Coord.z) {
-                        public void change(Credo cr) {
-                            Credo p = sel;
-                            super.change(cr);
-                            CharWnd.this.skg.sel = null;
-                            CharWnd.this.exps.sel = null;
-                            if (cr != null)
-                                info.settext(cr::rendertext);
-                            else if (p != null)
-                                info.settext("");
-                        }
-                    });
+		    public void change(Credo cr) {
+			Credo p = sel;
+			super.change(cr);
+			CharWnd.this.skg.sel = null;
+			CharWnd.this.exps.sel = null;
+			if (cr != null)
+			    info.settext(() -> cr.rendertext(this));
+			else if (p != null)
+			    info.settext("");
+		    }
+		});
 	    }
-
+	    
 	    Tabs.Tab exps = lists.add();
 	    {
 		Frame f = exps.add(new Frame(new Coord(lists.sz.x, gh), false), 0, 0);
 		this.exps = f.addin(new ExpGrid(Coord.z) {
-                        public void change(Experience exp) {
-                            Experience p = sel;
-                            super.change(exp);
-                            CharWnd.this.skg.sel = null;
-                            CharWnd.this.credos.sel = null;
-                            if (exp != null)
-                                info.settext(exp::rendertext);
-                            else if (p != null)
-                                info.settext("");
-                        }
-                    });
+		    public void change(Experience exp) {
+			Experience p = sel;
+			super.change(exp);
+			CharWnd.this.skg.sel = null;
+			CharWnd.this.credos.sel = null;
+			if (exp != null)
+			    info.settext(exp::rendertext);
+			else if (p != null)
+			    info.settext("");
+		    }
+		});
 	    }
 	    lists.pack();
 	    int bw = ((lists.sz.x + margin1) / 3) - margin1;
 	    skills.addhl(lists.c.add(0, lists.sz.y + margin1), lists.sz.x,
-			 lists.new TabButton(bw, "Skills", sktab),
-			 lists.new TabButton(bw, "Credos", credos),
-			 lists.new TabButton(bw, "Lore",   exps));
-        }
-
+		lists.new TabButton(bw, "Skills", sktab),
+		lists.new TabButton(bw, "Credos", credos),
+		lists.new TabButton(bw, "Lore",   exps));
+	}
+	
 	Tabs.Tab wounds;
 	{
 	    Widget prev;
-
+	    
 	    wounds = tabs.add();
 	    prev = wounds.add(settip(new Img(catf.i10n_label("Health & Wounds").tex()), "gfx/hud/chr/tips/wounds"), 0, 0);
 	    this.wounds = wounds.add(new WoundList(attrw, 12), prev.pos("bl").x(width + margin1).add(wbox.btloff()));
 	    Frame.around(wounds, Collections.singletonList(this.wounds));
 	    woundbox = wounds.add(new Widget(new Coord(attrw, this.wounds.sz.y)) {
-		    public void draw(GOut g) {
-			g.chcolor(0, 0, 0, 128);
-			g.frect(Coord.z, sz);
-			g.chcolor();
-			super.draw(g);
-		    }
-
-		    public void cdestroy(Widget w) {
-			if(w == wound)
-			    wound = null;
-		    }
-		}, prev.pos("bl").adds(5, 0).add(wbox.btloff()));
+		public void draw(GOut g) {
+		    g.chcolor(0, 0, 0, 128);
+		    g.frect(Coord.z, sz);
+		    g.chcolor();
+		    super.draw(g);
+		}
+		
+		public void cdestroy(Widget w) {
+		    if(w == wound)
+			wound = null;
+		}
+	    }, prev.pos("bl").adds(5, 0).add(wbox.btloff()));
 	    Frame.around(wounds, Collections.singletonList(woundbox));
 	}
-
+	
 	Tabs.Tab quests;
 	{
 	    Widget prev;
-
+	    
 	    quests = tabs.add();
 	    prev = quests.add(settip(new Img(catf.i10n_label("Quest Log").tex()), "gfx/hud/chr/tips/quests"), new Coord(0, 0));
 	    questbox = quests.add(new Widget(new Coord(attrw, height)) {
-		    public void draw(GOut g) {
-			g.chcolor(0, 0, 0, 128);
-			g.frect(Coord.z, sz);
-			g.chcolor();
-			super.draw(g);
-		    }
-
-		    public void cdestroy(Widget w) {
-			if(w == quest)
-			    quest = null;
-		    }
-		}, prev.pos("bl").adds(5, 0).add(wbox.btloff()));
+		public void draw(GOut g) {
+		    g.chcolor(0, 0, 0, 128);
+		    g.frect(Coord.z, sz);
+		    g.chcolor();
+		    super.draw(g);
+		}
+		
+		public void cdestroy(Widget w) {
+		    if(w == quest)
+			quest = null;
+		}
+	    }, prev.pos("bl").adds(5, 0).add(wbox.btloff()));
 	    Frame.around(quests, Collections.singletonList(questbox));
 	    Tabs lists = new Tabs(prev.pos("bl").x(width + margin1), Coord.z, quests);
 	    Tabs.Tab cqst = lists.add();
@@ -2140,14 +2183,14 @@ public class CharWnd extends WindowX {
 	    lists.pack();
 	    int bw = ((lists.sz.x + margin1) / 2) - margin1;
 	    quests.addhl(lists.c.add(0, lists.sz.y + margin1), lists.sz.x,
-			 lists.new TabButton(bw, "Current",   cqst),
-			 lists.new TabButton(bw, "Completed", dqst));
+		lists.new TabButton(bw, "Current",   cqst),
+		lists.new TabButton(bw, "Completed", dqst));
 	    questtab = quests;
 	}
-
+	
 	{
 	    Widget prev;
-
+	    
 	    class TB extends IButton {
 		final Tabs.Tab tab;
 		TB(String nm, Tabs.Tab tab, String tip) {
@@ -2155,24 +2198,24 @@ public class CharWnd extends WindowX {
 		    this.tab = tab;
 		    settip(tip);
 		}
-
+		
 		public void click() {
 		    tabs.showtab(tab);
 		}
-
+		
 		protected void depress() {
 		    ui.sfx(Button.clbtdown.stream());
 		}
-
+		
 		protected void unpress() {
 		    ui.sfx(Button.clbtup.stream());
 		}
 	    }
-
+	    
 	    tabs.pack();
-
+	    
 	    fgt = tabs.add();
-
+	    
 	    this.addhl(new Coord(tabs.c.x, tabs.c.y + tabs.sz.y + margin2), tabs.sz.x,
 		new TB("battr", battr, "Base Attributes"),
 		new TB("sattr", sattr, "Abilities"),
@@ -2182,10 +2225,10 @@ public class CharWnd extends WindowX {
 		new TB("quest", quests, "Quest Log")
 	    );
 	}
-
+	
 	resize(contentsz().add(UI.scale(15, 10)));
     }
-
+    
     public Glob.CAttr findattr(String name) {
 	for (SAttr skill : this.skill) {
 	    if(name.equals(skill.attr.nm)) {
@@ -2199,7 +2242,7 @@ public class CharWnd extends WindowX {
 	}
 	return null;
     }
-
+    
     public Glob.CAttr findattr(Resource res) {
 	for (SAttr skill : this.skill) {
 	    if(res == skill.res) {
@@ -2213,7 +2256,7 @@ public class CharWnd extends WindowX {
 	}
 	return null;
     }
-
+    
     public int statIndex(Resource res) {
 	if(base != null) {
 	    return IntStream.range(0, base.size())
@@ -2222,7 +2265,7 @@ public class CharWnd extends WindowX {
 	}
 	return Integer.MAX_VALUE;
     }
-
+    
     public int skillIndex(Resource res) {
 	if(skill != null) {
 	    return IntStream.range(0, skill.size())
@@ -2231,11 +2274,11 @@ public class CharWnd extends WindowX {
 	}
 	return Integer.MAX_VALUE;
     }
-
+    
     public int BY_PRIORITY(Resource r1, Resource r2 ) {
 	int b1 = statIndex(r1);
 	int b2 = statIndex(r2);
-
+	
 	if(b1 == b2) {
 	    b1 = skillIndex(r1);
 	    b2 = skillIndex(r2);
@@ -2248,7 +2291,7 @@ public class CharWnd extends WindowX {
 	    return Integer.compare(b1, b2);
 	}
     }
-
+    
     public void addchild(Widget child, Object... args) {
 	String place = (args[0] instanceof String)?(((String)args[0]).intern()):null;
 	if(place == "study") {
@@ -2272,7 +2315,7 @@ public class CharWnd extends WindowX {
 	    super.addchild(child, args);
 	}
     }
-
+    
     private List<Skill> decsklist(Object[] args, int a, boolean has) {
 	List<Skill> buf = new ArrayList<>();
 	while(a < args.length) {
@@ -2283,7 +2326,7 @@ public class CharWnd extends WindowX {
 	}
 	return(buf);
     }
-
+    
     private List<Credo> deccrlist(Object[] args, int a, boolean has) {
 	List<Credo> buf = new ArrayList<>();
 	while(a < args.length) {
@@ -2293,7 +2336,7 @@ public class CharWnd extends WindowX {
 	}
 	return(buf);
     }
-
+    
     private List<Experience> decexplist(Object[] args, int a) {
 	List<Experience> buf = new ArrayList<>();
 	while(a < args.length) {
@@ -2304,7 +2347,7 @@ public class CharWnd extends WindowX {
 	}
 	return(buf);
     }
-
+    
     private void decwound(Object[] args, int a, int len) {
 	int id = (Integer)args[a];
 	Indir<Resource> res = (args[a + 1] == null)?null:ui.sess.getres((Integer)args[a + 1]);
@@ -2323,7 +2366,7 @@ public class CharWnd extends WindowX {
 	    wounds.remove(id);
 	}
     }
-
+    
     public void uimsg(String nm, Object... args) {
 	if(nm == "attr") {
 	    int a = 0;
@@ -2377,7 +2420,7 @@ public class CharWnd extends WindowX {
 		int crql = (Integer)args[a++], crqlt = (Integer)args[a++];
 		int qid = (Integer)args[a++];
 		credos.pcr(new Credo(cnm, res, false),
-			   crl, crlt, crql, crqlt, qid);
+		    crl, crlt, crql, crqlt, qid);
 	    } else {
 		credos.pcr(null, 0, 0, 0, 0, 0);
 	    }
@@ -2417,7 +2460,7 @@ public class CharWnd extends WindowX {
 			q.done = st;
 			q.mtime = mtime;
 			if(((fst == Quest.QST_PEND) || (fst == Quest.QST_DISABLED)) &&
-			   !((st == Quest.QST_PEND) || (st == Quest.QST_DISABLED)))
+			    !((st == Quest.QST_PEND) || (st == Quest.QST_DISABLED)))
 			    q.done(getparent(GameUI.class));
 		    }
 		    QuestList nl = ((q.done == Quest.QST_PEND) || (q.done == Quest.QST_DISABLED)) ? cqst : dqst;
@@ -2432,6 +2475,7 @@ public class CharWnd extends WindowX {
 		    dqst.remove(id);
 		}
 	    }
+	    ui.gui.questHelper.refresh();
 	} else {
 	    super.uimsg(nm, args);
 	}

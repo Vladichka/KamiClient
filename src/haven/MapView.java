@@ -42,6 +42,7 @@ import haven.render.*;
 import haven.MCache.OverlayInfo;
 import haven.render.sl.Uniform;
 import haven.render.sl.Type;
+import haven.rx.Reactor;
 
 public class MapView extends PView implements DTarget, Console.Directory {
     public static final Resource.Named inspectCursor = Resource.local().loadwait("gfx/hud/curs/studyx").indir();
@@ -2177,6 +2178,9 @@ public class MapView extends PView implements DTarget, Console.Directory {
 		    if(ui.isCursor("gfx/hud/curs/study")) {
 		        ui.gui.setDetectGob(gob);
 		    }
+		    if(clickb == 3) {
+			Reactor.GOB_INTERACT.onNext(gob);
+		    }
 		    if(ui.gui.mapfile.domark) {
 			ui.gui.mapfile.addMarker(gob);
 			return;
@@ -2198,7 +2202,7 @@ public class MapView extends PView implements DTarget, Console.Directory {
 		ui.gui.mapfile.addMarker(mc.floor(tilesz));
 		return;
 	    }
-	    if(clickb == 1) {Bot.cancel();}
+	    if(clickb == 1) {Bot.cancelCurrent();}
 	    
 	    click(mc, clickb, args);
 	}
@@ -2213,9 +2217,13 @@ public class MapView extends PView implements DTarget, Console.Directory {
     }
     
     public void click(Gob gob, int button, Coord mouse) {
+	click(gob, button, mouse, ui.modflags());
+    }
+    
+    public void click(Gob gob, int button, Coord mouse, int modflags) {
 	if(button == 3) {FlowerMenu.lastGob(gob);}
 	Coord mc = gob.rc.floor(posres);
-	click(gob.rc, button, mouse, mc, button, ui.modflags(), 0, (int) gob.id, mc, 0, -1);
+	click(gob.rc, button, mouse, mc, button, modflags, 0, (int) gob.id, mc, 0, -1);
     }
     
     public void click(Coord2d mc, int button, Object... args) {

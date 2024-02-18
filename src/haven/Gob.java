@@ -32,6 +32,8 @@ import java.util.function.*;
 import haven.render.*;
 import haven.res.gfx.fx.msrad.MSRad;
 import integrations.mapv4.MappingClient;
+import me.ender.Reflect;
+import me.ender.ResName;
 import me.ender.minimap.AutoMarkers;
 
 import static haven.OCache.*;
@@ -61,7 +63,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     public Drawable drawable;
     public Moving moving;
     private Boolean isMe = null;
-    private final GeneralGobInfo info;
+    public final GeneralGobInfo info;
     private GobWarning warning = null;
     public StatusUpdates status = new StatusUpdates();
     private final CustomColor customColor = new CustomColor();
@@ -699,10 +701,14 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	openings = null;
     }
     
-    public void rclick() {
+    public void rclick(int modflags) {
+	click(3, modflags);
+    }
+    
+    public void click(int button, int modflags) {
 	try {
 	    MapView map = glob.sess.ui.gui.map;
-	    map.click(this, 3, Coord.z);
+	    map.click(this, button, Coord.z, modflags);
 	} catch (Exception ignored) {}
     }
     
@@ -768,6 +774,38 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    }
 	}
 	return isMe;
+    }
+    
+    public boolean hasPose(String... poses) {
+	Drawable d = drawable;
+	if(d == null) {return false;}
+	for (String pose : poses) {
+	    if(d.hasPose(pose)) {return true;}
+	}
+	return false;
+    }
+    
+    /**returns whether icon for this gob is visible on radar, if there's no icon in config returns null*/
+    public Boolean isOnRadar() {
+	GobIcon icon = getattr(GobIcon.class);
+	GameUI gui = context(GameUI.class);
+	if(icon == null || gui == null || gui.iconconf == null) {return null;}
+	try {
+	    GobIcon.Setting s = gui.iconconf.get(icon.res.get());
+	    return s == null ? null : s.show;
+	} catch (Loading ignored) {}
+	return null;
+    }
+    
+    public boolean isVisitorGate() {
+	for (Overlay ol : ols) {
+	    if(!Reflect.is(ol.spr, "haven.res.gfx.fx.eq.Equed")) {continue;}
+	    AnimSprite espr = Reflect.getFieldValue(ol.spr, "espr", AnimSprite.class);
+	    if(espr != null && "gfx/terobjs/arch/visflag".equals(espr.res.name)) {
+		return true;
+	    }
+	}
+	return false;
     }
 
     public Placer placer() {
@@ -1050,13 +1088,20 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	return null;
     }
     
+    public String inspect() {
+	return String.format("%s [%d]",resid(), sdt());
+    }
+    
     private static final ClassResolver<Gob> ctxr = new ClassResolver<Gob>()
 	.add(Gob.class, g -> g)
 	.add(Glob.class, g -> g.glob)
+	.add(UI.class, g -> g.glob.sess.ui)
 	.add(GameUI.class, g -> (g.glob.sess.ui != null) ? g.glob.sess.ui.gui : null)
 	.add(MapWnd2.class, g -> (g.glob.sess.ui != null && g.glob.sess.ui.gui != null) ? g.glob.sess.ui.gui.mapfile : null)
 	.add(Session.class, g -> g.glob.sess);
     public <T> T context(Class<T> cl) {return(ctxr.context(cl, this));}
+    public <T> Optional<T> contextopt(Class<T> cl) {return Optional.ofNullable(context(cl));}
+
 
     /* Because generic functions are too nice a thing for Java. */
     public double getv() {
@@ -1371,6 +1416,15 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	return 0;
     }
     
+    public Message sdtm() {
+	Drawable d = drawable;
+	if(d instanceof ResDrawable) {
+	    ResDrawable dw = (ResDrawable) d;
+	    return dw.sdt.clone();
+	}
+	return null;
+    }
+    
     public void setQuality(int q) {
         info.setQ(q);
         status.update(StatusType.info);
@@ -1453,24 +1507,23 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     
     private void updateColor() {
 	Color c = null;
-	if(CFG.DISPLAY_GOB_INFO.get()) {
-	    if(is(GobTag.DRACK)) {
-		if(is(GobTag.EMPTY)) {
-		    c = COL_EMPTY;
-		} else if(is(GobTag.READY)) {
-		    c = COL_READY;
-		}
+	if(CFG.SHOW_PROGRESS_COLOR.get() && is(GobTag.PROGRESSING)) {
+	    if(is(GobTag.READY)) {
+		c = COL_READY;
 	    }
-	    if(CFG.SHOW_CONTAINER_FULLNESS.get() && is(GobTag.CONTAINER)) {
-		if(is(GobTag.EMPTY)) {
-		    c = COL_EMPTY;
-		} else if(is(GobTag.FULL)) {
-		    c = COL_FULL;
-		}
+	}
+	if(CFG.SHOW_CONTAINER_FULLNESS.get() && is(GobTag.CONTAINER)) {
+	    if(is(GobTag.EMPTY)) {
+		c = COL_EMPTY;
+	    } else if(is(GobTag.FULL)) {
+		c = COL_FULL;
 	    }
 	}
 	customColor.color(c);
     }
+    
+    public float scale() {return info.growthScale();}
+    public String contents() {return info.contents();}
     
     private static class StatusUpdates {
 	private final Set<StatusType> updated = new HashSet<>();

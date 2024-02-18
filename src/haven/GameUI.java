@@ -30,6 +30,7 @@ import haven.Equipory.SLOTS;
 import haven.rx.BuffToggles;
 import haven.rx.Reactor;
 import integrations.mapv4.MappingClient;
+import me.ender.QuestHelper;
 import me.ender.minimap.*;
 import me.ender.timer.Timer;
 
@@ -57,6 +58,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     public MenuGrid menu;
     public MapView map;
     public PathQueue pathQueue;
+    public QuestHelper questHelper;
     public GobIcon.Settings iconconf;
     public MiniMap mmap;
     public Fightview fv;
@@ -341,6 +343,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	opts.hide();
 	zerg = add(new Zergwnd(), Utils.getprefc("wndc-zerg", UI.scale(new Coord(187, 50))));
 	zerg.hide();
+	questHelper = add(new QuestHelper(), UI.scale(new Coord(187, 50)));
+	questHelper.hide();
 	placemmap();
 	CFG.Observer<Boolean> change = cfg -> {
 	    synchronized (this) {
@@ -563,32 +567,32 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	super.dispose();
     }
     
-
+    
     public void toggleCraftList() {
 	if(craftlist == null){
 	    craftlist = add(new ActWindow("Craft…", "paginae/craft/.+"));
-	    craftlist.addtwdg(craftlist.add(new IButton("gfx/hud/btn-help", "","-d","-h"){
+	    craftlist.addtwdg(new IButton("gfx/hud/btn-help", "","-d","-h"){
 		@Override
 		public void click() {
 		    ItemFilter.showHelp(ui, HELP_SIMPLE, HELP_CURIO, HELP_FEP, HELP_ARMOR, HELP_SYMBEL, HELP_ATTR, HELP_INPUTS);
 		}
-	    }));
+	    });
 	} else if(craftlist.visible) {
 	    craftlist.hide();
 	} else {
 	    craftlist.show();
 	}
     }
-
+    
     public void toggleBuildList() {
 	if(buildlist == null){
 	    buildlist = add(new ActWindow("Build…", "paginae/bld/.+"));
-	    buildlist.addtwdg(buildlist.add(new IButton("gfx/hud/btn-help", "","-d","-h"){
+	    buildlist.addtwdg(new IButton("gfx/hud/btn-help", "","-d","-h"){
 		@Override
 		public void click() {
 		    ItemFilter.showHelp(ui, HELP_SIMPLE, HELP_INPUTS);
 		}
-	    }));
+	    });
 	} else if(buildlist.visible) {
 	    buildlist.hide();
 	} else {
@@ -876,6 +880,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	handHidden = !handHidden;
     }
     
+    public void toggleQuestHelper() {
+	questHelper.toggle();
+    }
     public DraggedItem hand() {
 	Collection<DraggedItem> collection;
 	if(handHidden) {
@@ -1849,6 +1856,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     }
 
     private double lastmsgsfx = 0;
+    
     public void msg(String msg) {
 	msg(msg, MsgType.INFO);
 	double now = Utils.rtime();
@@ -1915,6 +1923,20 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     
     public boolean isTracked(Marker marker) {
 	return trackedMarkers.containsKey(marker);
+    }
+    
+    public Optional<MiniMap.IPointer> findPointer(String name) {
+	final long curSeg = mapfile.playerSegmentId();
+	return ui.gui.children().stream()
+	    .filter(widget -> widget instanceof MiniMap.IPointer)
+	    .map(widget -> (MiniMap.IPointer) widget)
+	    .filter(p -> p.tc(curSeg) != null)
+	    .filter(p -> Objects.equals(name, p.name()))
+	    .findFirst();
+    }
+    
+    public boolean isInCombat() {
+	return fv != null && !fv.lsrel.isEmpty();
     }
 
     public void act(String... args) {
