@@ -42,6 +42,7 @@ public class ShowBuffsCfgWnd extends WindowX {
 	}
 
 	pack();
+	Coord asz = ca().sz();
 	if(asz.x < 120) {
 	    resize(new Coord(200, asz.y));
 	}

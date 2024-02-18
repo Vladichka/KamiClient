@@ -42,15 +42,17 @@ public class MapWnd2 extends MapWnd {
     @Override
     public void resize(Coord sz) {
 	super.resize(sz);
-	cfg.sz = asz;
+	if(cfg != null) {
+	    cfg.sz = ca().sz();
+	}
 	if(!switching) {storeCfg();}
     }
     
     @Override
     protected void initCfg() {
 	if(cfg != null && cfg.sz != null) {
-	    asz = cfg.sz;
-	    super.resize(asz);
+	    sz = cfg.sz;
+	    super.resize(sz);
 	}
 	super.initCfg();
     }
@@ -58,7 +60,7 @@ public class MapWnd2 extends MapWnd {
     @Override
     protected void setCfg() {
 	super.setCfg();
-	cfg.sz = asz;
+	cfg.sz = sz;
     }
     
     public void addMarker(Gob gob) {

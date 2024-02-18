@@ -508,24 +508,29 @@ public class WItem extends Widget implements DTarget2 {
 	return(true);
     }
     
-    public boolean mousehover(Coord c) {
-	if(item.contents != null) {
-	    item.hovering = this;
+    public boolean mousehover(Coord c, boolean on) {
+	boolean ret = super.mousehover(c, on);
+	if(on && (item.contents != null) && (!CFG.UI_STACK_SUB_INV_ON_SHIFT.get() || ui.modshift)) {
+	    item.hovering(this);
 	    return(true);
 	}
-	return(super.mousehover(c));
+	return(ret);
     }
     
     public void tryDrop() {
-	checkDrop = true;
+	if(item.contents == null) {
+	    checkDrop = true;
+	} else {
+	    item.contents.children(WItem.class).forEach(WItem::tryDrop);
+	}
     }
     
     private void checkDrop() {
 	if(checkDrop) {
-	    String name = this.name.get(null);
+	    String name = ItemAutoDrop.name(this);
 	    if(name != null) {
 		checkDrop = false;
-		if((!item.matches || !CFG.AUTO_DROP_RESPECT_FILTER.get()) && ItemAutoDrop.needDrop(name)) {
+		if((!item.matches() || !CFG.AUTO_DROP_RESPECT_FILTER.get()) && ItemAutoDrop.needDrop(name)) {
 		    item.drop();
 		}
 	    }

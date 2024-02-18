@@ -40,6 +40,21 @@ public class ItemAutoDrop {
 	return cfg.getOrDefault(name, false);
     }
     
+    public static String name(WItem target) {
+	String result = target.name.get(null);
+	target = target.item.contents != null
+	    ? target.item.contents.getchild(WItem.class)
+	    : null;
+	
+	if(target != null) {
+	    result = name(target);
+	}
+	if(result != null && result.endsWith(", stack of")) {
+	    result = result.substring(0, result.length() - 10);
+	}
+	return result;
+    }
+    
     private static void toggle(String name) {
 	boolean value = !cfg.getOrDefault(name, false);
 	if(cfg.put(name, value) == null) {
@@ -99,8 +114,8 @@ public class ItemAutoDrop {
     }
     
     public static class CFGWnd extends WindowX implements DTarget2 {
-	public static final String FILTER_DEFAULT = "Start typing to filter";
-	public static final Comparator<DropItem> BY_NAME = Comparator.comparing(dropItem -> dropItem.name);
+	private static final String FILTER_DEFAULT = "Start typing to filter";
+	private static final Comparator<DropItem> BY_NAME = Comparator.comparing(dropItem -> dropItem.name);
 	
 	private boolean raised = false;
 	private final DropList list;
@@ -134,7 +149,7 @@ public class ItemAutoDrop {
 	    setfocus(list);
 	    populateList();
 	}
-    
+	
 	private static void respectFilterChanged(Boolean v) {
 	    if(!v) {updateCallbacks();}
 	}
@@ -175,7 +190,7 @@ public class ItemAutoDrop {
 	
 	@Override
 	public boolean drop(WItem target, Coord cc, Coord ul) {
-	    String name = target.name.get(null);
+	    String name = name(target);
 	    if(name != null) {
 		if(ItemAutoDrop.add(name)) {
 		    addItem(name);

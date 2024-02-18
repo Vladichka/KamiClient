@@ -191,6 +191,7 @@ public class GobWarning extends GAttrib implements RenderTree.Node {
 	    box.changed(val -> WarnCFG.set(midges, message, val));
 	    
 	    pack();
+	    Coord asz = ca().sz();
 	    if(asz.x < 200) {
 		resize(new Coord(200, asz.y));
 	    }

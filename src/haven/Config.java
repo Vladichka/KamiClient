@@ -393,6 +393,11 @@ public class Config {
     public static String userpath() {
 	return String.format("%s/%s", username, playername);
     }
+    
+    public static String getPlayerName()
+    {
+	return playername;
+    }
 
     static {
 	Console.setscmd("par", new Console.Command() {

@@ -48,10 +48,10 @@ public class Inventory extends Widget implements DTarget {
 	public int compare(WItem o1, WItem o2) {
 	    QualityList ql1 = o1.itemq.get();
 	    double q1 = (ql1 != null && !ql1.isEmpty()) ? ql1.single().value : 0;
-
+	    
 	    QualityList ql2 = o2.itemq.get();
 	    double q2 = (ql2 != null && !ql2.isEmpty()) ? ql2.single().value : 0;
-
+	    
 	    return Double.compare(q1, q2);
 	}
     };
@@ -61,10 +61,10 @@ public class Inventory extends Widget implements DTarget {
 	    return ITEM_COMPARATOR_ASC.compare(o2, o1);
 	}
     };
-
+    
     public boolean locked = false;
     Map<GItem, WItem> wmap = new HashMap<GItem, WItem>();
-
+    
     static {
 	Coord sz = sqsz.add(1, 1);
 	WritableRaster buf = PUtils.imgraster(sz);
@@ -83,14 +83,14 @@ public class Inventory extends Widget implements DTarget {
 	}
 	invsq = new TexI(PUtils.rasterimg(buf));
     }
-
+    
     @RName("inv")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
 	    return(new ExtInventory((Coord)args[0]));
 	}
     }
-
+    
     public void draw(GOut g) {
 	Coord c = new Coord();
 	int mo = 0;
@@ -107,7 +107,7 @@ public class Inventory extends Widget implements DTarget {
 	}
 	super.draw(g);
     }
-	
+    
     public Inventory(Coord sz) {
 	super(sqsz.mul(sz).add(1, 1));
 	isz = sz;
@@ -126,12 +126,12 @@ public class Inventory extends Widget implements DTarget {
 	}
 	return(true);
     }
-
+    
     @Override
     public boolean mousedown(Coord c, int button) {
 	return !locked && super.mousedown(c, button);
     }
-
+    
     public void addchild(Widget child, Object... args) {
 	add(child);
 	Coord c = (Coord)args[0];
@@ -172,11 +172,11 @@ public class Inventory extends Widget implements DTarget {
 	}
 	return(true);
     }
-	
+    
     public boolean iteminteract(Coord cc, Coord ul) {
 	return(false);
     }
-	
+    
     public void uimsg(String msg, Object... args) {
 	if(msg.equals("sz")) {
 	    isz = (Coord)args[0];
@@ -201,7 +201,7 @@ public class Inventory extends Widget implements DTarget {
 	    super.uimsg(msg, args);
 	}
     }
-
+    
     @Override
     public void wdgmsg(Widget sender, String msg, Object... args) {
 	if(msg.equals("transfer-same")) {
@@ -216,13 +216,13 @@ public class Inventory extends Widget implements DTarget {
 	    super.wdgmsg(sender, msg, args);
 	}
     }
-
+    
     private void process(List<WItem> items, String action) {
 	for (WItem item : items){
 	    item.item.wdgmsg(action, Coord.z);
 	}
     }
-
+    
     private List<WItem> getSame(GItem item, Boolean ascending) {
 	String name = item.resname();
 	GSprite spr = item.spr();
@@ -231,7 +231,7 @@ public class Inventory extends Widget implements DTarget {
 	    if(wdg.visible && wdg instanceof WItem) {
 		WItem wItem = (WItem) wdg;
 		GItem child = wItem.item;
-		if(item.matches == child.matches && isSame(name, spr, child)) {
+		if(item.matches() == child.matches() && isSame(name, spr, child)) {
 		    items.add(wItem);
 		}
 	    }
@@ -319,16 +319,16 @@ public class Inventory extends Widget implements DTarget {
     }
     
     public void enableDrops() {
-        Window wnd = getparent(Window.class);
+	Window wnd = getparent(Window.class);
 	if(wnd != null) {
 	    canDropItems = true;
 	    dropsCallback = this::doDrops;
 	    ItemAutoDrop.addCallback(dropsCallback);
-	    wnd.addtwdg(wnd.add(new ICheckBox("gfx/hud/btn-adrop", "", "-d", "-h")
+	    wnd.addtwdg(new ICheckBox("gfx/hud/btn-adrop", "", "-d", "-h")
 		.changed(this::doEnableDrops)
 		.rclick(this::showDropCFG)
 		.settip("Left-click to toggle item dropping\nRight-click to open settings", true)
-	    ));
+	    );
 	}
     }
     public void itemsChanged() {
@@ -361,15 +361,15 @@ public class Inventory extends Widget implements DTarget {
     public static Coord invsz(Coord sz) {
 	return invsq.sz().add(new Coord(-1, -1)).mul(sz).add(new Coord(1, 1));
     }
-
+    
     public static Coord sqroff(Coord c){
 	return c.div(invsq.sz());
     }
-
+    
     public static Coord sqoff(Coord c){
 	return c.mul(invsq.sz());
     }
-
+    
     public void forEachItem(BiConsumer<GItem, WItem> consumer) {
 	wmap.forEach(consumer);
     }

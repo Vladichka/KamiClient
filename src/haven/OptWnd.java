@@ -42,7 +42,7 @@ import static haven.Text.*;
 public class OptWnd extends WindowX {
     public static final Coord PANEL_POS = new Coord(220, 30);
     public static final Coord Q_TYPE_PADDING = new Coord(3, 0);
-    private final Panel display, general, camera, shortcuts, mapping, uipanel, combat, minimap;
+    private final Panel display, general, camera, shortcuts, mapping, uipanel, combat, minimap, experimental;
     public final Panel main;
     private static final Text.Foundry LBL_FNT = new Text.Foundry(sans, 14);
     public Panel current;
@@ -764,6 +764,7 @@ public class OptWnd extends WindowX {
 	shortcuts = add(new Panel());
 	mapping = add(new Panel());
 	minimap = add(new Panel());
+	experimental = add(new Panel());
 	
 	int row = 0, colum = 0, mrow = 1;
 	
@@ -784,6 +785,7 @@ public class OptWnd extends WindowX {
 	addPanelButton("Combat", 'b', combat, colum, row++);
 	addPanelButton("Map", 'm', minimap, colum, row++);
 	addPanelButton("Map upload", 'm', mapping, colum, row++);
+	addPanelButton("Experimental", 'x', experimental, colum, row++);
 	
 	int y = 0;
 	mrow = Math.max(mrow, row);
@@ -814,6 +816,7 @@ public class OptWnd extends WindowX {
 	initCameraPanel();
 	initMappingPanel(mapping);
 	initMinimapPanel(minimap);
+	initExperimentalPanel(experimental);
 	main.pack();
 	chpanel(main);
     }
@@ -1432,6 +1435,33 @@ public class OptWnd extends WindowX {
 	title.c.x = (panel.sz.x - title.sz.x) / 2;
     }
     
+    
+    private void initExperimentalPanel(Panel panel) {
+	int STEP = UI.scale(25);
+	int START;
+	int x, y;
+	int my = 0, tx;
+	
+	Widget title = panel.add(new Label("Experimental settings", LBL_FNT), 0, 0);
+	START = title.sz.y + UI.scale(10);
+	
+	x = 0;
+	y = START;
+	//first row
+	panel.add(new CFGBox("Disable certain remote UI calls", CFG.IGNORE_CERTAIN_REMOTE_UI, "RemoteUI's of the type 'ui/rinit:3' are ignored if the first parameter matches the character name. Prevents the display of Realm invites. Might prevent other things too."), x, y);
+	
+	//second row
+	my = Math.max(my, y);
+	x += UI.scale(265);
+	y = START;
+	
+	
+	my = Math.max(my, y);
+	
+	panel.add(new PButton(UI.scale(200), "Back", 27, main), new Coord(0, my + UI.scale(35)));
+	panel.pack();
+	title.c.x = (panel.sz.x - title.sz.x) / 2;
+    }
     private void initMappingPanel(Panel panel) {
 	int STEP = UI.scale(25);
 	int START;

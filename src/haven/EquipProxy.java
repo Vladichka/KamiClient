@@ -27,17 +27,19 @@ public class EquipProxy extends DraggableWidget implements DTarget2 {
     }
     
     @Override
-    public boolean mousehover(Coord c) {
+    public boolean mousehover(Coord c, boolean on) {
 	Equipory e = ui.gui.equipory;
 	if(e != null) {
 	    WItem w = e.slots[slot(c).idx];
 	    if(w != null) {
-	    	GItem g = w.item;
-		g.hovering_pos = null;
-		boolean wasNull = g.contentswdg == null;
-		boolean hovered = w.mousehover(Coord.z);
-		if(hovered && wasNull && (g.contents != null) && (g.contentswnd == null)) {
-		    g.hovering_pos = parentpos(parent, sqroff(c).add(1, 1).mul(sqsz).sub(5, 5).sub(GItem.Contents.hovermarg));
+		GItem g = w.item;
+		boolean wasNull = g.hovering_pos == null;
+		boolean hovered = w.mousehover(Coord.z, on);
+		if(hovered && wasNull && (g.contents != null)) {
+		    g.hovering_pos = parentpos(parent, sqroff(c).add(1, 1).mul(sqsz).sub(5, 5).sub(GItem.HoverDeco.hovermarg));
+		}
+		if(!hovered) {
+		    g.hovering_pos = null;
 		}
 		return hovered;
 	    }

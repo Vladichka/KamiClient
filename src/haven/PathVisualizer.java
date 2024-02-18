@@ -251,6 +251,7 @@ public class PathVisualizer implements RenderTree.Node {
 	    }
 	    
 	    pack();
+	    Coord asz = ca().sz();
 	    if(asz.x < 200) {
 		resize(new Coord(200, asz.y));
 	    }

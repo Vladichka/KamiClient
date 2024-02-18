@@ -23,13 +23,13 @@ public class ExtInventory extends Widget {
     private static final String CFG_GROUP = "ext.group";
     private static final String CFG_SHOW = "ext.show";
     private static final String CFG_INV = "ext.inv";
-    private static final String[] TYPES = new String[]{"Quality", "Name", "Info"};
-    //TODO: remove name as it is not really needed
+    private static int curType = 0;
     private static final Set<String> EXCLUDES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("Steelbox", "Pouch", "Frame", "Tub", "Fireplace", "Rack", "Pane mold", "Table", "Purse")));
     public final Inventory inv;
     private final ItemGroupList list;
     private final Widget extension;
-    private final Label space, type;
+    private final Label space;
+    private final TextButton type;
     private SortedMap<ItemType, List<WItem>> groups;
     private final Dropbox<Grouping> grouping;
     private boolean disabled = false;
@@ -49,9 +49,10 @@ public class ExtInventory extends Widget {
 	chb_show
 	    .rclick(this::toggleInventory)
 	    .changed(this::setVisibility)
-	    .settip("LClick to toggle extra info\nRClick to hide inventory when info is visible\nTapping ALT toggles between displaying quality, name and info", true);
-    
+	    .settip("LClick to toggle extra info\nRClick to hide inventory when info is visible", true);
+	
 	Composer composer = new Composer(extension).hmrgn(margin).vmrgn(margin);
+	composer.add(0);
 	grouping = new Dropbox<Grouping>(UI.scale(75), 5, UI.scale(16)) {
 	    {bgcolor = new Color(16, 16, 16, 128);}
 	    
@@ -84,12 +85,12 @@ public class ExtInventory extends Widget {
 	    }
 	};
 	space = new Label("");
-	type = new Label(TYPES[0]);
+	type = new TextButton(DisplayType.values()[curType].name(), Coord.of(70, 0), this::changeDisplayType);
 	grouping.sel = Grouping.NONE;
 	composer.addr(
-	    new Label("Group:"), 
-	    grouping, 
-	    chb_repeat, 
+	    new Label("Group:"),
+	    grouping,
+	    chb_repeat,
 	    new IButton("gfx/hud/btn-help", "","-d","-h", this::showHelp).settip("Help")
 	);
 	list = new ItemGroupList(listw, (inv.sz.y - composer.y() - 2 * margin - space.sz.y) / itemh, itemh);
@@ -98,12 +99,12 @@ public class ExtInventory extends Widget {
 	type.c.x = listw - type.sz.x - margin;
 	extension.pack();
 	composer = new Composer(this).hmrgn(margin);
-	composer.addr(inv, extension);
+	composer.addr2(inv, extension);
 	pack();
     }
     
     private void showHelp() {
-        HelpWnd.show(ui, "halp/extrainv");
+	HelpWnd.show(ui, "halp/extrainv");
     }
     
     public void hideExtension() {
@@ -140,24 +141,22 @@ public class ExtInventory extends Widget {
 	ui.gui.addInventory(this);
 	wnd = null;//just in case
 	Window tmp;
-	//do not try to add if we are in small floaty contents widget 
-	if(!(parent instanceof GItem.Contents)
-	    //or in the contents window
-	    && !(parent instanceof GItem.ContentsWindow)
+	//do not try to add if we are in the contents window
+	if(!(parent instanceof GItem.ContentsWindow)
 	    //or in the item
 	    && !(parent instanceof GItem)
-	    //or if we have no window parent, 
+	    //or if we have no window parent,
 	    && (tmp = getparent(Window.class)) != null
 	    //or it is not WindowX for some reason
 	    && tmp instanceof WindowX) {
-	
+	    
 	    wnd = (WindowX) tmp;
 	    disabled = disabled || needDisableExtraInventory(wnd.caption());
 	    boolean vis = !disabled && wnd.cfg.getValue(CFG_SHOW, false);
 	    showInv = wnd.cfg.getValue(CFG_INV, true);
 	    if(!disabled) {
 		chb_show.a = vis;
-		wnd.addtwdg(wnd.add(chb_show));
+		wnd.addtwdg(chb_show);
 		grouping.sel = Grouping.valueOf(wnd.cfg.getValue(CFG_GROUP, Grouping.NONE.name()));
 		needUpdate = true;
 	    }
@@ -188,7 +187,7 @@ public class ExtInventory extends Widget {
     
     private void updateLayout() {
 	inv.visible = showInv || !extension.visible;
-    
+	
 	if(wnd == null) {
 	    pack();
 	    return;
@@ -199,7 +198,7 @@ public class ExtInventory extends Widget {
 	if(inv.visible && parent != null) {
 	    szx = inv.sz.x;
 	    for (Widget w : wnd.children()) {
-		if(w != this && (wnd != parent || w != wnd.cbtn && !wnd.twdgs.contains(w))) {
+		if(w != this && (wnd != parent || w != wnd.deco)) {
 		    Position p = w.pos("br");
 		    szx = Math.max(szx, p.x);
 		    szy = Math.max(szy, p.y);
@@ -265,13 +264,13 @@ public class ExtInventory extends Widget {
 	    super.uimsg(msg, args);
 	}
     }
-
+    
     @Override
     public boolean mousewheel(Coord c, int amount) {
 	super.mousewheel(c, amount);
 	return(true);
     }
-
+    
     @Override
     public void tick(double dt) {
 	if(waitUpdate > 0) {waitUpdate -= dt;}
@@ -290,13 +289,20 @@ public class ExtInventory extends Widget {
 	}
 	if(extension.visible) {
 	    updateSpace();
-	    String t = TYPES[(int) (ui.root.ALTs() % TYPES.length)];
-	    if(!t.equals(type.texts)) {
-		type.settext(t);
-		type.c.x = listw - type.sz.x - margin;
-	    }
+	    updateTypeText();
 	}
 	super.tick(dt);
+    }
+    
+    private void changeDisplayType(Integer btn) {
+	curType = (curType + (btn == 1 ? 1 : -1) + DisplayType.values().length) % DisplayType.values().length;
+	updateTypeText();
+    }
+    
+    private void updateTypeText() {
+	String t = DisplayType.values()[curType].name();
+	type.setText(t);
+	type.c.x = listw - type.sz.x - margin;
     }
     
     private void processItem(SortedMap<ItemType, List<WItem>> groups, WItem witem) {
@@ -356,18 +362,18 @@ public class ExtInventory extends Widget {
 	final Color color;
 	final ColorMask mask;
 	final String cacheId;
-
+	
 	public ItemType(WItem w, Double quality) {
 	    this.name = name(w);
 	    this.resname = resname(w);
 	    this.quality = quality;
-	    this.matches = w.item.matches;
+	    this.matches = w.item.matches();
 	    this.color = w.olcol.get();
 	    this.mask = color == null ? null : new ColorMask(color);
 	    loading = name.startsWith("???");
 	    cacheId = String.format("%s@%s", resname, name);
 	}
-
+	
 	@Override
 	public int compareTo(ItemType other) {
 	    int byMatch = Boolean.compare(other.matches, matches);
@@ -425,25 +431,25 @@ public class ExtInventory extends Widget {
 		quality = type.quality;
 	    }
 	    String quantity = Utils.f2s(items.stream().map(wItem -> wItem.quantity.get()).reduce(0f, Float::sum));
-	    this.text[1] = fnd.render(String.format("×%s %s", quantity, type.name)).tex();
+	    this.text[DisplayType.Name.ordinal()] = fnd.render(String.format("×%s %s", quantity, type.name)).tex();
 	    if(!Double.isNaN(quality)) {
 		String avg = type.quality != null ? "" : "~";
 		String sign = (g == Grouping.NONE || g == Grouping.Q) ? "" : "+";
 		String q = String.format("%sq%s%s", avg, Utils.f2s(quality, 1), sign);
-		this.text[0] = fnd.render(String.format("×%s %s", quantity, q)).tex();
+		this.text[DisplayType.Quality.ordinal()] = fnd.render(String.format("×%s %s", quantity, q)).tex();
 	    } else {
-		this.text[0] = text[1];
+		this.text[DisplayType.Quality.ordinal()] = text[DisplayType.Name.ordinal()];
 	    }
-	    this.text[2] = info(sample, quantity, text[1]);
+	    this.text[DisplayType.Info.ordinal()] = info(sample, quantity, text[DisplayType.Name.ordinal()]);
 	    flowerSubscription = Reactor.FLOWER_CHOICE.subscribe(this::flowerChoice);
 	}
-    
+	
 	@Override
 	public void dispose() {
 	    flowerSubscription.unsubscribe();
 	    super.dispose();
 	}
-    
+	
 	private void flowerChoice(FlowerMenu.Choice choice) {
 	    if(extInventory.chb_repeat.a && !choice.forced && choice.opt != null && choice.target != null && choice.target.item == sample) {
 		flowerSubscription.unsubscribe();
@@ -452,16 +458,16 @@ public class ExtInventory extends Widget {
 	    }
 	}
 	
-    
+	
 	private static Tex info(WItem itm, String count, Tex def) {
 	    Curiosity curio = itm.curio.get();
 	    if(curio != null) {
-	        int lph = Curiosity.lph(curio.lph);
-	        return RichText.render(String.format("×%s lph: $col[192,255,255]{%d}  mw: $col[255,192,255]{%d}", count, lph, curio.mw), 0).tex();
+		int lph = Curiosity.lph(curio.lph);
+		return RichText.render(String.format("×%s lph: $col[192,255,255]{%d}  mw: $col[255,192,255]{%d}", count, lph, curio.mw), 0).tex();
 	    }
 	    return def;
 	}
-
+	
 	@Override
 	public void draw(GOut g) {
 	    if(icon == null) {
@@ -485,7 +491,7 @@ public class ExtInventory extends Widget {
 		    }
 		}
 	    }
-	    int mode = (int) (ui.root.ALTs() % text.length);
+	    int mode = curType % text.length;
 	    if(icon != null) {
 		double meter = sample.meter();
 		if(meter > 0) {
@@ -509,7 +515,7 @@ public class ExtInventory extends Widget {
 		g.chcolor();
 	    }
 	}
-
+	
 	@Override
 	public boolean mousedown(Coord c, int button) {
 	    boolean properButton = button == 1 || button == 3;
@@ -533,7 +539,7 @@ public class ExtInventory extends Widget {
 	    }
 	    return (false);
 	}
-    
+	
 	private static void process(final List<WItem> items, boolean all, boolean reverse, String action, Object... args) {
 	    if(reverse) {
 		items.sort(ExtInventory::byReverseQuality);
@@ -596,24 +602,38 @@ public class ExtInventory extends Widget {
 	}
     }
     
-    private class ItemGroupList extends Listbox<ItemsGroup> {
+    private class ItemGroupList extends Listbox<ItemsGroup> implements DTarget2{
 	private List<ItemsGroup> groups = Collections.emptyList();
 	private boolean needsUpdate = false;
-
+	
 	public ItemGroupList(int w, int h, int itemh) {
 	    super(w, h, itemh);
 	}
-
+	
+	@Override
+	public boolean drop(WItem target, Coord cc, Coord ul) {
+	    return false;
+	}
+	
+	@Override
+	public boolean iteminteract(WItem target, Coord cc, Coord ul) {
+	    ItemsGroup item = itemat(cc);
+	    if(item == null) {return false;}
+	    if(item.items.isEmpty()) {return false;}
+	    item.items.get(0).iteminteract(target, cc, ul);
+	    return false;
+	}
+	
 	@Override
 	protected ItemsGroup listitem(int i) {
 	    return(groups.get(i));
 	}
-
+	
 	@Override
 	protected int listitems() {
 	    return(groups.size());
 	}
-
+	
 	@Override
 	protected void drawitem(GOut g, ItemsGroup item, int i) {
 	    g.chcolor(((i % 2) == 0) ? even : odd);
@@ -621,19 +641,19 @@ public class ExtInventory extends Widget {
 	    g.chcolor();
 	    item.draw(g);
 	}
-    
+	
 	@Override
 	public void dispose() {
 	    groups.forEach(ItemsGroup::dispose);
 	    super.dispose();
 	}
-    
+	
 	public void changed() {needsUpdate = true;}
-
+	
 	@Override
 	public void tick(double dt) {
 	    if(needsUpdate) {
-	        groups.forEach(ItemsGroup::dispose);
+		groups.forEach(ItemsGroup::dispose);
 		if(ExtInventory.this.groups == null) {
 		    groups = Collections.emptyList();
 		} else {
@@ -644,11 +664,11 @@ public class ExtInventory extends Widget {
 	    needsUpdate = false;
 	    super.tick(dt);
 	}
-    
+	
 	@Override
 	protected void drawbg(GOut g) {
 	}
-    
+	
 	@Override
 	public Object tooltip(Coord c, Widget prev) {
 	    int idx = idxat(c);
@@ -676,17 +696,22 @@ public class ExtInventory extends Widget {
 	if(inv != ui.gui.maininv) {
 	    return null;
 	}
-	if(ui.gui.ExtInventories.isEmpty()) {
+	List<Widget> inventories = ui.gui.ExtInventories;
+	if(inventories.isEmpty()) {
 	    return null;
 	}
-	Object[] args = new Object[2 + ui.gui.ExtInventories.size()];
+	Object[] args = new Object[2 + inventories.size()];
 	int i = 0;
 	args[i++] = 0; //flags
 	args[i++] = 1; //how many to transfer
-	for (Widget wdg : ui.gui.ExtInventories) {
+	for (Widget wdg : inventories) {
 	    args[i++] = wdg.wdgid();
 	}
 	return args;
+    }
+    
+    enum DisplayType {
+	Quality, Name, Info
     }
     
     enum Grouping {

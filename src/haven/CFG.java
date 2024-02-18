@@ -39,6 +39,7 @@ public class CFG<T> {
     public static final CFG<Theme> THEME = new CFG<>("ui.theme", Theme.Pretty);
     public static final CFG<Boolean> FORCE_HW_CURSOR = new CFG<>("ui.force_hw_cursor", false);
     public static final CFG<Boolean> DISABLE_UI_HIDING = new CFG<>("ui.disable_ui_hide", true);
+    public static final CFG<Boolean> UI_DISABLE_CONTAINER_POS = new CFG<>("ui.disable_container_pos", false);
     public static final CFG<Boolean> ALT_COMBAT_UI = new CFG<>("ui.combat.alt_ui", true);
     public static final CFG<Boolean> SIMPLE_COMBAT_OPENINGS = new CFG<>("ui.combat.simple_openings", true);
     public static final CFG<Boolean> ALWAYS_MARK_COMBAT_TARGET = new CFG<>("ui.combat.always_mark_target", false);
@@ -111,6 +112,7 @@ public class CFG<T> {
     public static final CFG<Boolean> CTRL_CLICK_DECAL = new CFG("general.ctrl_click_decal", false);
     public static final CFG<Boolean> DISPLAY_CRACKING_TEXTURE = new CFG("display.display_cracking_texture", true);
     public static final CFG<Boolean> ENHANCE_WATERFALL = new CFG("display.enhance_waterfall", true);
+    public static final CFG<Boolean> IGNORE_CERTAIN_REMOTE_UI = new CFG("display.ignore_certain_remote_ui", false);
     
     
     private static final String CONFIG_JSON = "config.json";

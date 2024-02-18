@@ -826,7 +826,7 @@ public class Widget {
 	}
 	return(false);
     }
-    
+	
     public void mousemove(Coord c) {
 	for(Widget wdg = lchild; wdg != null; wdg = wdg.prev) {
 	    if(!wdg.visible)
@@ -835,18 +835,23 @@ public class Widget {
 	    wdg.mousemove(c.add(cc.inv()));
 	}
     }
-    public boolean mousehover(Coord c) {
+
+    public boolean mousehover(Coord c, boolean hovering) {
+	boolean ret = false;
 	for(Widget wdg = lchild; wdg != null; wdg = wdg.prev) {
+	    boolean ch = hovering;
 	    if(!wdg.visible)
-		continue;
+		ch = false;
 	    Coord cc = xlate(wdg.c, true);
-	    if(c.isect(cc, wdg.sz) && wdg.mousehover(c.add(cc.inv())))
-		return(true);
+	    boolean inside = c.isect(cc, wdg.sz);
+	    if(wdg.mousehover(c.add(cc.inv()), ch && inside)) {
+		hovering = false;
+		ret = true;
+	    }
 	}
-	return(false);
+	return(ret);
     }
-    
-    
+
     private static final Map<Integer, Integer> gkeys = Utils.<Integer, Integer>map().
 	put((int)'0', KeyEvent.VK_0).put((int)'1', KeyEvent.VK_1).put((int)'2', KeyEvent.VK_2).put((int)'3', KeyEvent.VK_3).put((int)'4', KeyEvent.VK_4).
 	put((int)'5', KeyEvent.VK_5).put((int)'6', KeyEvent.VK_6).put((int)'7', KeyEvent.VK_7).put((int)'8', KeyEvent.VK_8).put((int)'9', KeyEvent.VK_9).

@@ -61,6 +61,7 @@ public class GildingWnd extends WindowX {
 	resize(new Coord(w + UI.scale(45), h + UI.scale(100) + (matches != null ? matches.getHeight() : 0)));
     
 	add(new FWItem(target.item), UI.scale(10, 5));
+	Coord asz = ca().sz();
 	add(new FWItem(gild.item), asz.x - UI.scale(5) - gild.sz.x, UI.scale(5));
     
 	boolean canSlot = true;
@@ -141,6 +142,7 @@ public class GildingWnd extends WindowX {
     @Override
     public void cdraw(GOut g) {
 	int itemH = Math.max(target.sz.y, gild.sz.y);
+	Coord asz = ca().sz();
 	g.image(islots, UI.scale(5, 10).addy(itemH));
 	g.image(igild, new Coord(asz.x - UI.scale(5) - igild.getWidth(), UI.scale(10) + itemH));
 	if(matches != null) {
@@ -148,6 +150,7 @@ public class GildingWnd extends WindowX {
 	    g.atext("Matching skills:", c1, 0.5, 0.5);
 	    g.image(matches, c1.sub(matches.getWidth() / 2, matches.getHeight() / 2).add(UI.scale(0, 18)));
 	}
+	
 	Coord ul = new Coord(0, asz.y - UI.scale(34));
 	Coord sz = new Coord(asz.x, UI.scale(14));
 	g.chcolor(new Color(122, 61, 61, 255));

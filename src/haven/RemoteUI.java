@@ -71,7 +71,13 @@ public class RemoteUI implements UI.Receiver, UI.Runner {
 		    int parent = msg.int32();
 		    Object[] pargs = msg.list();
 		    Object[] cargs = msg.list();
-		    ui.newwidget(id, type, parent, pargs, cargs);
+		    System.out.println(type);
+		    boolean createWidget = true;
+		    if (CFG.IGNORE_CERTAIN_REMOTE_UI.get() && cargs.length == 2 & pargs.length > 0 && type.equals("ui/rinit:3"))
+			if (cargs[0].toString().equals(Config.getPlayerName()) && pargs[0].toString().equals("misc"))
+			    createWidget = false;
+		    if (createWidget)
+		    	ui.newwidget(id, type, parent, pargs, cargs);
 		} else if(msg.type == RMessage.RMSG_WDGMSG) {
 		    int id = msg.int32();
 		    String name = msg.string();
