@@ -1307,6 +1307,10 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if(anyOf(GobTag.TREE, GobTag.BUSH)) {
 	    Drawable d = drawable;
 	    Boolean needHide = CFG.HIDE_TREES.get();
+	    Boolean onRadar = isOnRadar();
+	    if(onRadar != null && onRadar && CFG.SKIP_HIDING_RADAR_TREES.get()) {
+		needHide = false;
+	    }
 	    if(d != null && d.skipRender != needHide) {
 		d.skipRender = needHide;
 		if(needHide) {
