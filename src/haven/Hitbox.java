@@ -40,7 +40,7 @@ public class Hitbox extends SlottedNode implements Rendered {
     @Override
     public void added(RenderTree.Slot slot) {
 	super.added(slot);
-	slot.ostate(state);
+	slot.ostate(state(state));
 	updateState();
     }
     
@@ -56,16 +56,17 @@ public class Hitbox extends SlottedNode implements Rendered {
 	    boolean top = CFG.DISPLAY_GOB_HITBOX_TOP.get();
 	    Pipe.Op newState = passable() ? (top ? PASSABLE_TOP : PASSABLE) : (top ? SOLID_TOP : SOLID);
 	    try {
-	    	Model m = getModel(gob);
+		Model m = getModel(gob);
 		if(m != null && m != model) {
-	    	    model = m;
-	    	    slots.forEach(RenderTree.Slot::update);
+		    model = m;
+		    slots.forEach(RenderTree.Slot::update);
 		}
 	    }catch (Loading ignored) {}
 	    if(newState != state) {
 		state = newState;
+		newState = state(state);
 		for (RenderTree.Slot slot : slots) {
-		    slot.ostate(state);
+		    slot.ostate(newState);
 		}
 	    }
 	}
@@ -74,21 +75,21 @@ public class Hitbox extends SlottedNode implements Rendered {
     private boolean passable() {
 	try {
 	    String name = gob.resid();
+	    if(name == null) {return false;}
 	    ResDrawable rd = (gob.drawable instanceof ResDrawable) ? (ResDrawable) gob.drawable : null;
 	    
-	    if(rd != null) {
-		int state = gob.sdt();
-		if(name.endsWith("gate") && name.startsWith("gfx/terobjs/arch")) {//gates
-		    if(state == 1) { // gate is open
-			return true;
-		    }
-		} else if(name.endsWith("/dng/antdoor")) {
-		    return state == 1 || state == 13;
-		} else if(name.endsWith("/pow[hearth]")) {//hearth fire
-		    return true;
-		} else if(name.equals("gfx/terobjs/arch/cellardoor") || name.equals("gfx/terobjs/fishingnet")) {
-		    return true;
-		}
+	    if(rd == null) {return false;}
+	    int state = gob.sdt();
+	    if(gob.is(GobTag.GATE)) {//gates
+		if(state != 1) {return false;}// gate is not open
+		return !gob.isVisitorGate() // not visitor gate or not in combat
+		    || !gob.contextopt(GameUI.class).map(GameUI::isInCombat).orElse(false);
+	    } else if(name.contains("/dng/") && (name.endsWith("door") || name.endsWith("gate"))) {
+		return (state & 1) != 0;
+	    } else if(name.endsWith("/pow[hearth]")) {//hearth fire
+		return true;
+	    } else if(name.equals("gfx/terobjs/arch/cellardoor") || name.equals("gfx/terobjs/fishingnet")) {
+		return true;
 	    }
 	} catch (Loading ignored) {}
 	return false;
@@ -101,7 +102,7 @@ public class Hitbox extends SlottedNode implements Rendered {
 	    model = MODEL_CACHE.get(res);
 	    if(model == null) {
 		List<List<Coord3f>> polygons = new LinkedList<>();
-	    
+		
 		Collection<Resource.Neg> negs = res.layers(Resource.Neg.class);
 		if(negs != null) {
 		    for (Resource.Neg neg : negs) {
@@ -110,11 +111,11 @@ public class Hitbox extends SlottedNode implements Rendered {
 			box.add(new Coord3f(neg.bc.x, -neg.ac.y, Z));
 			box.add(new Coord3f(neg.bc.x, -neg.bc.y, Z));
 			box.add(new Coord3f(neg.ac.x, -neg.bc.y, Z));
-		    
+			
 			polygons.add(box);
 		    }
 		}
-	    
+		
 		Collection<Resource.Obstacle> obstacles = res.layers(Resource.Obstacle.class);
 		if(obstacles != null) {
 		    for (Resource.Obstacle obstacle : obstacles) {
@@ -126,20 +127,20 @@ public class Hitbox extends SlottedNode implements Rendered {
 			}
 		    }
 		}
-	    
+		
 		if(!polygons.isEmpty()) {
 		    List<Float> vertices = new LinkedList<>();
-		
+		    
 		    for (List<Coord3f> polygon : polygons) {
 			addLoopedVertices(vertices, polygon);
 		    }
-		
+		    
 		    float[] data = convert(vertices);
 		    VertexArray.Buffer vbo = new VertexArray.Buffer(data.length * 4, DataBuffer.Usage.STATIC, DataBuffer.Filler.of(data));
 		    VertexArray va = new VertexArray(LAYOUT, vbo);
-		
+		    
 		    model = new Model(Model.Mode.LINES, va, null);
-		
+		    
 		    MODEL_CACHE.put(res, model);
 		}
 	    }
@@ -177,6 +178,21 @@ public class Hitbox extends SlottedNode implements Rendered {
 	    }
 	}
 	return res;
+    }
+    
+    private Pipe.Op state(Pipe.Op state) {
+	float scale = gob.scale();
+	if(scale <= 0 || scale >= 1) {return state;}
+	return Pipe.Op.compose(state, scale(scale));
+    }
+    
+    private static Pipe.Op scale(float scale) {
+	scale = 1 / scale;
+	return new Location(new Matrix4f(
+	    scale, 0, 0, 0,
+	    0, scale, 0, 0,
+	    0, 0, scale, 0,
+	    0, 0, 0, 1));
     }
     
     public static void toggle(GameUI gui) {

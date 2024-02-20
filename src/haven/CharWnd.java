@@ -1862,6 +1862,8 @@ public class CharWnd extends WindowX {
     }
     
     public int getObjectiveIndex(String name) {
+	if (name == null)
+	    return 0;
 	Set<Quest.Box> wdgs = children(Quest.Box.class);
 	if(!wdgs.isEmpty()) {
 	    for (Quest.Box wdg : wdgs) {

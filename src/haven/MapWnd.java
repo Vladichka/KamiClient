@@ -154,6 +154,11 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    .set(CFG.MMAP_SHOW_MARKER_NAMES::set)
 	    .settip("Show marker names");
 	
+	btn = topbar.add(new ICheckBox("gfx/hud/mmap/pvpmode", "", "-d", "-h"), btn.pos("ur"))
+	    .state(CFG.PVP_MAP::get)
+	    .set(CFG.PVP_MAP::set)
+	    .settip("Enable PVP Mode");
+	
 	topbar.pack();
 	tool = add(new Toolbox2());;
 	compact(Utils.getprefb("compact-map", false));
@@ -204,7 +209,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	}
 	
 	public void mousemove(Coord c) {
-	    if(drag != null) {
+	    if(drag != null && tool.visible) {
 		Coord nsz = parentpos(MapWnd.this, c).add(dragc);
 		nsz.x = Math.max(nsz.x, UI.scale(150));
 		nsz.y = Math.max(nsz.y, UI.scale(150));

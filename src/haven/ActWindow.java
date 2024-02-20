@@ -22,6 +22,7 @@ public class ActWindow extends GameUI.Hidewnd {
     public ActWindow(String cap, String category) {
 	super(Coord.z, cap);
 	this.category = Pattern.compile(category);
+	setfocusctl(true);
 	filter = add(new TextEntry(WIDTH, "") {
 	    @Override
 	    public void activate(String text) {
