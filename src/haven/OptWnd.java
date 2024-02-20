@@ -1316,7 +1316,13 @@ public class OptWnd extends WindowX {
 	panel.add(new CFGBox("Show item wear bar", CFG.SHOW_ITEM_WEAR_BAR), new Coord(x, y));
 	
 	y += STEP;
+	panel.add(new CFGBox("Highlight broken items", CFG.HIGHLIGHT_BROKEN_ITEMS, "Broken items will have red border"), new Coord(x, y));
+	
+	y += STEP;
 	panel.add(new CFGBox("Show item armor", CFG.SHOW_ITEM_ARMOR), new Coord(x, y));
+	
+	y += STEP;
+	panel.add(new CFGBox("Improve weapon damage tooltip", CFG.IMPROVE_DAMAGE_TIP, "Make damage tooltip show base damage and damage based on its quality and your strength"), new Coord(x, y));
 	
 	my = Math.max(my, y);
 	
