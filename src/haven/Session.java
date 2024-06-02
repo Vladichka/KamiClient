@@ -26,6 +26,9 @@
 
 package haven;
 
+import java.io.IOException;
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 import java.net.*;
 import java.util.*;
 import java.util.function.*;
@@ -35,7 +38,7 @@ import java.lang.ref.*;
 
 public class Session implements Resource.Resolver {
     public static final int PVER = 28;
-
+    
     public static final int MSG_SESS = 0;
     public static final int MSG_REL = 1;
     public static final int MSG_ACK = 2;
@@ -73,9 +76,6 @@ public class Session implements Resource.Resolver {
     public UI ui;
     public byte[] sesskey;
     private boolean closed = false;
-    SocketAddress server;
-    Object[] args;
-    byte[] cookie;
     private int localCacheId = -1;
     
     @SuppressWarnings("serial")
@@ -151,8 +151,29 @@ public class Session implements Resource.Resolver {
 		}
 	    }
 	    
+	    @Override
+	    public boolean equals(Object obj) {
+		if(obj instanceof Resource.Named) {
+		    return Objects.equals(((Resource.Named) obj).name, resnm);
+		}
+		return super.equals(obj);
+	    }
+	    
+	    @Override
+	    public int hashCode() {
+		int ret = resnm != null ? resnm.hashCode() : 0;
+		ret = (ret * 31) + resver;
+		return (ret);
+	    }
+	    
 	    private void reset() {
 		res = null;
+	    }
+	}
+	
+	private class SRef extends Ref {
+	    public SRef(Resource res) {
+		this.res = res;
 	    }
 	}
 	
@@ -177,11 +198,7 @@ public class Session implements Resource.Resolver {
 		wq.wnotify();
 	    }
 	}
-	private class SRef extends Ref {
-	    public SRef(Resource res) {
-		this.res = res;
-	    }
-	}
+	
 	public void set(Resource res){
 	    synchronized(this) {
 		this.resnm = res.name;
@@ -209,13 +226,6 @@ public class Session implements Resource.Resolver {
 	return(res.get());
     }
     
-    public Indir<Resource> getres2(int id) {
-	synchronized (rescache) {
-	    CachedRes ret = rescache.get(id);
-	    return ret != null ? (ret.get()) : null;
-	}
-    }
-    
     private int cacheres(String resname){
 	return cacheres(Resource.local().loadwait(resname));
     }
@@ -227,6 +237,13 @@ public class Session implements Resource.Resolver {
     
     public Indir<Resource> getres(int id) {
 	return(getres(id, 0));
+    }
+    
+    public Indir<Resource> getres2(int id) {
+	synchronized (rescache) {
+	    CachedRes ret = rescache.get(id);
+	    return ret != null ? (ret.get()) : null;
+	}
     }
     
     public int getresid(Resource res) {
@@ -316,16 +333,15 @@ public class Session implements Resource.Resolver {
     };
     
     public Session(SocketAddress server, String username, byte[] cookie, Object... args) throws InterruptedException {
+	this.character = new CharacterInfo();
 	this.conn = new Connection(server, username);
-	this.server = server;
 	this.username = username;
-	this.cookie = cookie;
-	this.args = args;
-	Arrays.stream(LOCAL_CACHED).forEach(this::cacheres);
-	glob = new Glob(this);
-	character = new CharacterInfo();
+	this.glob = new Glob(this);
 	conn.add(conncb);
 	conn.connect(cookie, args);
+	
+	Arrays.stream(LOCAL_CACHED).forEach(this::cacheres);
+	Config.setUserName(username);
     }
     
     public void close() {

@@ -30,32 +30,32 @@ import java.awt.image.*;
 
 public abstract class SIWidget extends Widget {
     private Tex surf = null;
-
+    
     public SIWidget(Coord sz) {
 	super(sz);
     }
-
+    
     protected abstract void draw(BufferedImage buf);
-
+    
     public BufferedImage draw() {
 	BufferedImage buf = TexI.mkbuf(sz);
 	draw(buf);
 	return(buf);
     }
-
+    
     public void draw(GOut g) {
-	if(this.surf == null) {
+	if(this.surf == null && sz.x > 0 && sz.y > 0) {
 	    this.surf = new TexI(draw());
 	}
 	g.image(surf, Coord.z);
     }
-
+    
     public void redraw() {
 	if(surf != null)
 	    surf.dispose();
 	surf = null;
     }
-
+    
     public void dispose() {
 	super.dispose();
 	if(surf != null)

@@ -77,7 +77,6 @@ public class CharterBook extends WindowX {
 		.setData(names)
 		.setChangedCallback((index, charter) -> {
 		    text.settext(charter);
-		    text.buf.key('\0', KeyEvent.VK_END, 0); //move caret to the end
 		    setfocus(text);
 		});
 	    add(new Button(50, "GO", false, text::activate), child.c.add(child.sz.x + 20, 0));

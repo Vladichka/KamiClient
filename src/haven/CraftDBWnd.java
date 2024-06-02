@@ -70,14 +70,14 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
     }
     
     enum Mode {
-        All("paginae/act/craft", true),
+	All("paginae/act/craft", true),
 	Favourites("paginae/act/favourites", false),
 	History("paginae/act/history", false);
 	
-        public final LinkedList<Pagina> items;
+	public final LinkedList<Pagina> items;
 	public final boolean reparent;
 	private final Resource.Named res;
- 
+	
 	Mode(String name, boolean reparent) {
 	    Resource.remote().loadwait(name);
 	    this.res = Resource.remote().load(name);
@@ -103,28 +103,28 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	    .filter(Objects::nonNull)
 	    .collect(Collectors.toCollection(() -> Favourites.items));
     }
-
+    
     @Override
     protected void attach(UI ui) {
 	super.attach(ui);
 	init();
     }
-
+    
     @Override
     public void destroy() {
 	subscription.unsubscribe();
 	box.destroy();
 	super.destroy();
     }
-
+    
     private void init() {
 	CRAFT = paginafor("paginae/act/craft");
 	HISTORY = paginafor("paginae/act/history");
 	FAVOURITES = paginafor("paginae/act/favourites");
-    
+	
 	loadFavourites(Config.userpath());
 	subscription = Reactor.PLAYER.subscribe(this::loadFavourites);
-    
+	
 	tabStrip = add(new TabStrip<Mode>() {
 	    @Override
 	    protected void selected(Button<Mode> button) {
@@ -136,9 +136,9 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	    Resource res = modes[i].res.get();
 	    tabStrip.insert(i,
 		new TexI(PUtils.convolvedown(res.layer(Resource.imgc).img, ICON_SZ, CharWnd.iconfilter)),
-		paginafor(modes[i].res).act().name, null).tag = modes[i];
+		paginafor(modes[i].res).button().act().name, null).tag = modes[i];
 	}
-    
+	
 	box = add(new RecipeListBox(UI.scale(200), LIST_SIZE) {
 	    @Override
 	    protected void itemclick(Pagina item, int button) {
@@ -175,7 +175,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	breadcrumbs = add(new Breadcrumbs<Pagina>(new Coord(WND_SZ.x, ICON_SZ.y)) {
 	    @Override
 	    public void selected(Pagina data) {
-	        if(data == HISTORY) {
+		if(data == HISTORY) {
 		    showHistory();
 		} else if(data == FAVOURITES) {
 		    showFavourites();
@@ -195,7 +195,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	tabStrip.select(0);
 	select(selected, true, false);
     }
-
+    
     @Override
     public void cdestroy(Widget w) {
 	if(w == makewnd) {
@@ -203,7 +203,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	}
 	super.cdestroy(w);
     }
-
+    
     @Override
     public void wdgmsg(Widget sender, String msg, Object... args) {
 	if((sender == this) && msg.equals("close")) {
@@ -216,14 +216,14 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
     }
     
     private void changeMode(Mode mode) {
-        this.mode = mode;
-        tabStrip.select(mode, true);
-        switch (mode) {
+	this.mode = mode;
+	tabStrip.select(mode, true);
+	switch (mode) {
 	    case All:
-	        select(CRAFT, false, false);
+		select(CRAFT, false, false);
 		break;
 	    case History:
-	        showHistory();
+		showHistory();
 		break;
 	    case Favourites:
 		showFavourites();
@@ -291,7 +291,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	ui.destroy(this);
 	ui.gui.craftwnd = null;
     }
-
+    
     private List<Pagina> getPaginaChildren(Pagina parent) {
 	List<Pagina> buf = new LinkedList<>();
 	if (parent != null) {
@@ -299,14 +299,14 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	}
 	return buf;
     }
-
+    
     public void select(Pagina p, boolean use) {
 	if(mode != All) {changeMode(All);}
 	if(!filter.line().isEmpty()) {
 	    filter.setline("");
 	    changeMode(All);
 	    if(p == ui.gui.menu.bk.pag) {
-	        p = CRAFT;
+		p = CRAFT;
 	    }
 	}
 	select(p, use, false);
@@ -320,18 +320,18 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	}
 	if(box != null) {
 	    if(!p.isAction()){
-	        closemake();
+		closemake();
 	    }
 	    if(!skipReparent) {
 		List<Pagina> children = getPaginaChildren(p);
 		if(children.size() == 0) {
 		    children = getPaginaChildren(menu.getParent(p));
 		}
-		children.sort(MenuGrid.sorter);
+		children.sort(Comparator.comparing(pag -> pag.button().sortkey()));
 		if(p != CRAFT) {
 		    children.add(0, BACK);
 		}
-	    	filter.setline("");
+		filter.setline("");
 		box.setitems(children);
 	    }
 	    box.change(p);
@@ -349,18 +349,18 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	    this.senduse = p;
 	}
     }
-
+    
     private void closemake() {
 	if(makewnd != null) {
 	    makewnd.wdgmsg("close");
 	}
 	senduse = null;
     }
-
+    
     @Override
     public void cdraw(GOut g) {
 	super.cdraw(g);
-
+	
 	if(senduse != null) {
 	    Pagina p = senduse;
 	    closemake();
@@ -368,28 +368,28 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	}
 	drawDescription(g);
     }
-
+    
     private void drawDescription(GOut g) {
 	if(descriptionPagina == null) {
 	    return;
 	}
 	if(description == null) {
 	    try {
-		description = ItemData.longtip(descriptionPagina, ui.sess, 20, 5);
+		description = ItemData.longtip(descriptionPagina, ui.sess, true, 20, 5);
 	    } catch (Loading ignored) {}
 	}
 	if(description != null) {
 	    g.image(description, new Coord(box.c.x + box.sz.x + UI.scale(10), PANEL_H + UI.scale(5)));
 	}
     }
-
+    
     private void setCurrent(Pagina current) {
 	CraftDBWnd.current = current;
 	updateBreadcrumbs(current);
 	updateDescription(current);
 	btnFavourite.state(Favourites.items.contains(current));
     }
-
+    
     private void updateBreadcrumbs(Pagina p) {
 	List<Breadcrumbs.Crumb<Pagina>> crumbs = new LinkedList<>();
 	if (filter.line().isEmpty()) {
@@ -398,7 +398,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 		Collections.reverse(parents);
 		for(Pagina item : parents) {
 		    BufferedImage img = item.res().layer(Resource.imgc).img;
-		    Resource.AButton act = item.act();
+		    Resource.AButton act = item.button().act();
 		    String name = "...";
 		    if(act != null) {
 			name = act.name;
@@ -415,7 +415,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	}
 	breadcrumbs.setCrumbs(crumbs);
     }
-
+    
     private List<Pagina> getParents(Pagina p) {
 	List<Pagina> list = new LinkedList<>();
 	if(getPaginaChildren(p).size() > 0) {
@@ -428,7 +428,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	}
 	return list;
     }
-
+    
     private void updateDescription(Pagina p) {
 	if(description != null) {
 	    description.dispose();
@@ -436,7 +436,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	}
 	descriptionPagina = p;
     }
-
+    
     public void setMakewindow(Widget widget) {
 	makewnd = add(widget, new Coord(box.c.x + box.sz.x + UI.scale(10), box.c.y + box.sz.y - widget.sz.y));
     }
@@ -448,18 +448,18 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
     private Pagina paginafor(String name) {
 	return ui.gui.menu.findPagina(name);
     }
-
+    
     private void updateInfo(WItem item){
 	ItemData.actualize(item.item, current);
 	updateDescription(current);
     }
-
+    
     @Override
     public boolean drop(WItem target, Coord cc, Coord ul) {
 	updateInfo(target);
 	return true;
     }
-
+    
     @Override
     public boolean iteminteract(WItem target, Coord cc, Coord ul) {
 	updateInfo(target);
@@ -469,7 +469,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
     @Override
     public void tick(double dt) {
 	super.tick(dt);
-    
+	
 	MenuGrid menu = ui.gui.menu;
 	synchronized (menu.paginae) {
 	    if(pagseq != menu.pagseq) {
@@ -477,7 +477,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 		    All.items.clear();
 		    All.items.addAll(
 			menu.paginae.stream()
-			    .filter(p -> category.matcher(Pagina.name(p)).matches())
+			    .filter(p -> category.matcher(Pagina.resname(p)).matches())
 			    .collect(Collectors.toList())
 		    );
 		    
@@ -557,7 +557,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 		}
 		return true;
 	}
- 
+	
 	String before = filter.line();
 	if(filter.key(ev) && !before.equals(filter.line())) {
 	    needfilter();
@@ -596,7 +596,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	    }
 	    return list.get(i);
 	}
-
+	
 	public void setitems(List<Pagina> list) {
 	    if(list.equals(this.list)) {
 		return;
@@ -625,7 +625,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 		}
 	    }
 	}
-
+	
 	@Override
 	protected int listitems() {
 	    if(list == null) {
@@ -652,7 +652,7 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 		if(res != null) {
 		    BufferedImage icon = PUtils.convolvedown(res.layer(Resource.imgc).img, ICON_SZ, CharWnd.iconfilter);
 		    
-		    Resource.AButton act = p.act();
+		    Resource.AButton act = p.button().acts();
 		    String name = "...";
 		    if(act != null) {
 			name = act.name;
@@ -676,8 +676,8 @@ public class CraftDBWnd extends WindowX implements DTarget2 {
 	
 	@Override
 	public int compare(Pagina a, Pagina b) {
-	    String an = a.act().name.toLowerCase();
-	    String bn = b.act().name.toLowerCase();
+	    String an = a.button().act().name.toLowerCase();
+	    String bn = b.button().act().name.toLowerCase();
 	    if(filter != null && !filter.isEmpty()) {
 		boolean ai = an.startsWith(filter);
 		boolean bi = bn.startsWith(filter);

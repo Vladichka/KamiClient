@@ -4,10 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Radar {
     public static final String CONFIG_JSON = "radar.json";
@@ -36,41 +33,27 @@ public class Radar {
 	return null;
     }
     
-    public static void addCustomSettings(Map<String, GobIcon.Setting> settings, UI ui) {
+    public static void addCustomSettings(GobIcon.Settings.Loader loader, UI ui) {
 	List<RadarItemVO> items = load(Config.loadJarFile(CONFIG_JSON));
 	items.addAll(load(Config.loadFSFile(CONFIG_JSON)));
 	for (RadarItemVO item : items) {
 	    gob2icon.put(item.match, item.icon);
-	    addSetting(settings, item.icon, item.visible);
+	    addSetting(loader, item.icon, item.visible);
 	}
-	addMissingStones(settings);
 	ui.sess.glob.oc.gobAction(Gob::iconUpdated);
     }
     
-    private static void addMissingStones(Map<String, GobIcon.Setting> settings)
-    {
-	putStone("cinnabar");
-	addSetting(settings, "gfx/invobjs/cinnabar", false);
-	putStone("chert");
-	addSetting(settings, "gfx/invobjs/chert", false);
-	putStone("graywacke");
-	addSetting(settings, "gfx/invobjs/graywacke", false);
-	putStone("serpentine");
-	addSetting(settings, "gfx/invobjs/serpentine", false);
-    }
-    
-    private static void putStone(String name)
-    {
-	gob2icon.put("gfx/terobjs/bummlings/" + name + "1", "gfx/invobjs/" + name);
-	gob2icon.put("gfx/terobjs/bummlings/" + name + "2", "gfx/invobjs/" + name);
-	gob2icon.put("gfx/terobjs/bummlings/" + name + "3", "gfx/invobjs/" + name);
-    }
-    
-    private static void addSetting(Map<String, GobIcon.Setting> settings, String res, boolean def) {
-	if(!settings.containsKey(res)) {
-	    GobIcon.Setting cfg = new GobIcon.Setting(new Resource.Spec(null, res));
+    private static void addSetting(GobIcon.Settings.Loader loader, String res, boolean def) {
+	if(loader.load.stream().noneMatch(q -> Objects.equals(q.res.name, res))) {
+	    Resource.Saved spec = new Resource.Saved(Resource.remote(), res, -1);
+	    GobIcon.Settings.ResID id = new GobIcon.Settings.ResID(spec, new byte[0]);
+	    GobIcon.Setting cfg = new GobIcon.Setting(spec, GobIcon.Icon.nilid);
 	    cfg.show = cfg.defshow = def;
-	    settings.put(res, cfg);
+	    
+	    Collection<GobIcon.Setting> sets = new ArrayList<>();
+	    sets.add(cfg);
+	    loader.load.add(id);
+	    loader.resolve.put(id, sets);
 	}
     }
     
@@ -83,6 +66,23 @@ public class Radar {
 	    } catch (Exception ignored) {}
 	}
 	return new LinkedList<>();
+    }
+    
+    enum Symbols {
+	$circle("gfx/hud/mmap/symbols/circle"),
+	$diamond("gfx/hud/mmap/symbols/diamond"),
+	$dot("gfx/hud/mmap/symbols/dot"),
+	$down("gfx/hud/mmap/symbols/down"),
+	$pentagon("gfx/hud/mmap/symbols/pentagon"),
+	$square("gfx/hud/mmap/symbols/square"),
+	$up("gfx/hud/mmap/symbols/up");
+	
+	public final Tex tex;
+	public static final Symbols DEFAULT = $circle;
+	
+	Symbols(String res) {
+	    tex = Resource.loadtex(res);
+	}
     }
     
     private static class RadarItemVO {

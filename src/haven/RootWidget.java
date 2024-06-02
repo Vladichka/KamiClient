@@ -37,9 +37,7 @@ public class RootWidget extends ConsoleHost implements UI.MessageWidget, Console
     Profile guprof, grprof, ggprof;
     private Text lastmsg;
     private double msgtime;
-	
-    final boolean[] mods = new boolean[3]; //CTRL, ALT, SHIFT
-    final long[] presses = new long[3]; //CTRL, ALT, SHIFT
+    
     
     public RootWidget(UI ui, Coord sz) {
 	super(ui, new Coord(0, 0), sz);
@@ -47,7 +45,7 @@ public class RootWidget extends ConsoleHost implements UI.MessageWidget, Console
 	hasfocus = true;
 	cursor = defcurs.indir();
     }
-	
+    
     public boolean globtype(char key, KeyEvent ev) {
 	if(super.globtype(key, ev)) {
 	    return false;
@@ -80,7 +78,7 @@ public class RootWidget extends ConsoleHost implements UI.MessageWidget, Console
 	}
 	return true;
     }
-
+    
     @Override
     public boolean keydown(KeyEvent ev) {
 	return super.keydown(ev);
@@ -90,30 +88,6 @@ public class RootWidget extends ConsoleHost implements UI.MessageWidget, Console
     public boolean keyup(KeyEvent ev) {
 	return super.keyup(ev);
     }
-    
-    void processModDown(KeyEvent ev) {
-	mods[0] = isCTRL(ev);
-	mods[1] = isALT(ev);
-	mods[2] = isSHIFT(ev);
-    }
-    
-    void processModUp(KeyEvent ev) {
-	if(mods[0] && isCTRL(ev)) {
-	    presses[0]++;
-	} else if(mods[1] && isALT(ev)) {
-	    presses[1]++;
-	} else if(mods[2] && isSHIFT(ev)) {
-	    presses[2]++;
-	}
-	
-	mods[0] = mods[1] = mods[2] = false;
-    }
-    
-    public long CTRLs() {return presses[0];}
-    
-    public long ALTs() {return presses[1];}
-    
-    public long SHIFTs() {return presses[2];}
     
     private boolean isCTRL(KeyEvent ev) {
 	return ev.getModifiersEx() == (ev.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK)
@@ -143,7 +117,7 @@ public class RootWidget extends ConsoleHost implements UI.MessageWidget, Console
     public boolean mousedown(Coord c, int button) {
 	return super.mousedown(c, button);
     }
-
+    
     public void draw(GOut g) {
 	super.draw(g);
 	if(cmdline != null) {
@@ -160,7 +134,7 @@ public class RootWidget extends ConsoleHost implements UI.MessageWidget, Console
 	    }
 	}
     }
-
+    
     public void uimsg(String msg, Object... args) {
 	if(msg == "err") {
 	    ui.error((String)args[0]);
@@ -169,18 +143,18 @@ public class RootWidget extends ConsoleHost implements UI.MessageWidget, Console
 		ui.msg((String)args[0]);
 	    } else {
 		ui.loader.defer(() -> {
-			int a = 0;
-			String text = (String)args[a++];
-			Color color = Color.WHITE;
-			if(args[a] instanceof Color)
-			    color = (Color)args[a++];
-			Audio.Clip sfx = msgsfx;
-			if(args.length > a) {
-			    Indir<Resource> res = ui.sess.getresv(args[a++]);
-			    sfx = (res == null) ? null : Audio.resclip(res.get());
-			}
-			ui.msg(text, color, sfx);
-		    }, null);
+		    int a = 0;
+		    String text = (String)args[a++];
+		    Color color = Color.WHITE;
+		    if(args[a] instanceof Color)
+			color = (Color)args[a++];
+		    Audio.Clip sfx = msgsfx;
+		    if(args.length > a) {
+			Indir<Resource> res = ui.sess.getresv(args[a++]);
+			sfx = (res == null) ? null : Audio.resclip(res.get());
+		    }
+		    ui.msg(text, color, sfx);
+		}, null);
 	    }
 	} else if(msg == "sfx") {
 	    int a = 0;
@@ -188,13 +162,13 @@ public class RootWidget extends ConsoleHost implements UI.MessageWidget, Console
 	    double vol = (args.length > a) ? Utils.dv(args[a++]) : 1.0;
 	    double spd = (args.length > a) ? Utils.dv(args[a++]) : 1.0;
 	    ui.sess.glob.loader.defer(() -> {
-		    Audio.CS clip = Audio.fromres(resid.get());
-		    if(spd != 1.0)
-			clip = new Audio.Resampler(clip).sp(spd);
-		    if(vol != 1.0)
-			clip = new Audio.VolAdjust(clip, vol);
-		    Audio.play(clip);
-		}, null);
+		Audio.CS clip = Audio.fromres(resid.get());
+		if(spd != 1.0)
+		    clip = new Audio.Resampler(clip).sp(spd);
+		if(vol != 1.0)
+		    clip = new Audio.VolAdjust(clip, vol);
+		Audio.play(clip);
+	    }, null);
 	} else if(msg == "bgm") {
 	    int a = 0;
 	    Indir<Resource> resid = (args.length > a) ? ui.sess.getresv(args[a++]) : null;
@@ -209,48 +183,48 @@ public class RootWidget extends ConsoleHost implements UI.MessageWidget, Console
 	    super.uimsg(msg, args);
 	}
     }
-
+    
     public void msg(String msg, Color color) {
 	lastmsg = msgfoundry.render(msg, color);
 	msgtime = Utils.rtime();
     }
-
+    
     public void msg(String msg, Color color, Audio.Clip sfx) {
 	msg(msg, color);
 	ui.sfxrl(sfx);
     }
-
+    
     public void error(String msg) {
 	ui.error(msg);
     }
-
+    
     public Object tooltip(Coord c, Widget prev) {
 	if(modtip && (ui.modflags() != 0))
 	    return(KeyMatch.modname(ui.modflags()));
 	return(super.tooltip(c, prev));
     }
-
+    
     private Map<String, Console.Command> cmdmap = new TreeMap<String, Console.Command>();
     {
 	cmdmap.put("wdgtree", new Console.Command() {
-		public void run(Console cons, String[] args) throws Exception {
-		    for(Widget w = RootWidget.this; w != null; w = w.rnext()) {
-			for(Widget p = w.parent; p != null; p = p.parent)
-			    cons.out.write('\t');
-			cons.out.write(w.visible ? 'S' : 'H');
-			cons.out.write(' ');
-			cons.out.write(w.hasfocus ? "F" : "f");
-			cons.out.write(w.focusctl ? "C" : "c");
-			cons.out.write(w.focustab ? "T" : "t");
-			cons.out.write(w.canfocus ? "A" : "a");
-			cons.out.write(w.autofocus ? "T" : "t");
-			cons.out.write(((w.parent != null) && (w.parent.focused == w)) ? "P" : "p");
-			cons.out.write(' ');
-			cons.out.write(w.toString());
-			cons.out.write('\n');
-		    }
+	    public void run(Console cons, String[] args) throws Exception {
+		for(Widget w = RootWidget.this; w != null; w = w.rnext()) {
+		    for(Widget p = w.parent; p != null; p = p.parent)
+			cons.out.write('\t');
+		    cons.out.write(w.visible ? 'S' : 'H');
+		    cons.out.write(' ');
+		    cons.out.write(w.hasfocus ? "F" : "f");
+		    cons.out.write(w.focusctl ? "C" : "c");
+		    cons.out.write(w.focustab ? "T" : "t");
+		    cons.out.write(w.canfocus ? "A" : "a");
+		    cons.out.write(w.autofocus ? "T" : "t");
+		    cons.out.write(((w.parent != null) && (w.parent.focused == w)) ? "P" : "p");
+		    cons.out.write(' ');
+		    cons.out.write(w.toString());
+		    cons.out.write('\n');
 		}
-	    });
+	    }
+	});
     }
     public Map<String, Console.Command> findcmds() {
 	return(cmdmap);

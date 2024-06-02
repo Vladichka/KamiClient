@@ -39,35 +39,75 @@ import javax.swing.filechooser.*;
 public class GobIcon extends GAttrib {
     private static final int size = UI.scale(20);
     public static final PUtils.Convolution filter = new PUtils.Hanning(1);
-    private static final Map<Indir<Resource>, Image> cache = new WeakHashMap<>();
-    private static final Map<Indir<Resource>, Image> cachegray = new WeakHashMap<>();
     public final Indir<Resource> res;
-    private Image img, imggray;
+    public final byte[] sdt;
+    private Icon icon;
     public final boolean isCustom;
-
-    public GobIcon(Gob g, Indir<Resource> res) {
+    
+    public GobIcon(Gob g, Indir<Resource> res, byte[] sdt) {
 	super(g);
 	this.res = res;
+	this.sdt = sdt;
 	isCustom = false;
     }
     
     public GobIcon(Gob g, Indir<Resource> res, boolean isCustom) {
 	super(g);
 	this.res = res;
+	this.sdt = new byte[0];
 	this.isCustom = isCustom;
     }
-
+    
+    public static abstract class Icon {
+	public static final Object[] nilid = new Object[0];
+	public final OwnerContext owner;
+	public final Resource res;
+	
+	public Icon(OwnerContext owner, Resource res) {
+	    this.owner = owner;
+	    this.res = res;
+	}
+	
+	public String tooltip() {
+	    String tt = name();
+	    try {
+		Resource.Tooltip name = res.layer(Resource.tooltip);
+		tt = (name == null) ? res.name : name.t;
+	    } catch (Resource.Loading ignored) {}
+	    return tt;
+	}
+	
+	public static enum Markable {
+	    UNMARKABLE, NONDEFAULT, DEFAULT
+	}
+	
+	public abstract String name();
+	public abstract BufferedImage image();
+	public abstract void draw(GOut g, Coord cc);
+	public abstract boolean checkhit(Coord c);
+	public Object[] id() {return(nilid);}
+	public int z() {return(0);}
+	public Markable markable() {return(Markable.UNMARKABLE);}
+	
+	@Resource.PublishedCode(name = "mapicon")
+	public static interface Factory {
+	    public Icon create(OwnerContext owner, Resource res, Message sdt);
+	    public Collection<? extends Icon> enumerate(OwnerContext owner, Resource res, Message sdt);
+	}
+    }
+    
     public static class Image {
-	public Resource res;
+	private static final Map<Resource, Image> cache = new WeakHashMap<>();
+	public final BufferedImage img;
 	public final Tex tex;
 	public Coord cc;
 	public boolean rot;
 	public double ao;
 	public int z;
-
+	
 	public Image(Resource res) {
-	    this.res = res;
 	    Resource.Image rimg = res.layer(Resource.imgc);
+	    BufferedImage img = rimg.scaled();
 	    Tex tex = rimg.tex();
 	    if ((tex.sz().x > size) || (tex.sz().y > size)) {
 		BufferedImage buf = rimg.img;
@@ -78,8 +118,9 @@ public class GobIcon extends GAttrib {
 		else
 		    tsz = new Coord((size * buf.getWidth()) / buf.getHeight(), size);
 		buf = PUtils.convolve(buf, tsz, filter);
-		tex = new TexI(buf);
+		tex = new TexI(img = buf);
 	    }
+	    this.img = img;
 	    this.tex = tex;
 	    this.cc = tex.sz().div(2);
 	    byte[] data = rimg.kvdata.get("mm/rot");
@@ -92,125 +133,163 @@ public class GobIcon extends GAttrib {
 	    if(data != null)
 		this.z = Utils.intvard(data, 0);
 	}
- 
-	public Image(Resource.Image rimg, BufferedImage img) {
-	    Tex tex = new TexI(img);
-	    if ((tex.sz().x > size) || (tex.sz().y > size)) {
-		BufferedImage buf;
-		buf = PUtils.rasterimg(PUtils.blurmask2(img.getRaster(), 1, 1, Color.BLACK));
-		Coord tsz;
-		if(buf.getWidth() > buf.getHeight())
-		    tsz = new Coord(size, (size * buf.getHeight()) / buf.getWidth());
-		else
-		    tsz = new Coord((size * buf.getWidth()) / buf.getHeight(), size);
-		buf = PUtils.convolve(buf, tsz, filter);
-		tex = new TexI(buf);
-	    }
-	    this.tex = tex;
-	    this.cc = tex.sz().div(2);
-	    byte[] data = rimg.kvdata.get("mm/rot");
-	    if(data != null) {
-		this.rot = true;
-		this.ao = Utils.float32d(data, 0) * (Math.PI / 180f);
-	    }
-	    this.z = rimg.z;
-	    data = rimg.kvdata.get("mm/z");
-	    if(data != null)
-		this.z = Utils.intvard(data, 0);
-	}
-    }
-
-    public Image img() {
-	if(this.img == null) {
+	
+	public static Image get(Resource res) {
 	    synchronized(cache) {
 		Image img = cache.get(res);
 		if(img == null) {
-		    img = new Image(res.get());
+		    img = new Image(res);
 		    cache.put(res, img);
 		}
-		this.img = img;
+		return(img);
 	    }
 	}
-	return(this.img);
     }
-
+    
+    public static class ImageIcon extends Icon {
+	public final Image img;
+	private final Gob gob = owner.fcontext(Gob.class, false);
+	
+	public ImageIcon(OwnerContext owner, Resource res, Image img) {
+	    super(owner, res);
+	    this.img = img;
+	}
+	
+	public String name() {
+	    Resource.Tooltip name = res.layer(Resource.tooltip);
+	    return(name == null ? "???" : name.t);
+	}
+	
+	public BufferedImage image() {
+	    return(res.flayer(Resource.imgc).img);
+	}
+	
+	public void draw(GOut g, Coord cc) {
+	    if(!img.rot)
+		g.image(img.tex, cc.sub(img.cc));
+	    else
+		g.rotimage(img.tex, cc, img.cc, ((gob == null) ? 0 : -gob.a) + img.ao);
+	}
+	
+	public boolean checkhit(Coord c) {
+	    Coord oc = c.add(img.cc);
+	    if(!oc.isect(Coord.z, PUtils.imgsz(img.img)))
+		return(false);
+	    if(img.img.getRaster().getNumBands() < 4)
+		return(true);
+	    return(img.img.getRaster().getSample(oc.x, oc.y, 3) >= 128);
+	}
+	
+	public int z() {
+	    return(img.z);
+	}
+	
+	private int markdata() {
+	    byte[] data = res.flayer(Resource.imgc).kvdata.get("mm/mark");
+	    if(data == null)
+		return(0);
+	    return(Utils.intvard(data, 0));
+	}
+	
+	public Markable markable() {
+	    switch(markdata()) {
+		case 1:
+		    return(Markable.NONDEFAULT);
+		case 2:
+		    return(Markable.DEFAULT);
+		default:
+		    return(Markable.UNMARKABLE);
+	    }
+	}
+	
+	public static final Factory factory = new Factory() {
+	    public ImageIcon create(OwnerContext owner, Resource res, Message sdt) {
+		return(new ImageIcon(owner, res, Image.get(res)));
+	    }
+	    
+	    public Collection<ImageIcon> enumerate(OwnerContext owner, Resource res, Message sdt) {
+		return(Collections.singletonList(new ImageIcon(owner, res, Image.get(res))));
+	    }
+	};
+    }
+    
+    public static Icon.Factory getfac(Resource res) {
+	Icon.Factory fac = res.getcode(Icon.Factory.class, false);
+	if(fac != null)
+	    return(fac);
+	return(ImageIcon.factory);
+    }
+    
+    public Icon icon() {
+	if(this.icon == null) {
+	    Resource res = this.res.get();
+	    this.icon = getfac(res).create(gob, res, new MessageBuf(sdt));
+	}
+	return(this.icon);
+    }
+    
     private static Consumer<UI> resnotif(String nm) {
 	return(ui -> {
-		Indir<Resource> resid = Resource.local().load(nm);
-		ui.sess.glob.loader.defer(() -> {
-			Resource res;
-			try {
-			    res = resid.get();
-			} catch(Loading l) {
-			    throw(l);
-			} catch(RuntimeException e) {
-			    ui.error("Could not play " + nm);
-			    return;
-			}
-			Audio.CS clip = Audio.fromres(res);
-			ui.sfx(clip);
-		    }, null);
-	    });
+	    Indir<Resource> resid = Resource.local().load(nm);
+	    ui.sess.glob.loader.defer(() -> {
+		Resource res;
+		try {
+		    res = resid.get();
+		} catch(Loading l) {
+		    throw(l);
+		} catch(RuntimeException e) {
+		    ui.error("Could not play " + nm);
+		    return;
+		}
+		Audio.CS clip = Audio.fromres(res);
+		ui.sfx(clip);
+	    }, null);
+	});
     }
-
+    
     private static Consumer<UI> wavnotif(Path path) {
 	return(ui -> {
-		ui.sess.glob.loader.defer(() -> {
-			Audio.CS clip;
-			InputStream fail = null;
+	    ui.sess.glob.loader.defer(() -> {
+		Audio.CS clip;
+		InputStream fail = null;
+		try {
+		    fail = Files.newInputStream(path);
+		    clip = Audio.PCMClip.fromwav(new BufferedInputStream(fail));
+		    fail = null;
+		} catch(IOException e) {
+		    String msg = e.getMessage();
+		    if(e instanceof FileSystemException)
+			msg = "Could not open file";
+		    ui.error("Could not play " + path + ": " + msg);
+		    return;
+		} finally {
+		    if(fail != null) {
 			try {
-			    fail = Files.newInputStream(path);
-			    clip = Audio.PCMClip.fromwav(new BufferedInputStream(fail));
-			    fail = null;
+			    fail.close();
 			} catch(IOException e) {
-			    String msg = e.getMessage();
-			    if(e instanceof FileSystemException)
-				msg = "Could not open file";
-			    ui.error("Could not play " + path + ": " + msg);
-			    return;
-			} finally {
-			    if(fail != null) {
-				try {
-				    fail.close();
-				} catch(IOException e) {
-				    new Warning(e, "unexpected error on close").issue();
-				}
-			    }
+			    new Warning(e, "unexpected error on close").issue();
 			}
-			ui.sfx(clip);
-		    }, null);
-	    });
+		    }
+		}
+		ui.sfx(clip);
+	    }, null);
+	});
     }
-
+    
     private static final Map<Object, Double> lastnotifs = new HashMap<>();
     private static Consumer<UI> notiflimit(Consumer<UI> bk, Object id) {
 	return(ui -> {
-		double now = Utils.rtime();
-		synchronized(lastnotifs) {
-		    Double last = lastnotifs.get(id);
-		    if((last != null) && (now - last < 0.5))
-			return;
-		    lastnotifs.put(id, now);
-		}
-		bk.accept(ui);
-	    });
-    }
-
-    
-    public Image imggray() {
-	if(this.imggray == null) {
-	    synchronized(cachegray) {
-		Image img = cachegray.get(res);
-		if(img == null) {
-		    Resource.Image rimg = res.get().layer(Resource.imgc);
-		    img = new Image(rimg, PUtils.monochromize(rimg.img, Color.WHITE));
-		    cachegray.put(res, img);
-		}
-		this.imggray = img;
+	    double now = Utils.rtime();
+	    synchronized(lastnotifs) {
+		Double last = lastnotifs.get(id);
+		if((last != null) && (now - last < 0.5))
+		    return;
+		lastnotifs.put(id, now);
 	    }
-	}
-	return(this.imggray);
+	    bk.accept(ui);
+	});
     }
+    
     
     public String tooltip() {
 	String tt = null;
@@ -223,16 +302,52 @@ public class GobIcon extends GAttrib {
     }
     
     public static class Setting implements Serializable {
-	public Resource.Spec res;
+	public final ID id;
+	public final Icon icon;
+	public final Settings.ResID from;
+	public Resource.Saved res;
 	public boolean show, defshow, notify;
 	public String resns;
 	public Path filens;
 	public boolean mark, markset;
-
-	public Setting(Resource.Spec res) {
-	    this.res = res;
+	
+	public static class ID {
+	    public final String res;
+	    public final Object[] sub;
+	    
+	    public ID(String res, Object[] sub) {
+		this.res = res;
+		this.sub = sub;
+	    }
+	    
+	    public int hashCode() {
+		return((res.hashCode() * 31) + Arrays.deepHashCode(sub));
+	    }
+	    
+	    public boolean equals(ID that) {
+		return(this.res.equals(that.res) && Arrays.deepEquals(this.sub, that.sub));
+	    }
+	    
+	    public boolean equals(Object x) {
+		return((x instanceof ID) && equals((ID)x));
+	    }
 	}
-
+	
+	public Setting(Resource.Saved res, Object[] id, Icon icon, Settings.ResID from) {
+	    this.res = res;
+	    this.id = new ID(res.name, id);
+	    this.icon = icon;
+	    this.from = from;
+	}
+	
+	public Setting(Resource.Saved res, Object[] id) {
+	    this(res, id, null, null);
+	}
+	
+	public Setting(Icon icon, Settings.ResID from) {
+	    this(new Resource.Saved(Resource.remote(), icon.res.name, icon.res.ver), icon.id(), icon, from);
+	}
+	
 	public Consumer<UI> notification() {
 	    if(resns != null)
 		return(notiflimit(resnotif(resns), resns));
@@ -240,194 +355,359 @@ public class GobIcon extends GAttrib {
 		return(notiflimit(wavnotif(filens), filens));
 	    return(null);
 	}
-
+	
 	private Resource lres;
 	public Resource resource() {
 	    if(this.lres != null)
 		return(this.lres);
-	    return(this.lres = this.res.loadsaved(Resource.remote()));
+	    return(this.lres = this.res.get());
 	}
-
-	private int markdata() {
-	    byte[] data = resource().flayer(Resource.imgc).kvdata.get("mm/mark");
-	    if(data == null)
-		return(0);
-	    return(Utils.intvard(data, 0));
-	}
-
+	
 	public boolean getmarkablep() {
-	    return(markdata() != 0);
+	    return(icon.markable() != Icon.Markable.UNMARKABLE);
 	}
-
+	
 	public boolean getmarkp() {
 	    if(markset)
 		return(mark);
-	    return(markdata() == 2);
+	    return(icon.markable() == Icon.Markable.DEFAULT);
 	}
     }
-
-    public static class Settings implements Serializable {
+    
+    public static class Settings implements OwnerContext, Serializable {
 	public static final byte[] sig = "Icons".getBytes(Utils.ascii);
-	public Map<String, Setting> settings = new HashMap<>();
+	public final UI ui;
+	public final String filename;
+	public Map<Setting.ID, Setting> settings = new HashMap<>();
 	public int tag = -1;
 	public boolean notify = false;
-
-	public Setting get(Resource.Named res) {
-	    Setting ret = settings.get(res.name);
-	    if((ret != null) && (ret.res.ver < res.ver))
-		ret.res = new Resource.Spec(null, res.name, res.ver);
-	    return(ret);
+	
+	public Settings(UI ui, String filename) {
+	    this.ui = ui;
+	    this.filename = filename;
 	}
-
-	public Setting get(Resource res) {
-	    return(get(res.indir()));
+	
+	public Setting get(Icon icon) {
+	    return(settings.get(new Setting.ID(icon.res.name, icon.id())));
 	}
-
-	public void receive(int tag, Setting[] conf) {
-	    Map<String, Setting> nset = new HashMap<>(settings);
-	    for(int i = 0; i < conf.length; i++) {
-		String nm = conf[i].res.name;
-		Setting prev = nset.get(nm);
-		if(prev == null)
-		    nset.put(nm, conf[i]);
-		else if(prev.res.ver < conf[i].res.ver)
-		    prev.res = conf[i].res;
+	
+	public static class ResID {
+	    public final Resource.Saved res;
+	    public final byte[] data;
+	    
+	    public ResID(Resource.Saved res, byte[] data) {
+		this.res = res;
+		this.data = data;
 	    }
-	    this.settings = nset;
-	    this.tag = tag;
+	    
+	    public int hashCode() {
+		return((res.name.hashCode() * 31) + Arrays.hashCode(data));
+	    }
+	    
+	    public boolean equals(ResID that) {
+		return(this.res.name.equals(that.res.name) && Arrays.equals(this.data, that.data));
+	    }
+	    
+	    public boolean equals(Object x) {
+		return((x instanceof ResID) && equals((ResID)x));
+	    }
 	}
-
+	
+	private Loader loading = null;
+	public class Loader implements Runnable {
+	    public final Queue<ResID> load = new ArrayDeque<>();
+	    public final Map<ResID, Setting> defaults = new HashMap<>();
+	    public final Map<ResID, Collection<Setting>> resolve = new HashMap<>();
+	    public boolean save = false, adv = false;
+	    public Integer tag = null;
+	    private final Collection<Icon> advbuf = new ArrayList<>();
+	    private ResID r = null;
+	    private Loader next = null;
+	    private Map<Setting.ID, Setting> nset = null;
+	    
+	    private void merge(Setting set, Setting conf) {
+		set.show    = conf.show;
+		set.defshow = conf.defshow;
+		set.notify  = conf.notify;
+		set.resns   = conf.resns;
+		set.filens  = conf.filens;
+		if(set.markset = conf.markset)
+		    set.mark = conf.mark;
+	    }
+	    
+	    public void run() {
+		if(nset == null)
+		    nset = new HashMap<>(settings);
+		while(true) {
+		    if((r == null) && ((r = load.poll()) == null))
+			break;
+		    Resource res;
+		    try {
+			res = r.res.get(-10);
+		    } catch(Resource.NoSuchResourceException e) {
+			r = null;
+			continue;
+		    }
+		    Icon.Factory fac = getfac(res);
+		    for(Icon icon : fac.enumerate(Settings.this, res, new MessageBuf(r.data))) {
+			Setting set = new Setting(icon, r);
+			Setting def = defaults.get(r);
+			if(def != null)
+			    merge(set, def);
+			Setting prev = nset.get(set.id);
+			if((prev == null) || (prev.res.ver < set.res.ver)) {
+			    if(prev != null)
+				merge(set, prev);
+			    else
+				advbuf.add(icon);
+			    nset.put(set.id, set);
+			}
+		    }
+		    Collection<Setting> sets = resolve.remove(r);
+		    if(sets != null) {
+			for(Setting conf : sets) {
+			    Setting set = nset.get(conf.id);
+			    if(set != null)
+				merge(set, conf);
+			}
+		    }
+		    r = null;
+		}
+		settings = nset;
+		if(tag != null)
+		    Settings.this.tag = tag;
+		if(save)
+		    save();
+		if(adv && notify) {
+		    Set<String> names = new HashSet<>();
+		    advbuf.forEach(icon -> names.add(icon.name()));
+		    synchronized(ui) {
+			for(String nm : names)
+			    ui.msg(String.format("%s added to list of seen icons.", nm));
+		    }
+		}
+		synchronized(Settings.this) {
+		    if(loading == this)
+			loading = null;
+		    else
+			ui.loader.defer(next, null);
+		}
+	    }
+	    
+	    public void submit() {
+		synchronized(Settings.this) {
+		    if(loading == null)
+			ui.loader.defer(this, null);
+		    else
+			loading.next = this;
+		    loading = this;
+		}
+	    }
+	}
+	
+	private final ClassResolver<Settings> ctxr = new ClassResolver<Settings>()
+	    .add(Glob.class, s -> s.ui.sess.glob)
+	    .add(Session.class, s -> s.ui.sess);
+	public <T> T context(Class<T> cl) {return(ctxr.context(cl, this));}
+	
+	public void receive(Object[] args) {
+	    int tag = Utils.iv(args[0]);
+	    if(args[1] instanceof String) {
+		int a = 1;
+		Resource.Saved res = new Resource.Saved(Resource.remote(), (String)args[a++], Utils.iv(args[a++]));
+		byte[] data = (args[a] instanceof byte[]) ? (byte[])args[a++] : new byte[0];
+		ResID id = new ResID(res, data);
+		Setting def = new Setting(res, Icon.nilid);
+		def.show = def.defshow = Utils.bv(args[a++]);
+		Loader l = new Loader();
+		l.save = true;
+		l.adv = true;
+		l.tag = tag;
+		l.load.add(id);
+		l.defaults.put(id, def);
+		l.submit();
+	    } else if(args[1] instanceof Object[]) {
+		Object[] sub = (Object[])args[1];
+		int a = 0;
+		Loader l = new Loader();
+		l.save = true;
+		l.tag = tag;
+		Collection<GobIcon.Setting> csets = new ArrayList<>();
+		while(a < sub.length) {
+		    Resource.Saved res = new Resource.Saved(Resource.remote(), (String)sub[a++], Utils.iv(sub[a++]));
+		    byte[] data = (sub[a] instanceof byte[]) ? (byte[])sub[a++] : new byte[0];
+		    int fl = Utils.iv(sub[a++]);
+		    ResID id = new ResID(res, data);
+		    Setting def = new Setting(res, Icon.nilid);
+		    def.show = def.defshow = ((fl & 1) != 0);
+		    l.load.add(id);
+		    l.defaults.put(id, def);
+		}
+		l.submit();
+	    }
+	}
+	
+	private static void encodeset(Map<Object, Object> buf, Setting set) {
+	    if(set.show)    buf.put("s", 1);
+	    if(set.defshow) buf.put("d", 1);
+	    if(set.notify)  buf.put("n", 1);
+	    if(set.markset) buf.put("m", set.mark ? 1 : 0);
+	    if(set.resns != null)  buf.put("R", set.resns);
+	    if(set.filens != null) buf.put("W", set.filens.toString());
+	}
+	
 	public void save(Message dst) {
+	    Map<ResID, Collection<Setting>> byid = new HashMap<>();
+	    for(Setting set : settings.values())
+		byid.computeIfAbsent(set.from, k -> new ArrayList<>()).add(set);
 	    Map<Object, Object> buf = new HashMap<>();
 	    buf.put("tag", tag);
 	    if(notify)
 		buf.put("notify", 1);
 	    List<Object> abuf = new ArrayList<>();
-	    for(Setting set : settings.values()) {
-		Map<Object, Object> sbuf = new HashMap<>();
-		sbuf.put("res", new Object[] {set.res.name, set.res.ver});
-		if(set.show)    sbuf.put("s", 1);
-		if(set.defshow) sbuf.put("d", 1);
-		if(set.notify)  sbuf.put("n", 1);
-		if(set.markset) sbuf.put("m", set.mark ? 1 : 0);
-		if(set.resns != null)  sbuf.put("R", set.resns);
-		if(set.filens != null) sbuf.put("W", set.filens.toString());
-		abuf.add(Utils.mapencn(sbuf));
+	    for(Map.Entry<ResID, Collection<Setting>> ent : byid.entrySet()) {
+		ResID id = ent.getKey();
+		Map<Object, Object> rbuf = new HashMap<>();
+		if(id.data.length == 0)
+		    rbuf.put("res", new Object[] {id.res.name, id.res.savever()});
+		else
+		    rbuf.put("res", new Object[] {id.res.name, id.res.savever(), id.data});
+		Collection<Object> sub = new ArrayList<>();
+		for(Setting set : ent.getValue()) {
+		    if(set.id.sub.length == 0) {
+			encodeset(rbuf, set);
+		    } else {
+			Map<Object, Object> sbuf = new HashMap<>();
+			sbuf.put("id", set.id.sub);
+			encodeset(sbuf, set);
+			sub.add(Utils.mapencn(sbuf));
+		    }
+		}
+		if(!sub.isEmpty())
+		    rbuf.put("sub", sub.toArray(new Object[0]));
+		abuf.add(Utils.mapencn(rbuf));
 	    }
 	    buf.put("icons", abuf.toArray(new Object[0]));
-
+	    
 	    dst.addbytes(sig);
 	    dst.adduint8(3);
 	    dst.addlist(Utils.mapencn(buf));
 	}
-
-	public static Settings loadold(Message buf, UI ui) {
-	    if(!Arrays.equals(buf.bytes(sig.length), sig))
-		throw(new Message.FormatError("Invalid signature"));
-	    int ver = buf.uint8();
-	    if((ver < 1) || (ver > 2))
-		throw(new Message.FormatError("Unknown version: " + ver));
-	    Settings ret = new Settings();
-	    ret.tag = buf.int32();
-	    if(ver >= 2)
-		ret.notify = (buf.uint8() != 0);
-	    while(true) {
-		String resnm = buf.string();
-		if(resnm.equals(""))
-		    break;
-		int resver = buf.int16();
-		Resource.Spec res = new Resource.Spec(null, resnm, resver);
-		Setting set = new Setting(res);
-		boolean setdef = false;
-		data: while(true) {
-		    int datum = buf.uint8();
-		    switch(datum) {
-		    case (int)'s':
-			set.show = (buf.uint8() != 0);
-			break;
-		    case (int)'d':
-			set.defshow = (buf.uint8() != 0);
-			setdef = true;
-			break;
-		    case (int)'n':
-			set.notify = (buf.uint8() != 0);
-			break;
-		    case (int)'R':
-			set.resns = buf.string();
-			break;
-		    case (int)'W':
-			try {
-			    set.filens = Utils.path(buf.string());
-			} catch(RuntimeException e) {
-			    new Warning(e, "could not read path").issue();
-			}
-			break;
-		    case 0:
-			break data;
-		    default:
-			throw(new Message.FormatError("Unknown datum: " + datum));
-		    }
-		}
-		if(!setdef)
-		    set.defshow = set.show;
-		ret.settings.put(res.name, set);
+	
+	private static void parseset(Setting set, Map<Object, Object> data) {
+	    set.show    = Utils.bv(data.getOrDefault("s", 0));
+	    set.defshow = Utils.bv(data.getOrDefault("d", 0));
+	    set.notify  = Utils.bv(data.getOrDefault("n", 0));
+	    set.resns   = (String)data.getOrDefault("R", null);
+	    if(data.containsKey("m")) {
+		set.markset = true;
+		set.mark = Utils.bv(data.get("m"));
 	    }
-	    Radar.addCustomSettings(ret.settings, ui);
-	    return(ret);
+	    try {
+		set.filens = Utils.path((String)data.getOrDefault("W", null));
+	    } catch(RuntimeException e) {
+		new Warning(e, "could not read path").issue();
+	    }
 	}
-
-	public static Settings load(Message blob, UI ui) {
+	
+	public void load(Message blob, UI ui) {
 	    if(!Arrays.equals(blob.bytes(sig.length), sig))
 		throw(new Message.FormatError("Invalid signature"));
 	    int ver = blob.uint8();
 	    if((ver < 3) || (ver > 3))
 		throw(new Message.FormatError("Unknown version: " + ver));
-	    Settings ret = new Settings();
 	    Map<Object, Object> root = Utils.mapdecn(blob.tto());
-	    ret.tag = Utils.iv(root.get("tag"));
-	    ret.notify = Utils.bv(root.getOrDefault("notify", 0));
+	    this.tag = Utils.iv(root.get("tag"));
+	    this.notify = Utils.bv(root.getOrDefault("notify", 0));
+	    Loader l = new Loader();
 	    for(Object eicon : (Object[])root.get("icons")) {
 		Map<Object, Object> icon = Utils.mapdecn(eicon);
 		Object[] eres = (Object[])icon.get("res");
-		Resource.Spec res = new Resource.Spec(null, (String)eres[0], Utils.iv(eres[1]));
-		Setting set = new Setting(res);
-		set.show    = Utils.bv(icon.getOrDefault("s", 0));
-		set.defshow = Utils.bv(icon.getOrDefault("d", 0));
-		set.notify  = Utils.bv(icon.getOrDefault("n", 0));
-		set.resns   = (String)icon.getOrDefault("R", null);
-		if(icon.containsKey("m")) {
-		    set.markset = true;
-		    set.mark = Utils.bv(icon.get("m"));
+		ResID res = new ResID(new Resource.Saved(Resource.remote(), (String)eres[0], Utils.iv(eres[1])),
+		    (eres.length > 2) ? (byte[])eres[2] : new byte[0]);
+		Collection<Setting> sets = new ArrayList<>();
+		Setting set = new Setting(res.res, Icon.nilid);
+		parseset(set, icon);
+		sets.add(set);
+		if(icon.containsKey("sub")) {
+		    for(Object esub : (Object[])icon.get("sub")) {
+			Map<Object, Object> sub = Utils.mapdecn(esub);
+			set = new Setting(res.res, (Object[])sub.get("id"));
+			parseset(set, sub);
+			sets.add(set);
+		    }
 		}
-		try {
-		    set.filens = Utils.path((String)icon.getOrDefault("W", null));
-		} catch(RuntimeException e) {
-		    new Warning(e, "could not read path").issue();
-		}
-		ret.settings.put(res.name, set);
+		l.load.add(res);
+		l.resolve.put(res, sets);
 	    }
-	    Radar.addCustomSettings(ret.settings, ui);
-	    return(ret);
+	    Radar.addCustomSettings(l, ui);
+	    l.submit();
+	}
+	
+	public void save() {
+	    if(ResCache.global == null)
+		return;
+	    try(StreamMessage fp = new StreamMessage(ResCache.global.store(filename))) {
+		save(fp);
+	    } catch(Exception e) {
+		new Warning(e, "failed to store icon-conf").issue();
+	    }
+	}
+	
+	private boolean saveagain = false, saving = false;
+	private void dsave0() {
+	    save();
+	    synchronized(this) {
+		if(saveagain) {
+		    Defer.later(this::dsave0, null);
+		    saveagain = false;
+		} else {
+		    saving = false;
+		}
+	    }
+	}
+	
+	public void dsave() {
+	    synchronized(this) {
+		if(!saving) {
+		    Defer.later(this::dsave0, null);
+		    saving = true;
+		} else {
+		    saveagain = true;
+		}
+	    }
+	}
+	
+	public static Settings load(UI ui, String name) throws IOException {
+	    if(ResCache.global == null)
+		return(new Settings(ui, name));
+	    try(StreamMessage fp = new StreamMessage(ResCache.global.fetch(name))) {
+		Settings ret = new Settings(ui, name);
+		ret.load(fp, ui);
+		return(ret);
+	    } catch(FileNotFoundException e) {
+	    }
+	    return(new Settings(ui, name));
 	}
     }
-
+    
     public static class NotificationSetting {
 	public final String name, res;
 	public final Path wav;
-
+	
 	private NotificationSetting(String name, String res, Path wav) {this.name = name; this.res = res; this.wav = wav;}
 	public NotificationSetting(String name, String res) {this(name, res, null);}
 	public NotificationSetting(String name, Path wav)   {this(name, null, wav);}
 	public NotificationSetting(Path wav) {this(wav.getFileName().toString(), wav);}
-
+	
 	public boolean act(Setting conf) {
 	    return(Utils.eq(conf.resns, this.res) && Utils.eq(conf.filens, wav));
 	}
-
+	
 	public static final NotificationSetting nil = new NotificationSetting("None", null, null);
 	public static final NotificationSetting other = new NotificationSetting("Select file...", null, null);
 	public static final List<NotificationSetting> builtin;
-
+	
 	static {
 	    List<NotificationSetting> buf = new ArrayList<>();
 	    buf.add(new NotificationSetting("Bell 1", "sfx/hud/mmap/bell1"));
@@ -440,29 +720,33 @@ public class GobIcon extends GAttrib {
 	    builtin = buf;
 	}
     }
-
+    
     public static class SettingsWindow extends WindowX {
 	public final Settings conf;
-	private final Runnable save;
 	private final PackCont.LinPack cont;
 	private final IconList list;
 	private Widget setbox;
 	private final CheckBox toggleAll;
 	private GobIconCategoryList.GobCategory category = GobIconCategoryList.GobCategory.ALL;
- 
-	public static class Icon {
+	
+	public static class ListIcon {
 	    public final Setting conf;
-	    public String name;
+	    public final String name;
+	    public final Object[] id;
 	    public Text tname = null;
 	    public Text tresnm = null;
-
-	    public Icon(Setting conf) {this.conf = conf;}
+	    
+	    public ListIcon(Setting conf) {
+		this.conf = conf;
+		this.name = conf.icon.name();
+		this.id = conf.icon.id();
+	    }
 	    
 	    //TODO: check for proper place to use
 	    private Tex img = null;
 	    public Tex img() {
 		if(this.img == null) {
-		    this.img = tex(conf.res.loadsaved(Resource.remote()).layer(Resource.imgc).img);
+		    this.img = tex(conf.res.get().layer(Resource.imgc).img);
 		}
 		return(this.img);
 	    }
@@ -476,74 +760,63 @@ public class GobIcon extends GAttrib {
 		return(new TexI(PUtils.convolve(img, tsz, filter)));
 	    }
 	}
-
+	
 	private <T> Consumer<T> andsave(Consumer<T> main) {
-	    return(val -> {main.accept(val); if(save != null) save.run();});
+	    return(val -> {main.accept(val); conf.dsave();});
 	}
- 
+	
 	private static final Text.Foundry elf = CharWnd.attrf;
 	private static final int elh = elf.height() + UI.scale(2);
-	public class IconList extends SSearchBox<Icon, IconList.IconLine> {
-	    private List<Icon> ordered = Collections.emptyList();
-	    private List<Icon> categorized = Collections.emptyList();
-	    private Map<String, Setting> cur = null;
+	public class IconList extends SSearchBox<ListIcon, IconList.IconLine> {
+	    private List<ListIcon> ordered = Collections.emptyList();
+	    private List<ListIcon> categorized = Collections.emptyList();
+	    private Map<Setting.ID, Setting> cur = null;
 	    private boolean reorder = false;
-
+	    
 	    private IconList(Coord sz) {
 		super(sz, elh);
 	    }
-
-	    public class IconLine extends SListWidget.ItemWidget<Icon> {
-		public IconLine(Coord sz, Icon icon) {
+	    
+	    public class IconLine extends SListWidget.ItemWidget<ListIcon> {
+		public IconLine(Coord sz, ListIcon icon) {
 		    super(IconList.this, sz, icon);
 		    Widget prev;
 		    prev = adda(new CheckBox("").state(() -> icon.conf.notify).set(andsave(val -> icon.conf.notify = val)).settip("Notify"),
-				sz.x - UI.scale(2) - (sz.y / 2), sz.y / 2, 0.5, 0.5);
+			sz.x - UI.scale(2) - (sz.y / 2), sz.y / 2, 0.5, 0.5);
 		    prev = adda(new CheckBox("").state(() -> icon.conf.show).set(andsave(val -> {icon.conf.show = val;updateAllCheckbox();})).settip("Display"),
-				prev.c.x - UI.scale(2) - (sz.y / 2), sz.y / 2, 0.5, 0.5);
-		    add(SListWidget.IconText.of(Coord.of(prev.c.x - UI.scale(2), sz.y), () -> item.conf.resource()), Coord.z);
+			prev.c.x - UI.scale(2) - (sz.y / 2), sz.y / 2, 0.5, 0.5);
+		    add(SListWidget.IconText.of(Coord.of(prev.c.x - UI.scale(2), sz.y), item.conf.icon::image, item.conf.icon::name), Coord.z);
 		}
 	    }
-
-	    protected boolean searchmatch(Icon icon, String text) {
+	    
+	    protected boolean searchmatch(ListIcon icon, String text) {
 		return((icon.name != null) &&
-		       (icon.name.toLowerCase().indexOf(text.toLowerCase()) >= 0));
+		    (icon.name.toLowerCase().indexOf(text.toLowerCase()) >= 0));
 	    }
-	    protected List<Icon> allitems() {return(categorized);}
-	    protected IconLine makeitem(Icon icon, int idx, Coord sz) {return(new IconLine(sz, icon));}
-
+	    protected List<ListIcon> allitems() {return(categorized);}
+	    protected IconLine makeitem(ListIcon icon, int idx, Coord sz) {return(new IconLine(sz, icon));}
+	    
 	    public void tick(double dt) {
-		Map<String, Setting> cur = this.cur;
+		Map<Setting.ID, Setting> cur = this.cur;
 		if(cur != conf.settings) {
 		    cur = conf.settings;
-		    ArrayList<Icon> ordered = new ArrayList<>(cur.size());
+		    ArrayList<ListIcon> ordered = new ArrayList<>(cur.size());
 		    for(Setting conf : cur.values())
-			ordered.add(new Icon(conf));
+			ordered.add(new ListIcon(conf));
 		    this.cur = cur;
 		    this.ordered = ordered;
-		    reorder = true;
+		    this.reorder = true;
 		}
-		if(reorder) {
-		    reorder = false;
-		    for(Icon icon : ordered) {
-			if(icon.name == null) {
-			    try {
-				Resource.Tooltip name = icon.conf.resource().layer(Resource.tooltip);
-				icon.name = (name == null) ? "???" : name.t;
-			    } catch(Loading l) {
-				reorder = true;
-			    }
-			}
-		    }
+		if(this.reorder) {
+		    this.reorder = false;
 		    Collections.sort(ordered, (a, b) -> {
-			    if((a.name == null) && (b.name == null))
-				return(0);
-			    if(a.name == null)
-				return(1);
-			    if(b.name == null)
-				return(-1);
-			    return(a.name.compareTo(b.name));
-			});
+			int c;;
+			if((c = a.name.compareTo(b.name)) != 0)
+			    return(c);
+			if((c = Utils.compare(a.id, b.id)) != 0)
+			    return(c);
+			return(0);
+		    });
 		    categorized = list.ordered.stream()
 			.filter(category::matches)
 			.collect(Collectors.toList());
@@ -563,16 +836,15 @@ public class GobIcon extends GAttrib {
 		if(ev.getKeyCode() == java.awt.event.KeyEvent.VK_SPACE) {
 		    if(sel != null) {
 			sel.conf.show = !sel.conf.show;
-			if(save != null)
-			    save.run();
+			conf.dsave();
 			updateAllCheckbox();
 		    }
 		    return(true);
 		}
 		return(super.keydown(ev));
 	    }
-
-	    public void change(Icon icon) {
+	    
+	    public void change(ListIcon icon) {
 		super.change(icon);
 		if(setbox != null) {
 		    setbox.destroy();
@@ -583,40 +855,40 @@ public class GobIcon extends GAttrib {
 		}
 	    }
 	}
-
+	
 	public class IconSettings extends Widget {
 	    public final Setting conf;
 	    public final NotifBox nb;
-
+	    
 	    public IconSettings(int w, Setting conf) {
 		super(Coord.z);
 		this.conf = conf;
 		Widget prev = add(new CheckBox("Display").state(() -> conf.show).set(andsave(val -> conf.show = val)),
-				  0, 0);
+		    0, 0);
 		add(new CheckBox("Notify").state(() -> conf.notify).set(andsave(val -> conf.notify = val)),
 		    w / 2, 0);
 		Button pb = new Button(UI.scale(50), "Play") {
-			protected void depress() {}
-			protected void unpress() {}
-			public void click() {play();}
-		    };
+		    protected void depress() {}
+		    protected void unpress() {}
+		    public void click() {play();}
+		};
 		prev = add(new Label("Sound to play on notification:"), prev.pos("bl").adds(0, 5));
 		nb = new NotifBox(w - pb.sz.x - UI.scale(15));
 		addhl(prev.pos("bl").adds(0, 2), w, prev = Frame.with(nb, false), pb);
 		if(conf.getmarkablep()) {
 		    add(new CheckBox("Place permanent marker")
-			.state(() -> conf.markset ? conf.mark : conf.getmarkp())
-			.set(andsave(val -> {conf.markset = true; conf.mark = val;})),
+			    .state(() -> conf.markset ? conf.mark : conf.getmarkp())
+			    .set(andsave(val -> {conf.markset = true; conf.mark = val;})),
 			prev.pos("bl").adds(0, 5));
 		}
 		pack();
 	    }
-
-	    public class NotifBox extends Dropbox<NotificationSetting> {
+	    
+	    public class NotifBox extends SDropBox<NotificationSetting, Widget> {
 		private final List<NotificationSetting> items = new ArrayList<>();
-
+		
 		public NotifBox(int w) {
-		    super(w, 8, UI.scale(20));
+		    super(w, UI.scale(160), UI.scale(20));
 		    items.add(NotificationSetting.nil);
 		    for(NotificationSetting notif : NotificationSetting.builtin)
 			items.add(notif);
@@ -625,36 +897,32 @@ public class GobIcon extends GAttrib {
 		    items.add(NotificationSetting.other);
 		    for(NotificationSetting item : items) {
 			if(item.act(conf)) {
-			    sel = item;
+			    change(item);
 			    break;
 			}
 		    }
 		}
-
-		protected NotificationSetting listitem(int idx) {return(items.get(idx));}
-		protected int listitems() {return(items.size());}
-
-		protected void drawitem(GOut g, NotificationSetting item, int idx) {
-		    g.atext(item.name, Coord.of(0, g.sz().y / 2), 0.0, 0.5);
-		}
-
+		
+		protected List<NotificationSetting> items() {return(items);}
+		protected Widget makeitem(NotificationSetting item, int idx, Coord sz) {return(SListWidget.TextItem.of(sz, Text.std, () -> item.name));}
+		
 		private void selectwav() {
 		    java.awt.EventQueue.invokeLater(() -> {
-			    JFileChooser fc = new JFileChooser();
-			    fc.setFileFilter(new FileNameExtensionFilter("PCM wave file", "wav"));
-			    if(fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
-				return;
-			    for(Iterator<NotificationSetting> i = items.iterator(); i.hasNext();) {
-				NotificationSetting item = i.next();
-				if(item.wav != null)
-				    i.remove();
-			    }
-			    NotificationSetting ws = new NotificationSetting(fc.getSelectedFile().toPath());
-			    items.add(items.indexOf(NotificationSetting.other), ws);
-			    change(ws);
-			});
+			JFileChooser fc = new JFileChooser();
+			fc.setFileFilter(new FileNameExtensionFilter("PCM wave file", "wav"));
+			if(fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
+			    return;
+			for(Iterator<NotificationSetting> i = items.iterator(); i.hasNext();) {
+			    NotificationSetting item = i.next();
+			    if(item.wav != null)
+				i.remove();
+			}
+			NotificationSetting ws = new NotificationSetting(fc.getSelectedFile().toPath());
+			items.add(items.indexOf(NotificationSetting.other), ws);
+			change(ws);
+		    });
 		}
-
+		
 		public void change(NotificationSetting item) {
 		    super.change(item);
 		    if(item == NotificationSetting.other) {
@@ -662,12 +930,11 @@ public class GobIcon extends GAttrib {
 		    } else {
 			conf.resns = item.res;
 			conf.filens = item.wav;
-			if(save != null)
-			    save.run();
+			SettingsWindow.this.conf.dsave();
 		    }
 		}
 	    }
-
+	    
 	    private void play() {
 		NotificationSetting sel = nb.sel;
 		if(sel == null) sel = NotificationSetting.nil;
@@ -677,11 +944,10 @@ public class GobIcon extends GAttrib {
 		    wavnotif(sel.wav).accept(ui);
 	    }
 	}
-
-	public SettingsWindow(Settings conf, Runnable save) {
+	
+	public SettingsWindow(Settings conf) {
 	    super(Coord.z, "Icon settings");
 	    this.conf = conf;
-	    this.save = save;
 	    PackCont.LinPack.VPack left = new PackCont.LinPack.VPack();
 	    PackCont.LinPack root;
 	    add(root = new PackCont.LinPack.HPack(), Coord.z).margin(UI.scale(5)).packpar(true);
@@ -692,12 +958,11 @@ public class GobIcon extends GAttrib {
 		@Override
 		public void changed(boolean val) {
 		    list.items().forEach(icon -> icon.conf.show = val);
-		    if(save != null)
-			save.run();
+		    conf.dsave();
 		}}, 0);
 	    list = cont.last(new IconList(UI.scale(250, 500)), 0);
 	    
-	    left.last(new GobIconCategoryList(UI.scale(250), 8, elh){
+	    left.last(new GobIconCategoryList(UI.scale(250), 8, elh) {
 		@Override
 		public void change(GobIconCategoryList.GobCategory item) {
 		    super.change(item);
@@ -708,41 +973,43 @@ public class GobIcon extends GAttrib {
 	    
 	    left.last(new HRuler(list.sz.x), 0);
 	    left.last(new CheckBox("Notification on newly seen icons") {
-		    {this.a = conf.notify;}
-
-		    public void changed(boolean val) {
-			conf.notify = val;
-			if(save != null)
-			    save.run();
-		    }
-		}, UI.scale(5));
+		{this.a = conf.notify;}
+		
+		public void changed(boolean val) {
+		    conf.notify = val;
+		    conf.dsave();
+		}
+	    }, UI.scale(5));
 	    cont.pack();
 	    left.pack();
 	    root.pack();
 	    updateAllCheckbox();
 	}
- 
+	
 	private void updateAllCheckbox() {
 	    if(toggleAll == null) {
 		return;
 	    }
-	    List<? extends Icon> items = list != null ? list.items() : null;
+	    List<? extends ListIcon> items = list != null ? list.items() : null;
 	    toggleAll.a = items != null
 		&& !items.isEmpty()
 		&& items.stream().allMatch(icon -> icon.conf.show);
 	}
     }
-
+    
     @OCache.DeltaType(OCache.OD_ICON)
     public static class $icon implements OCache.Delta {
 	public void apply(Gob g, OCache.AttrDelta msg) {
 	    int resid = msg.uint16();
-	    Indir<Resource> res;
 	    if(resid == 65535) {
 		g.delattr(GobIcon.class);
 	    } else {
+		Indir<Resource> res = OCache.Delta.getres(g, resid);
 		int ifl = msg.uint8();
-		g.setattr(new GobIcon(g, OCache.Delta.getres(g, resid)));
+		byte[] sdt = msg.bytes();
+		GobIcon cur = g.getattr(GobIcon.class);
+		if((cur == null) || (cur.res != res) || !Arrays.equals(cur.sdt, sdt))
+		    g.setattr(new GobIcon(g, OCache.Delta.getres(g, resid), sdt));
 	    }
 	}
     }

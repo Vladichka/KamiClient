@@ -1,6 +1,7 @@
 package haven;
 
 import me.ender.ContainerInfo;
+import me.ender.gob.KinInfo;
 
 import java.util.*;
 
@@ -30,7 +31,7 @@ public enum GobTag {
     MENU, PICKUP, HIDDEN;
     
     private static final String[] AGGRO = {
-        "/bear", "/boar", "/troll", "/wolverine", "/badger", "/adder", "/wolf", "/walrus", "/lynx", "/rat/caverat", "/moose", 
+        "/bear", "/boar", "/troll", "/wolverine", "/badger", "/adder", "/wolf", "/walrus", "/lynx", "/rat/caverat", "/moose",
         "/mammoth", "/goat/wildgoat", "/spermwhale", "/orca"
     };
     
@@ -75,8 +76,8 @@ public enum GobTag {
                 try {
                     List<String> list = new ArrayList<>();
                     for (Gob.Overlay overlay : gob.ols) {
-                        if(overlay != null && overlay.res != null) {
-                            list.add(overlay.res.get().name);
+                        if(overlay != null && overlay.spr != null && overlay.spr.res != null) {
+                            list.add(overlay.spr.res.name);
                         }
                     }
                     ols = list;
@@ -84,7 +85,7 @@ public enum GobTag {
                     gob.tagsUpdated();
                 }
             }
-    
+            
             if(name.startsWith("gfx/terobjs/trees")) {
                 if(name.endsWith("log") || name.endsWith("oldtrunk")) {
                     tags.add(LOG);
@@ -171,6 +172,7 @@ public enum GobTag {
             if("Water".equals(gob.contents())) {
                 tags.add(HAS_WATER);
             }
+            
             if(anyOf(tags, HERB, CRITTER, GEM, ARROW)) {
                 tags.add(PICKUP);
             }
@@ -178,7 +180,7 @@ public enum GobTag {
             if(anyOf(tags, DOMESTIC, HERB, TREE, BUSH)) {
                 tags.add(MENU);
             }
-    
+            
             ContainerInfo.get(name).ifPresent(container -> {
                 tags.add(CONTAINER);
                 if(container.isFull(sdt)) {
@@ -187,7 +189,7 @@ public enum GobTag {
                     tags.add(EMPTY);
                 }
             });
-    
+            
             Drawable d = gob.drawable;
             if(d != null) {
                 if(d.hasPose("/knock")) {
@@ -198,7 +200,7 @@ public enum GobTag {
                 }
             }
         }
-    
+        
         return tags;
     }
     

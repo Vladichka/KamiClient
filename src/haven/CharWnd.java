@@ -31,11 +31,13 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.IntStream;
+
 import haven.resutil.FoodInfo;
 import haven.resutil.Curiosity;
 import static haven.PUtils.*;
 
-public class CharWnd extends Window {
+public class CharWnd extends WindowX {
     public static final RichText.Foundry ifnd = new RichText.Foundry(Resource.remote(), java.awt.font.TextAttribute.FAMILY, "SansSerif", java.awt.font.TextAttribute.SIZE, UI.scale(9)).aa(true);
     public static final Text.Furnace catf = new BlurFurn(new TexFurn(new Text.Foundry(Text.fraktur, 25).aa(true), Window.ctex), UI.scale(3), UI.scale(2), new Color(96, 48, 0));
     public static final Text.Furnace failf = new BlurFurn(new TexFurn(new Text.Foundry(Text.fraktur, 25).aa(true), Resource.loadimg("gfx/hud/fontred")), UI.scale(3), UI.scale(2), new Color(96, 48, 0));
@@ -48,25 +50,27 @@ public class CharWnd extends Window {
     public static final Color every = new Color(255, 255, 255, 16), other = new Color(255, 255, 255, 32);
     public static final int width = UI.scale(255);
     public static final int height = UI.scale(260);
+    private final Tabs tabs;
+    private final IButton[] tabbtns;
     public BAttrWnd battr;
     public SAttrWnd sattr;
     public SkillWnd skill;
-    public FightWnd fight;
+    public FightWndEx fight;
     public WoundWnd wound;
     public QuestWnd quest;
     public final Tabs.Tab battrtab, sattrtab, skilltab, fighttab, woundtab, questtab;
     public int exp, enc;
-
+    
     public static class TabProxy extends AWidget {
 	public final Class<? extends Widget> tcl;
 	public final String id;
 	private Widget tab = null;
-
+	
 	public TabProxy(Class<? extends Widget> tcl, String id) {
 	    this.tcl = tcl;
 	    this.id = id;
 	}
-
+	
 	protected void added() {
 	    super.added();
 	    if(tab == null) {
@@ -82,12 +86,12 @@ public class CharWnd extends Window {
 		}
 	    }
 	}
-
+	
 	public void uimsg(String nm, Object... args) {
 	    tab.uimsg(nm, args);
 	}
     }
-
+    
     public <T> T getchild(Class<T> cl) {
 	T ret = super.getchild(cl);
 	if(ret != null)
@@ -100,7 +104,7 @@ public class CharWnd extends Window {
 	}
 	return(null);
     }
-
+    
     public static class RLabel<V> extends Label {
 	private final Supplier<V> val;
 	private final Function<V, String> fmt;
@@ -108,27 +112,27 @@ public class CharWnd extends Window {
 	private Coord oc;
 	private Color lc;
 	private V lv;
-
-        private RLabel(Supplier<V> val, Function<V, String> fmt, Function<V, Color> col, V ival) {
-            super(ival == null ? "" : fmt.apply(ival));
+	
+	private RLabel(Supplier<V> val, Function<V, String> fmt, Function<V, Color> col, V ival) {
+	    super(ival == null ? "" : fmt.apply(ival));
 	    this.val = val;
 	    this.fmt = fmt;
 	    this.col = col;
 	    this.lv = ival;
-            this.oc = oc;
+	    this.oc = oc;
 	    if((col != null) && (ival != null))
 		setcolor(lc = col.apply(ival));
-        }
-
-        public RLabel(Supplier<V> val, Function<V, String> fmt, Function<V, Color> col) {
+	}
+	
+	public RLabel(Supplier<V> val, Function<V, String> fmt, Function<V, Color> col) {
 	    this(val, fmt, col, null);
 	}
-
-        public RLabel(Supplier<V> val, Function<V, String> fmt, Color col) {
+	
+	public RLabel(Supplier<V> val, Function<V, String> fmt, Color col) {
 	    this(val, fmt, (Function<V, Color>)null);
 	    setcolor(col);
 	}
-
+	
 	private void update() {
 	    V v = val.get();
 	    if(!Utils.eq(v, lv)) {
@@ -143,7 +147,7 @@ public class CharWnd extends Window {
 		}
 	    }
 	}
-
+	
 	protected void attached() {
 	    super.attached();
 	    if(oc == null)
@@ -151,28 +155,28 @@ public class CharWnd extends Window {
 	    if(lv == null)
 		update();
 	}
-
+	
 	public void settext(String text) {
 	    super.settext(text);
 	    if(oc != null)
 		move(oc.add(-sz.x, 0));
 	}
-
+	
 	public void tick(double dt) {
 	    update();
 	}
     }
-
+    
     public static class LoadingTextBox extends RichTextBox {
 	private Indir<String> text = null;
-
+	
 	public LoadingTextBox(Coord sz, String text, RichText.Foundry fnd) {super(sz, text, fnd);}
 	public LoadingTextBox(Coord sz, String text, Object... attrs) {super(sz, text, attrs);}
-
+	
 	public void settext(Indir<String> text) {
 	    this.text = text;
 	}
-
+	
 	public void draw(GOut g) {
 	    if(text != null) {
 		try {
@@ -184,33 +188,33 @@ public class CharWnd extends Window {
 	    super.draw(g);
 	}
     }
-
+    
     @RName("chr")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
 	    return(new CharWnd(ui.sess.glob));
 	}
     }
-
+    
     public static <T extends Widget> T settip(T wdg, String resnm) {
 	wdg.tooltip = new Widget.PaginaTip(new Resource.Spec(Resource.local(), resnm));
 	return(wdg);
     }
-
+    
     public CharWnd(Glob glob) {
 	super(UI.scale(new Coord(300, 290)), "Character Sheet");
-
-	Tabs tabs = new Tabs(new Coord(15, 10), UI.scale(506, 315), this);
-        battrtab = tabs.add();
-        sattrtab = tabs.add();
+	
+	tabs = new Tabs(new Coord(15, 10), UI.scale(506, 315), this);
+	battrtab = tabs.add();
+	sattrtab = tabs.add();
 	skilltab = tabs.add();
 	fighttab = tabs.add();
 	woundtab = tabs.add();
 	questtab = tabs.add();
-
+	
 	{
 	    Widget prev;
-
+	    
 	    class TB extends IButton {
 		final Tabs.Tab tab;
 		TB(String nm, Tabs.Tab tab, String tip) {
@@ -218,33 +222,35 @@ public class CharWnd extends Window {
 		    this.tab = tab;
 		    settip(tip);
 		}
-
+		
 		public void click() {
 		    tabs.showtab(tab);
 		}
-
+		
 		protected void depress() {
 		    ui.sfx(Button.clbtdown.stream());
 		}
-
+		
 		protected void unpress() {
 		    ui.sfx(Button.clbtup.stream());
 		}
 	    }
-
+	    
 	    this.addhl(new Coord(tabs.c.x, tabs.c.y + tabs.sz.y + UI.scale(10)), tabs.sz.x,
-		new TB("battr", battrtab, "Base Attributes"),
-		new TB("sattr", sattrtab, "Abilities"),
-		new TB("skill", skilltab, "Lore & Skills"),
-		new TB("fgt",   fighttab, "Martial Arts & Combat Schools"),
-		new TB("wound", woundtab, "Health & Wounds"),
-		new TB("quest", questtab, "Quest Log")
+		tabbtns = new IButton[] {
+		    new TB("battr", battrtab, "Base Attributes"),
+		    new TB("sattr", sattrtab, "Abilities"),
+		    new TB("skill", skilltab, "Lore & Skills"),
+		    new TB("fgt", fighttab, "Martial Arts & Combat Schools"),
+		    new TB("wound", woundtab, "Health & Wounds"),
+		    new TB("quest", questtab, "Quest Log")
+		}
 	    );
 	}
-
+	
 	resize(contentsz().add(UI.scale(15, 10)));
     }
-
+    
     public void addchild(Widget child, Object... args) {
 	String place = (args[0] instanceof String) ? (((String)args[0]).intern()) : null;
 	if((place == "tab") || /* XXX: Remove me! */ Utils.eq(args[0], Coord.of(47, 47))) {
@@ -254,8 +260,8 @@ public class CharWnd extends Window {
 		sattr = sattrtab.add((SAttrWnd)child, Coord.z);
 	    } else if(child instanceof SkillWnd) {
 		skill = skilltab.add((SkillWnd)child, Coord.z);
-	    } else if(child instanceof FightWnd) {
-		fight = fighttab.add((FightWnd)child, Coord.z);
+	    } else if(child instanceof FightWndEx) {
+		fight = fighttab.add((FightWndEx)child, Coord.z);
 	    } else if(child instanceof WoundWnd) {
 		wound = woundtab.add((WoundWnd)child, Coord.z);
 	    } else if(child instanceof QuestWnd) {
@@ -265,14 +271,20 @@ public class CharWnd extends Window {
 	    } else {
 		throw(new RuntimeException("unknown tab widget: " + child));
 	    }
+	    updlayout();
 	} else if(place == "fmg") {
-	    /* XXX: Remove me! */
-	    fight = fighttab.add((FightWnd)child, 0, 0);
+	    fight = fighttab.add((FightWndEx)child, 0, 0);
 	} else {
 	    super.addchild(child, args);
 	}
     }
-
+    
+    private void updlayout() {
+	tabs.pack();
+	resize(contentsz().add(UI.scale(15, 10)));
+	Widget.poshl(new Coord(tabs.c.x, tabs.c.y + tabs.sz.y + UI.scale(10)), tabs.sz.x, tabbtns);
+    }
+    
     public void uimsg(String nm, Object... args) {
 	if(nm == "attr") {
 	    int a = 0;
@@ -288,6 +300,75 @@ public class CharWnd extends Window {
 	    enc = Utils.iv(args[0]);
 	} else {
 	    super.uimsg(nm, args);
+	}
+    }
+    
+    public Glob.CAttr findattr(String name) {
+	for (SAttrWnd.SAttr skill : this.sattr.attrs) {
+	    if(name.equals(skill.attr.nm)) {
+		return skill.attr;
+	    }
+	}
+	for (BAttrWnd.Attr stat : this.battr.attrs) {
+	    if(name.equals(stat.attr.nm)) {
+		return stat.attr;
+	    }
+	}
+	return null;
+    }
+    
+    public Glob.CAttr findattr(Resource res) {
+	for (SAttrWnd.SAttr skill : this.sattr.attrs) {
+	    if(res == skill.res) {
+		return skill.attr;
+	    }
+	}
+	for (BAttrWnd.Attr stat : this.battr.attrs) {
+	    if(res == stat.res) {
+		return stat.attr;
+	    }
+	}
+	return null;
+    }
+    
+    private int statIndex(Resource res) {
+	return Optional.ofNullable(this.battr)
+	    .map(x -> x.attrs)
+	    .map(attrs -> IntStream.range(0, attrs.size())
+		.filter(i -> attrs.get(i).res == res)
+		.findFirst()
+		.orElse(Integer.MAX_VALUE)
+	    ).orElse(Integer.MAX_VALUE);
+    }
+    
+    private int skillIndex(Resource res) {
+	return Optional.ofNullable(this.sattr)
+	    .map(x -> x.attrs)
+	    .map(attrs -> {
+		    int i = 0;
+		    for (SAttrWnd.SAttr attr : attrs) {
+			if(attr.res == res) {return i;}
+			i++;
+		    }
+		    return Integer.MAX_VALUE;
+		}
+	    ).orElse(Integer.MAX_VALUE);
+    }
+    
+    public int BY_PRIORITY(Resource r1, Resource r2 ) {
+	int b1 = statIndex(r1);
+	int b2 = statIndex(r2);
+	
+	if(b1 == b2) {
+	    b1 = skillIndex(r1);
+	    b2 = skillIndex(r2);
+	    if(b1 == b2) {
+		return r1.name.compareTo(r2.name);
+	    } else {
+		return Integer.compare(b1, b2);
+	    }
+	} else {
+	    return Integer.compare(b1, b2);
 	}
     }
 }

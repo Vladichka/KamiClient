@@ -1241,7 +1241,7 @@ public class OptWnd extends WindowX {
 		super.set(a);
 		if(ui.gui != null && ui.gui.chrwdg != null) {
 		    if(a) {
-			ui.gui.addcmeter(new FEPMeter(ui.gui.chrwdg.feps));
+			ui.gui.addcmeter(new FEPMeter(ui.gui.chrwdg.battr.feps));
 		    } else {
 			ui.gui.delcmeter(FEPMeter.class);
 		    }
@@ -1256,7 +1256,7 @@ public class OptWnd extends WindowX {
 		super.set(a);
 		if(ui.gui != null && ui.gui.chrwdg != null) {
 		    if(a) {
-			ui.gui.addcmeter(new HungerMeter(ui.gui.chrwdg.glut));
+			ui.gui.addcmeter(new HungerMeter(ui.gui.chrwdg.battr.glut));
 		    } else {
 			ui.gui.delcmeter(HungerMeter.class);
 		    }

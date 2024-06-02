@@ -333,6 +333,13 @@ public class Inventory extends Widget implements DTarget {
     }
     public void itemsChanged() {
 	if(ext != null) {ext.itemsChanged();}
+	GItem.ContentsWindow cnt = getparent(GItem.ContentsWindow.class);
+	if(cnt != null) {
+	    Inventory inv = cnt.cont.getparent(Inventory.class);
+	    if(inv != null) {
+		inv.itemsChanged();
+	    }
+	}
     }
     
     private void showDropCFG() {

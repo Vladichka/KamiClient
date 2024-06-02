@@ -85,7 +85,7 @@ public class CheckBox extends ACheckBox {
     }
     
     private String i10n(String text) {
-	return i10n ? L10N.label(text) : text;
+	return i10n() ? L10N.label(text) : text;
     }
     
     public static class Untranslated extends CheckBox {

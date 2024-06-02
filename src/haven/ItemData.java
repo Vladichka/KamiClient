@@ -20,15 +20,16 @@ import static haven.QualityList.SingleType.*;
 
 public class ItemData {
     public static final String INFO_CLASS_GILDING = "haven.res.ui.tt.slot.Slotted";
+    public static final String INFO_CLASS_SLOTS = "haven.res.ui.tt.slots.ISlots";
     private static final ItemData EMPTY = new ItemData();
     private static Gson gson;
     private static Map<String, ItemData> item_data = new LinkedHashMap<String, ItemData>(9, 0.75f, true) {
 	private static final long serialVersionUID = 1L;
-
+	
 	protected boolean removeEldestEntry(Map.Entry<String, ItemData> eldest) {
 	    return size() > 75;
 	}
-
+	
     };
     private Curiosity.Data curiosity;
     private FoodInfo.Data food;
@@ -43,28 +44,28 @@ public class ItemData {
     private ItemData(GItem item) {
 	this(item.info());
     }
-
+    
     private ItemData(List<ItemInfo> info) {
 	init(info);
     }
-
+    
     private ItemData() {}
-
+    
     public void init(List<ItemInfo> info) {
 	for (ItemInfo ii : info) {
 	    String className = ii.getClass().getCanonicalName();
 	    QualityList q = QualityList.make(ItemInfo.findall(QualityList.classname, info));
-
+	    
 	    if(ii instanceof Curiosity) {
 		curiosity = new Curiosity.Data((Curiosity) ii, q);
 	    } else if(ii instanceof FoodInfo){
 		food = new FoodInfo.Data((FoodInfo) ii, q);
 	    } else if("Gast".equals(className)){
-	        gast = new GastronomyData(ii, q);
-	    } else if("ISlots".equals(className)){
+		gast = new GastronomyData(ii, q);
+	    } else if(INFO_CLASS_SLOTS.equals(className)){
 		slots = SlotsData.make(ii);
-	    } else if("Slotted".equals(className)){
-	        gilding = SlottedData.make(ii, q);
+	    } else if(INFO_CLASS_GILDING.equals(className)){
+		gilding = SlottedData.make(ii, q);
 	    }
 	    
 	    Pair<Integer, Integer> a = ItemInfo.getArmor(info);
@@ -87,20 +88,20 @@ public class ItemData {
 	    }
 	}
     }
-
-    public static Tex longtip(Pagina pagina, Session sess) {
-        return longtip(pagina, sess, 0, 0);
+    
+    public static Tex longtip(Pagina pagina, Session sess, boolean widePagina) {
+	return longtip(pagina, sess, widePagina, 0, 0);
     }
     
-    public static Tex longtip(Pagina pagina, Session sess, int titleSize, int titleSpace) {
-	List<ItemInfo> infos = pagina.info();
+    public static Tex longtip(Pagina pagina, Session sess, boolean widePagina, int titleSize, int titleSpace) {
+	List<ItemInfo> infos = pagina.button().info();
 	if(infos == null || infos.isEmpty()) {
-	    return ItemData.get(pagina).longtip(pagina.res(), sess, titleSize, titleSpace);
+	    return ItemData.get(pagina).longtip(pagina.res(), sess, widePagina, titleSize, titleSpace);
 	}
-	return longtip(pagina.res(), infos, titleSize, titleSpace);
+	return longtip(pagina.res(), infos, widePagina, titleSize, titleSpace);
     }
-
-    private static Tex longtip(Resource res, List<ItemInfo> infos, int titleSize, int titleSpace) {
+    
+    private static Tex longtip(Resource res, List<ItemInfo> infos, boolean widePagina, int titleSize, int titleSpace) {
 	Resource.AButton ad = res.layer(Resource.action);
 	Resource.Pagina pg = res.layer(Resource.pagina);
 	Resource.Tooltip tip = res.layer(Resource.tooltip);
@@ -109,19 +110,25 @@ public class ItemData {
 	if(titleSize > 0) {
 	    tt = String.format("$size[%d]{%s}", titleSize, tt);
 	}
+	if(pg == null) {widePagina = false;}
 	
-	if(pg != null) {tt += "\n\n" + pg.text;}
-
+	if(widePagina) {
+	    tt += "\n\n" + pg.text;
+	    infos = infos.stream()
+		.filter(i -> !(i instanceof ItemInfo.Pagina))
+		.collect(Collectors.toList());
+	}
+	
 	BufferedImage img = MenuGrid.ttfnd.render(tt, UI.scale(300)).img;
-
+	
 	if(!infos.isEmpty()) {
 	    img = ItemInfo.catimgs(UI.scale(20), img, ItemInfo.longtip(infos));
 	}
 	return new TexI(img);
     }
-
-    private Tex longtip(Resource res, Session sess, int titleSize, int titleSpace) {
-	return longtip(res, iteminfo(sess), titleSize, titleSpace);
+    
+    private Tex longtip(Resource res, Session sess, boolean widePagina, int titleSize, int titleSpace) {
+	return longtip(res, iteminfo(sess), widePagina, titleSize, titleSpace);
     }
     
     public List<ItemInfo> iteminfo(Session sess) {
@@ -153,24 +160,24 @@ public class ItemData {
 	if(data == null) {data = EMPTY;}
 	return data;
     }
-
+    
     public static ItemData get(Pagina p){
-	List<ItemInfo> infos = p.info();
+	List<ItemInfo> infos = p.button().info();
 	if(infos == null || infos.isEmpty()){
 	    return ItemData.get(p.res().name);
 	}
-        return new ItemData(infos);
+	return new ItemData(infos);
     }
-
+    
     public static void actualize(GItem item, Pagina pagina) {
 	if(item.resname() == null) { return; }
-
+	
 	ItemData data = new ItemData(item);
 	String name = pagina.res().name;
 	item_data.put(name, data);
 	store(name, data);
     }
-
+    
     private static ItemData load(String name) {
 	ItemData data = parse(Config.loadFile(getFilename(name)));
 	if(data != null) {
@@ -178,15 +185,15 @@ public class ItemData {
 	}
 	return data;
     }
-
+    
     private static void store(String name, ItemData data) {
-        Config.saveFile(getFilename(name), getGson().toJson(data));
+	Config.saveFile(getFilename(name), getGson().toJson(data));
     }
-
+    
     private static String getFilename(String name) {
 	return "/item_data/" + name + ".json";
     }
-
+    
     private static ItemData parse(String json) {
 	ItemData data = null;
 	try {
@@ -195,7 +202,7 @@ public class ItemData {
 	}
 	return data;
     }
-
+    
     private static Gson getGson() {
 	if(gson == null) {
 	    GsonBuilder builder = new GsonBuilder();
@@ -206,7 +213,7 @@ public class ItemData {
 	}
 	return gson;
     }
-
+    
     public interface ITipData {
 	ItemInfo create(Session sess);
     }
@@ -235,7 +242,7 @@ public class ItemData {
     private static class ArmorData implements ITipData {
 	private final Integer hard;
 	private final Integer soft;
-    
+	
 	public ArmorData(Pair<Integer, Integer> armor, QualityList q) {
 	    QualityList.Quality single = q.single(Quality);
 	    if(single == null) {
@@ -254,7 +261,7 @@ public class ItemData {
     private static class GastronomyData implements ITipData {
 	private final double glut;
 	private final double fev;
-    
+	
 	public GastronomyData(ItemInfo data, QualityList q) {
 	    QualityList.Quality single = q.single(Quality);
 	    if(single == null) {
@@ -263,7 +270,7 @@ public class ItemData {
 	    glut = Reflect.getFieldValueDouble(data, "glut") / single.multiplier;
 	    fev = Reflect.getFieldValueDouble(data, "fev") / single.multiplier;
 	}
-    
+	
 	@Override
 	public ItemInfo create(Session sess) {
 	    return ItemInfo.make(sess, "ui/tt/gast", null, glut, fev);
@@ -273,17 +280,17 @@ public class ItemData {
     
     private static class AttrData implements ITipData {
 	private final Map<Resource, Integer> attrs;
-    
+	
 	public AttrData(Map<Resource, Integer> attrs) {
 	    this.attrs = attrs;
 	}
-    
+	
 	@Override
 	public ItemInfo create(Session sess) {
 	    Object[] params = params(sess);
 	    return ItemInfo.make(sess, "ui/tt/attrmod", params);
 	}
-    
+	
 	public Object[] params(Session sess) {
 	    Object[] params = new Object[2 * attrs.size() + 1];
 	    params[0] = sess.getresidf(Resource.remote().loadwait("ui/tt/attrmod"));
@@ -318,7 +325,7 @@ public class ItemData {
 		    }
 		));
 	}
-    
+	
 	public static AttrData make(Map<Resource, Integer> attrs) {
 	    if(attrs != null) {
 		return new AttrData(attrs);
@@ -328,30 +335,30 @@ public class ItemData {
     }
     
     private static class SlotsData implements ITipData {
-    
+	
 	private final int left;
 	private final double pmin;
 	private final double pmax;
 	private final Resource[] attrs;
-    
+	
 	public SlotsData(int left, double pmin, double pmax, Resource[] attrs) {
 	    this.left = left;
 	    this.pmin = pmin;
 	    this.pmax = pmax;
 	    this.attrs = attrs;
 	}
-    
+	
 	public static SlotsData make(ItemInfo info){
-            if(info!=null){
+	    if(info!=null){
 		int left = Reflect.getFieldValueInt(info, "left");
 		double pmin = Reflect.getFieldValueDouble(info, "pmin");
 		double pmax = Reflect.getFieldValueDouble(info, "pmax");
 		Resource[] attrres = (Resource[]) Reflect.getFieldValue(info, "attrs");
 		return new SlotsData(left, pmin, pmax, attrres);
 	    }
-            return null;
+	    return null;
 	}
-        
+	
 	@Override
 	public ItemInfo create(Session sess) {
 	    List<Object> params = new ArrayList<>();

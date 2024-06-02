@@ -2,14 +2,14 @@ package haven;
 
 public class HungerMeter extends Widget {
     private static final Tex bg = Resource.loadtex("gfx/hud/meter/custom/hunger");
-
-    private final CharWnd.GlutMeter glut;
-
-    public HungerMeter(CharWnd.GlutMeter glut) {
+    
+    private final BAttrWnd.GlutMeter glut;
+    
+    public HungerMeter(BAttrWnd.GlutMeter glut) {
 	super(IMeter.fsz);
 	this.glut = glut;
     }
-
+    
     @Override
     public void draw(GOut g) {
 	if (glut.bg == null)
@@ -23,7 +23,7 @@ public class HungerMeter extends Widget {
 	g.chcolor();
 	g.image(bg, Coord.z);
     }
-
+    
     @Override
     public Object tooltip(Coord c, Widget prev) {
 	return glut.tooltip(c, prev);

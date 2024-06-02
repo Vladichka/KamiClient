@@ -21,6 +21,13 @@ public class WindowDetector {
 	Reactor.WINDOW.subscribe(WindowDetector::onWindowEvent);
     }
     
+    public static void process(Widget wdg, Widget parent) {
+	if(wdg instanceof Window) {
+	    detect((Window) wdg);
+	}
+	untranslate(wdg, parent);
+    }
+    
     public static void detect(Window window) {
 	synchronized (toDetect) {
 	    toDetect.add(window);
@@ -53,30 +60,25 @@ public class WindowDetector {
 	AnimalFarm.processCattleInfo(window);
     }
     
-    private static Widget.Factory convert(Widget parent, Widget.Factory f, Object[] cargs) {
+    private static void untranslate(Widget wdg, Widget parent) {
+	Label lbl;
 	if(parent instanceof Window) {
 	    Window window = (Window) parent;
-	    //TODO: extract to separate class
 	    String caption = window.caption();
-	    if("Milestone".equals(caption) && f instanceof Label.$_) {
-		String text = (String) cargs[0];
-		if(!text.equals("Make new trail:")) {
-		    return new Label.Untranslated.$_();
+	    if("Milestone".equals(caption) && wdg instanceof Label) {
+		lbl  = (Label) wdg;
+		if(!lbl.original.equals("Make new trail:")) {
+		    lbl.i10n(false);
 		}
 	    } else if(isProspecting(caption)) {
-		if(f instanceof Label.$_) {
-		    ((ProspectingWnd) parent).text((String) cargs[0]);
-		} else if(f instanceof Button.$Btn) {
-		    return new Button.$BtnSmall();
+		if(wdg instanceof Label) {
+		    lbl = (Label) wdg;
+		    ((ProspectingWnd) parent).text(lbl.original);
+		} else if(wdg instanceof Button) {
+		    ((Button) wdg).large(false);
 		}
 	    }
 	}
-	return f;
-    }
-    
-    public static Widget create(Widget parent, Widget.Factory f, UI ui, Object[] cargs) {
-	f = convert(parent, f, cargs);
-	return f.create(ui, cargs);
     }
     
     public static Widget newWindow(Coord sz, String title, boolean lg) {

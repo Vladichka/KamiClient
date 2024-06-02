@@ -8,7 +8,7 @@ import java.nio.*;
 import static haven.MCache.tilesz;
 
 /* >wdg: LandSurvey */
-@FromResource(name = "ui/surv", version = 42)
+@haven.FromResource(name = "ui/surv", version = 42)
 public class LandSurvey extends Window {
     final Coord ul, br;
     MapView mv;

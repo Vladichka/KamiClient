@@ -298,7 +298,7 @@ public class MapFile {
 	public long oid;
 	public Resource.Saved res;
 
-	public SMarkerOld(long seg, Coord tc, String nm, long oid, Resource.Spec res) {
+	public SMarkerOld(long seg, Coord tc, String nm, long oid, Resource.Saved res) {
 	    super(seg, tc, nm);
 	    this.oid = oid;
 	    this.res = res;

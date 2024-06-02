@@ -36,50 +36,49 @@ public class ResDrawable extends Drawable implements EquipTarget {
     public final Resource rres;
     public final Sprite spr;
     MessageBuf sdt;
-    // private double delay = 0; XXXRENDER
     private String resid;
-
+    
     public ResDrawable(Gob gob, Indir<Resource> res, Message sdt, boolean old) {
 	super(gob);
 	this.res = res;
 	this.sdt = new MessageBuf(sdt);
 	this.rres = res.get();
 	spr = Sprite.create(gob, rres, this.sdt.clone());
-	resid = makeResId();
 	if(old || true)
 	    spr.age();
+	resid = makeResId();
     }
-
+    
     public ResDrawable(Gob gob, Indir<Resource> res, Message sdt) {
 	this(gob, res, sdt, false);
     }
-
+    
     public ResDrawable(Gob gob, Resource res) {
 	this(gob, res.indir(), MessageBuf.nil);
     }
-
+    
     public void ctick(double dt) {
 	spr.tick(dt);
     }
-
+    
     public void gtick(Render g) {
 	spr.gtick(g);
     }
-
+    
     public void added(RenderTree.Slot slot) {
 	slot.add(spr);
 	super.added(slot);
     }
-
+    
     public void dispose() {
 	if(spr != null)
 	    spr.dispose();
     }
-
+    
     public Resource getres() {
 	return(rres);
     }
-
+    
     @Override
     public Indir<Resource> getires() {
 	return res;
@@ -90,12 +89,18 @@ public class ResDrawable extends Drawable implements EquipTarget {
     public String resId() {return resid;}
     
     private String makeResId() {
-	String name = res.get().name;
+	String name = rres.name;
 	String extra = null;
 	int state =  sdtnum();
 	if(name.endsWith("/pow")) {//fire
 	    if(state == 17 || state == 33) { // this fire is actually hearth fire
 		extra = "hearth";
+	    }
+	} else if(name.endsWith("/squirrelcache")) {//squirrel cache
+	    if(state == 5 || state == 6) {
+		extra = "full";
+	    } else {
+		extra = "empty";
 	    }
 	}
 	return extra == null ? name : String.format("%s[%s]", name, extra);
@@ -114,10 +119,6 @@ public class ResDrawable extends Drawable implements EquipTarget {
 	return 0;
     }
     
-    public Skeleton.Pose getpose() {
-	return(Skeleton.getpose(spr));
-    }
-
     public Gob.Placer placer() {
 	if(spr instanceof Gob.Placing) {
 	    Gob.Placer ret = ((Gob.Placing)spr).placer();
@@ -126,7 +127,7 @@ public class ResDrawable extends Drawable implements EquipTarget {
 	}
 	return(super.placer());
     }
-
+    
     public Supplier<? extends Pipe.Op> eqpoint(String nm, Message dat) {
 	if(spr instanceof EquipTarget) {
 	    Supplier<? extends Pipe.Op> ret = ((EquipTarget)spr).eqpoint(nm, dat);
@@ -138,7 +139,7 @@ public class ResDrawable extends Drawable implements EquipTarget {
 	    return(bo.from(null));
 	return(null);
     }
-
+    
     @OCache.DeltaType(OCache.OD_RES)
     public static class $cres implements OCache.Delta {
 	public void apply(Gob g, OCache.AttrDelta msg) {

@@ -42,6 +42,8 @@ import java.awt.event.InputEvent;
 import java.awt.image.BufferedImage;
 import java.util.*;
 import java.io.Serializable;
+import java.util.List;
+
 import static haven.Utils.el;
 import haven.render.Environment;
 import haven.render.Render;
@@ -49,10 +51,10 @@ import haven.render.Render;
 public class UI {
     public static int MOD_SHIFT = KeyMatch.S, MOD_CTRL = KeyMatch.C, MOD_META = KeyMatch.M, MOD_SUPER = KeyMatch.SUPER;
     enum KeyMod {
-        SHIFT(MOD_SHIFT), CTRL(MOD_CTRL), ALT(MOD_META);
-    
+	SHIFT(MOD_SHIFT), CTRL(MOD_CTRL), ALT(MOD_META);
+	
 	public final int mod;
- 
+	
 	KeyMod(int mod) {
 	    this.mod = mod;
 	}
@@ -78,42 +80,68 @@ public class UI {
     public final Loader loader;
     public final CommandQueue queue = new CommandQueue();
     private static final double scalef;
+    private final Object guiLock = new Object();
     public GameUI gui = null;
     
     {
 	lastevent = lasttick = Utils.rtime();
     }
-	
+    public Observable menuObservable = new Observable(){
+	@Override
+	public void notifyObservers(Object arg) {
+	    setChanged();
+	    super.notifyObservers(arg);
+	    clearChanged();
+	}
+    };
+    public final List<Widget> EXT_INVENTORIES = new LinkedList<>();
+    public void addInventory(Widget wdg) {
+	WindowX wnd = wdg.getparent(WindowX.class);
+	if(wnd == null) {return;}
+	String name = wnd.caption().toLowerCase();
+	if(name.contains("inventory")
+	    || name.contains("character sheet")
+	    || name.contains("belt")
+	    || name.contains("equipment")
+	    || name.contains("study")) {
+	    return;
+	}
+	EXT_INVENTORIES.add(wdg);
+    }
+    
+    public void remInventory(Widget wdg) {
+	EXT_INVENTORIES.remove(wdg);
+    }
     public interface Receiver {
 	public void rcvmsg(int widget, String msg, Object... args);
     }
-
+    
     public interface Runner {
 	public Runner run(UI ui) throws InterruptedException;
 	public default void init(UI ui) {}
 	public default String title() {return(null);}
-
+	
 	public static class Proxy implements Runner {
 	    public final Runner back;
-
+	    
 	    public Proxy(Runner back) {
 		this.back = back;
 	    }
-
+	    
 	    public Runner run(UI ui) throws InterruptedException {return(back.run(ui));}
 	    public void init(UI ui) {back.init(ui);}
 	    public String title() {return(back.title());}
 	}
     }
-
+    
     public interface Context {
 	void setmousepos(Coord c);
     }
-
+    
     public interface AfterDraw {
 	public void draw(GOut g);
     }
-
+    
     public void setgprefs(GSettings prefs) {
 	synchronized(this) {
 	    if(!Utils.eq(prefs, this.gprefs)) {
@@ -122,33 +150,33 @@ public class UI {
 	    }
 	}
     }
-
+    
     private class WidgetConsole extends Console {
 	{
 	    setcmd("q", new Command() {
-		    public void run(Console cons, String[] args) {
-			HackThread.tg().interrupt();
-		    }
-		});
+		public void run(Console cons, String[] args) {
+		    HackThread.tg().interrupt();
+		}
+	    });
 	    setcmd("lo", new Command() {
-		    public void run(Console cons, String[] args) {
-			sess.close();
-		    }
-		});
+		public void run(Console cons, String[] args) {
+		    sess.close();
+		}
+	    });
 	    setcmd("gl", new Command() {
-		    <T> void merd(GSettings.Setting<T> var, String val) {
-			setgprefs(gprefs.update(null, var, var.parse(val)));
-		    }
-
-		    public void run(Console cons, String[] args) throws Exception {
-			if(args.length < 3)
-			    throw(new Exception("usage: gl SETTING VALUE"));
-			GSettings.Setting<?> var = gprefs.find(args[1]);
-			if(var == null)
-			    throw(new Exception("No such setting: " + var));
-			merd(var, args[2]);
-		    }
-		});
+		<T> void merd(GSettings.Setting<T> var, String val) {
+		    setgprefs(gprefs.update(null, var, var.parse(val)));
+		}
+		
+		public void run(Console cons, String[] args) throws Exception {
+		    if(args.length < 3)
+			throw(new Exception("usage: gl SETTING VALUE"));
+		    GSettings.Setting<?> var = gprefs.find(args[1]);
+		    if(var == null)
+			throw(new Exception("No such setting: " + var));
+		    merd(var, args[2]);
+		}
+	    });
 	}
 	
 	private void findcmds(Map<String, Command> map, Widget wdg) {
@@ -161,41 +189,41 @@ public class UI {
 	    for(Widget ch = wdg.child; ch != null; ch = ch.next)
 		findcmds(map, ch);
 	}
-
+	
 	public Map<String, Command> findcmds() {
 	    Map<String, Command> ret = super.findcmds();
 	    findcmds(ret, root);
 	    return(ret);
 	}
     }
-
+    
     public static class UIException extends RuntimeException {
 	public String mname;
 	public Object[] args;
-
+	
 	public UIException(String message, String mname, Object... args) {
 	    super(message);
 	    this.mname = mname;
 	    this.args = args;
 	}
-
+	
 	public void printStackTrace(java.io.PrintStream out) {
 	    super.printStackTrace(out);
 	    out.printf("Message: %s; Arguments: %s\n", mname, Arrays.asList(args));
 	}
     }
-
+    
     public static class UIWarning extends Warning {
 	public String mname;
 	public Object[] args;
-
+	
 	public UIWarning(String message, String mname, Object... args) {
 	    super(message);
 	    this.mname = mname;
 	    this.args = args;
 	}
     }
-
+    
     public UI(Context uictx, Coord sz, Runner fun) {
 	this.uictx = uictx;
 	root = new RootWidget(this, sz);
@@ -210,7 +238,7 @@ public class UI {
 		throw(new NullPointerException());
 	}
     }
-
+    
     public static class Command implements Serializable {
 	private static final java.util.concurrent.atomic.AtomicInteger nextid = new java.util.concurrent.atomic.AtomicInteger(0);
 	public final int id = nextid.getAndIncrement();
@@ -219,18 +247,18 @@ public class UI {
 	public final Collection<Command> next = new ArrayList<>();
 	public final Collection<Command> wait = new ArrayList<>();
 	public final Runnable action;
-
+	
 	public Command(Runnable action) {
 	    this.action = action;
 	}
-
+	
 	public Command dep(int id, boolean bar) {
 	    deps.add(id);
 	    if(bar)
 		bars.add(id);
 	    return(this);
 	}
-
+	
 	private String fl(String id, Collection<?> l) {
 	    if(l.isEmpty())
 		return("");
@@ -242,32 +270,32 @@ public class UI {
 	    buf.append(")");
 	    return(buf.toString());
 	}
-
+	
 	public String toString() {
 	    return(String.format("#<cmd %d %s%s%s>", this.id, action, fl("deps", deps), fl("bars", bars)));
 	}
     }
-
+    
     public static class CommandException extends RuntimeException {
 	public final Command cmd;
-
+	
 	public CommandException(Command cmd, Throwable cause) {
 	    super(cause);
 	    this.cmd = cmd;
 	}
-
+	
 	public String getMessage() {
 	    return(String.format("error during ui command-handling: " + cmd));
 	}
     }
-
+    
     private static final boolean cmdjitter = false;
     private static final boolean cmddump = false;
     public class CommandQueue {
 	private final Map<Integer, Command> score = new HashMap<>();
-
+	
 	private CommandQueue() {}
-
+	
 	private void run(Command cmd) {
 	    if(cmdjitter) {
 		try {
@@ -285,13 +313,13 @@ public class UI {
 	    }
 	    finish(cmd);
 	}
-
+	
 	private void execute(Command cmd) {
 	    if(cmddump)
 		System.err.printf("exec: %s\n", cmd);
 	    loader.defer(() -> run(cmd), null);
 	}
-
+	
 	public void submit(Command cmd) {
 	    boolean ready = true;
 	    synchronized(this) {
@@ -316,7 +344,7 @@ public class UI {
 	    if(ready)
 		execute(cmd);
 	}
-
+	
 	public void finish(Command cmd) {
 	    if(cmddump)
 		System.err.printf("done: %s\n", cmd);
@@ -336,11 +364,11 @@ public class UI {
 		execute(next);
 	}
     }
-
+    
     public void setreceiver(Receiver rcvr) {
 	this.rcvr = rcvr;
     }
-	
+    
     public void bind(Widget w, int id) {
 	synchronized(widgets) {
 	    widgets.put(id, w);
@@ -348,13 +376,13 @@ public class UI {
 	    w.bound();
 	}
     }
-
+    
     public Widget getwidget(int id) {
 	synchronized(widgets) {
 	    return(widgets.get(id));
 	}
     }
-
+    
     public int widgetid(Widget wdg) {
 	synchronized(widgets) {
 	    Integer id = rwidgets.get(wdg);
@@ -363,13 +391,13 @@ public class UI {
 	    return(id);
 	}
     }
-
+    
     public void drawafter(AfterDraw ad) {
 	synchronized(afterdraws) {
 	    afterdraws.add(ad);
 	}
     }
-
+    
     public void tick() {
 	double now = Utils.rtime();
 	double delta = now - lasttick;
@@ -380,11 +408,11 @@ public class UI {
 	    gprefsdirty = false;
 	}
     }
-
+    
     public void gtick(Render out) {
 	root.gtick(out);
     }
-
+    
     public void draw(GOut g) {
 	root.draw(g);
 	synchronized(afterdraws) {
@@ -393,9 +421,9 @@ public class UI {
 	    afterdraws.clear();
 	}
     }
-
+    
     private Collection<Integer> or_deps = null, or_bars = null;
-
+    
     private void submitcmd(Command cmd) {
 	synchronized(queue) {
 	    if(or_deps != null) {
@@ -411,64 +439,66 @@ public class UI {
 	}
 	queue.submit(cmd);
     }
-
+    
     public class NewWidget implements Runnable, Serializable {
 	public final int id;
 	public final String typenm;
 	public final Object[] cargs;
 	private transient Widget.Factory type;
-
+	
 	private NewWidget(int id, Widget.Factory type, Object... cargs) {
 	    this.id = id;
 	    this.type = type;
 	    this.typenm = null;
 	    this.cargs = cargs;
 	}
-
+	
 	private NewWidget(int id, String type, Object... cargs) {
 	    this.id = id;
 	    this.typenm = type;
 	    this.cargs = cargs;
 	}
-
+	
 	private transient Widget wdg = null;
 	public void run() {
 	    if((type == null) && ((type = Widget.gettype3(typenm)) == null))
 		throw(new UIException("Bad widget name", typenm, cargs));
-	    if(wdg == null)
+	    if(wdg == null) {
 		wdg = type.create(UI.this, cargs);
+		if(wdg instanceof Window) {WindowDetector.detect((Window) wdg);}
+	    }
 	    synchronized(UI.this) {
 		wdg.attach(UI.this);
 		bind(wdg, id);
 	    }
 	}
-
+	
 	public String toString() {
 	    return(String.format("#<newwdg %d %s %s>", id, (typenm == null) ? type : typenm, Arrays.asList(cargs)));
 	}
     }
-
+    
     public void newwidget(int id, Widget.Factory type, Object... cargs) {
 	submitcmd(new Command(new NewWidget(id, type, cargs)).dep(id, true));
     }
-
+    
     public void newwidget(int id, String type, Object... cargs) throws InterruptedException {
 	submitcmd(new Command(new NewWidget(id, type, cargs)).dep(id, true));
     }
-
+    
     private final MultiMap<Integer, Integer> shadowchildren = new HashMultiMap<>();
     private final Map<Integer, Integer> shadowparents = new HashMap<>();
-
+    
     public class AddWidget implements Runnable, Serializable {
 	public final int id, parent;
 	public final Object[] pargs;
-
+	
 	private AddWidget(int id, int parent, Object... pargs) {
 	    this.id = id;
 	    this.parent = parent;
 	    this.pargs = pargs;
 	}
-
+	
 	public void run() {
 	    synchronized(UI.this) {
 		Widget wdg = getwidget(id);
@@ -478,14 +508,15 @@ public class UI {
 		if(pwdg == null)
 		    throw(new UIException(String.format("Null parent widget %d for %d (%s)", parent, id, wdg), null, pargs));
 		pwdg.addchild(wdg, pargs);
+		WindowDetector.process(wdg, pwdg);
 	    }
 	}
-
+	
 	public String toString() {
 	    return(String.format("#<addwdg %d @ %d %s>", id, parent, Arrays.asList(pargs)));
 	}
     }
-
+    
     public void addwidget(int id, int parent, Object... pargs) {
 	synchronized(shadowchildren) {
 	    Integer prev = shadowparents.put(id, parent);
@@ -495,63 +526,54 @@ public class UI {
 	    submitcmd(new Command(new AddWidget(id, parent, pargs)).dep(id, true).dep(parent, true));
 	}
     }
-
+    
     public void wdgbarrier(Collection<Integer> deps, Collection<Integer> bars) {
 	synchronized(queue) {
 	    or_deps = deps;
 	    or_bars = (bars == null) ? deps : bars;
 	}
     }
-
+    
     public void newwidgetp(int id, Widget.Factory type, int parent, Object[] pargs, Object... cargs) {
 	newwidget(id, type, cargs);
 	if(parent != -1)
 	    addwidget(id, parent, pargs);
     }
-
+    
     public void newwidgetp(int id, String type, int parent, Object[] pargs, Object... cargs) throws InterruptedException {
 	newwidget(id, type, cargs);
 	if(parent != -1)
 	    addwidget(id, parent, pargs);
     }
-
+    
     public abstract class Grab {
 	public final Widget wdg;
 	public Grab(Widget wdg) {this.wdg = wdg;}
 	public abstract void remove();
     }
-
+    
     public Grab grabmouse(Widget wdg) {
 	if(wdg == null) throw(new NullPointerException());
 	Grab g = new Grab(wdg) {
-		public void remove() {
-		    mousegrab.remove(this);
-		}
-	    };
-	//
-	ArrayList<Grab> gList = new ArrayList<>();
-	for (Grab gx : mousegrab ){
-	    if (gx.wdg == wdg)
-		gList.add(gx);
-	}
-	for (Grab gd : gList)
-	    gd.remove();
-	//
+	    public void remove() {
+		mousegrab.remove(this);
+	    }
+	};
 	mousegrab.addFirst(g);
 	return(g);
     }
-
+    
     public Grab grabkeys(Widget wdg) {
 	if(wdg == null) throw(new NullPointerException());
 	Grab g = new Grab(wdg) {
-		public void remove() {
-		    keygrab.remove(this);
-		}
-	    };
+	    public void remove() {
+		keygrab.remove(this);
+	    }
+	};
 	keygrab.addFirst(g);
 	return(g);
     }
-
+    
     private void removeid(Widget wdg) {
 	synchronized(widgets) {
 	    Integer id = rwidgets.get(wdg);
@@ -563,7 +585,7 @@ public class UI {
 	for(Widget child = wdg.child; child != null; child = child.next)
 	    removeid(child);
     }
-	
+    
     public void removed(Widget wdg) {
 	for(Iterator<Grab> i = mousegrab.iterator(); i.hasNext();) {
 	    Grab g = i.next();
@@ -576,19 +598,19 @@ public class UI {
 		i.remove();
 	}
     }
-
+    
     public void destroy(Widget wdg) {
 	removeid(wdg);
 	wdg.reqdestroy();
     }
-
+    
     public class DstWidget implements Runnable, Serializable {
 	public final int id;
-
+	
 	private DstWidget(int id) {
 	    this.id = id;
 	}
-
+	
 	public void run() {
 	    synchronized(UI.this) {
 		Widget wdg = getwidget(id);
@@ -596,12 +618,12 @@ public class UI {
 		    destroy(wdg);
 	    }
 	}
-
+	
 	public String toString() {
 	    return(String.format("#<dstwdg %d>", id));
 	}
     }
-
+    
     public void destroy(int id) {
 	synchronized(shadowchildren) {
 	    Integer parent = shadowparents.remove(id);
@@ -618,7 +640,7 @@ public class UI {
 	    submitcmd(cmd);
 	}
     }
-	
+    
     public void wdgmsg(Widget sender, String msg, Object... args) {
 	int id = widgetid(sender);
 	if(id < 0) {
@@ -628,18 +650,18 @@ public class UI {
 	if(rcvr != null)
 	    rcvr.rcvmsg(id, msg, args);
     }
-	
+    
     public class UiMessage implements Runnable, Serializable {
 	public final int id;
 	public final String msg;
 	public final Object[] args;
-
+	
 	private UiMessage(int id, String msg, Object[] args) {
 	    this.id = id;
 	    this.msg = msg;
 	    this.args = args;
 	}
-
+	
 	public void run() {
 	    Widget wdg = getwidget(id);
 	    if(wdg != null) {
@@ -650,22 +672,22 @@ public class UI {
 		throw(new UIException("Uimsg to non-existent widget " + id, msg, args));
 	    }
 	}
-
+	
 	public String toString() {
 	    return(String.format("#<wdgmsg %d %s %s>", id, msg, Arrays.asList(args)));
 	}
     }
-
+    
     public void uimsg(int id, String msg, Object... args) {
 	submitcmd(new Command(new UiMessage(id, msg, args)).dep(id, true));
     }
-
+    
     public static interface MessageWidget {
 	public static final Audio.Clip errsfx = Audio.resclip(Resource.local().loadwait("sfx/error"));
 	public static final Audio.Clip msgsfx = Audio.resclip(Resource.local().loadwait("sfx/msg"));
-
+	
 	public void msg(String msg, Color color, Audio.Clip sfx);
-
+	
 	public static MessageWidget find(Widget w) {
 	    for(Widget ch = w.child; ch != null; ch = ch.next) {
 		MessageWidget ret = find(ch);
@@ -677,26 +699,24 @@ public class UI {
 	    return(null);
 	}
     }
-
+    
     public void msg(String msg, Color color, Audio.Clip sfx) {
+	Reactor.IMSG.onNext(msg);
 	if(color == null)
 	    color = Color.WHITE;
 	MessageWidget h = MessageWidget.find(root);
 	if(h != null)
 	    h.msg(msg, color, sfx);
     }
-
+    
     public void error(String msg) {
 	msg(msg, new Color(192, 0, 0), MessageWidget.errsfx);
     }
-
+    
     public void msg(String msg) {
-	Reactor.IMSG.onNext(msg);
-	MessageWidget h = MessageWidget.find(root);
-	if(h != null)
-	    h.msg(msg);
+	msg(msg, Color.WHITE, MessageWidget.msgsfx);
     }
-
+    
     private void setmods(InputEvent ev) {
 	setmods(ev.getModifiersEx());
     }
@@ -709,9 +729,9 @@ public class UI {
 	modsuper = (mod & InputEvent.SUPER_DOWN_MASK) != 0;
 	*/
     }
-
+    
     private Grab[] c(Collection<Grab> g) {return(g.toArray(new Grab[0]));}
-
+    
     public void keydown(KeyEvent ev) {
 	setmods(ev);
 	for(Grab g : c(keygrab)) {
@@ -724,9 +744,8 @@ public class UI {
 		key = 0;
 	    root.globtype(key, ev);
 	}
-	root.processModDown(ev);
     }
-	
+    
     public void keyup(KeyEvent ev) {
 	setmods(ev);
 	for(Grab g : c(keygrab)) {
@@ -734,13 +753,12 @@ public class UI {
 		return;
 	}
 	root.keyup(ev);
-	root.processModUp(ev);
     }
-	
+    
     private Coord wdgxlate(Coord c, Widget wdg) {
 	return(c.sub(wdg.rootpos()));
     }
-	
+    
     public boolean dropthing(Widget w, Coord c, Object thing) {
 	if(w instanceof DropTarget) {
 	    if(((DropTarget)w).dropthing(c, thing))
@@ -755,12 +773,12 @@ public class UI {
 	}
 	return(false);
     }
-
+    
     public void mousedown(Coord c, int button) {
-        setmods(0);
+	setmods(0);
 	processMouseDown(c, button);
     }
-
+    
     public void mousedown(MouseEvent ev, Coord c, int button) {
 	setmods(ev);
 	processMouseDown(c, button);
@@ -776,10 +794,10 @@ public class UI {
     }
     
     public void mouseup(Coord c, int button) {
-        setmods(0);
+	setmods(0);
 	processMouseUp(c, button);
     }
-	
+    
     public void mouseup(MouseEvent ev, Coord c, int button) {
 	setmods(ev);
 	processMouseUp(c, button);
@@ -811,11 +829,11 @@ public class UI {
     public void mousehover(Coord c) {
 	root.mousehover(c, true);
     }
-
+    
     public void setmousepos(Coord c) {
 	uictx.setmousepos(c);
     }
-	
+    
     public void mousewheel(MouseEvent ev, Coord c, int amount) {
 	setmods(ev);
 	lcc = mc = c;
@@ -825,18 +843,18 @@ public class UI {
 	}
 	root.mousewheel(c, amount);
     }
-
+    
     public void mouseclick(MouseEvent ev, Coord c, int button, int count) {
-        setmods(ev);
-        lcc = mc = c;
-        for(Grab g : c(mousegrab)) {
-            if(g.wdg.mouseclick(wdgxlate(c, g.wdg), button, count))
-                return;
-        }
-        root.mouseclick(c, button, count);
+	setmods(ev);
+	lcc = mc = c;
+	for(Grab g : c(mousegrab)) {
+	    if(g.wdg.mouseclick(wdgxlate(c, g.wdg), button, count))
+		return;
+	}
+	root.mouseclick(c, button, count);
     }
     
-
+    
     public Resource getcurs(Coord c) {
 	for(Grab g : mousegrab) {
 	    Resource ret = g.wdg.getcurs(wdgxlate(c, g.wdg));
@@ -854,28 +872,28 @@ public class UI {
 	}
 	return curs != null && curs.name.equals(name);
     }
-
+    
     public static int modflags(InputEvent ev) {
 	int mod = ev.getModifiersEx();
 	return((((mod & InputEvent.SHIFT_DOWN_MASK) != 0) ? MOD_SHIFT : 0) |
-	       (((mod & InputEvent.CTRL_DOWN_MASK) != 0)  ? MOD_CTRL : 0) |
-	       (((mod & (InputEvent.META_DOWN_MASK | InputEvent.ALT_DOWN_MASK)) != 0) ? MOD_META : 0)
-	       /* (((mod & InputEvent.SUPER_DOWN_MASK) != 0) ? MOD_SUPER : 0) */);
+	    (((mod & InputEvent.CTRL_DOWN_MASK) != 0)  ? MOD_CTRL : 0) |
+	    (((mod & (InputEvent.META_DOWN_MASK | InputEvent.ALT_DOWN_MASK)) != 0) ? MOD_META : 0)
+	    /* (((mod & InputEvent.SUPER_DOWN_MASK) != 0) ? MOD_SUPER : 0) */);
     }
-
+    
     public int modflags() {
 	return((modshift ? MOD_SHIFT : 0) |
-	       (modctrl  ? MOD_CTRL  : 0) |
-	       (modmeta  ? MOD_META  : 0) |
-	       (modsuper ? MOD_SUPER : 0));
+	    (modctrl  ? MOD_CTRL  : 0) |
+	    (modmeta  ? MOD_META  : 0) |
+	    (modsuper ? MOD_SUPER : 0));
     }
-
+    
     public void message(String str, GameUI.MsgType type) {
 	if((cons!=null) && (gui!=null)){
 	    gui.msg(str, type);
 	}
     }
-
+    
     public void message(String str, Color msgColor) {
 	if((cons != null) && (gui != null)) {
 	    gui.msg(str, msgColor);
@@ -888,16 +906,16 @@ public class UI {
 	}
     }
     
-    public void message(String str, Color msgColor, Resource sfx) {
+    public void message(String str, Color msgColor, Audio.Clip sfx) {
 	if((cons != null) && (gui != null)) {
 	    gui.msg(str, msgColor, sfx);
 	}
     }
-
+    
     public Environment getenv() {
 	return(env);
     }
-
+    
     public void destroy() {
 	root.destroy();
 	audio.clear();
@@ -906,7 +924,7 @@ public class UI {
     public Optional<PathQueue> pathQueue() {
 	return (gui != null && gui.pathQueue != null) ? Optional.of(gui.pathQueue) : Optional.empty();
     }
-
+    
     public void sfx(Audio.CS clip) {
 	audio.aui.add(clip);
     }
@@ -916,7 +934,7 @@ public class UI {
     public void sfx(Resource clip) {
 	sfx(Audio.fromres(clip));
     }
-
+    
     public final Map<Audio.Clip, Double> lastmsgsfx = new HashMap<>();
     public void sfxrl(Audio.Clip clip) {
 	if(clip != null) {
@@ -928,67 +946,67 @@ public class UI {
 	    }
 	}
     }
-
+    
     public static double scale(double v) {
 	return(v * scalef);
     }
-
+    
     public static float scale(float v) {
 	return(v * (float)scalef);
     }
-
+    
     public static int scale(int v) {
 	return(Math.round(scale((float)v)));
     }
-
+    
     public static int rscale(double v) {
 	return((int)Math.round(v * scalef));
     }
-
+    
     public static Coord scale(Coord v) {
 	return(v.mul(scalef));
     }
-
+    
     public static Coord scale(int x, int y) {
 	return(scale(new Coord(x, y)));
     }
-
+    
     public static Coord rscale(double x, double y) {
 	return(new Coord(rscale(x), rscale(y)));
     }
-
+    
     public static Coord2d scale(Coord2d v) {
 	return(v.mul(scalef));
     }
-
+    
     static public Font scale(Font f, float size) {
 	return(f.deriveFont(scale(size)));
     }
-
+    
     public static <T extends Tex> ScaledTex<T> scale(T tex) {
 	return(new ScaledTex<T>(tex, UI.scale(tex.sz())));
     }
-
+    
     public static <T extends Tex> ScaledTex<T> scale(ScaledTex<T> tex) {
 	return(tex);
     }
-
+    
     public static double unscale(double v) {
 	return(v / scalef);
     }
-
+    
     public static float unscale(float v) {
 	return(v / (float)scalef);
     }
-
+    
     public static int unscale(int v) {
 	return(Math.round(unscale((float)v)));
     }
-
+    
     public static Coord unscale(Coord v) {
 	return(v.div(scalef));
     }
-
+    
     private static double maxscale = -1;
     public static double maxscale() {
 	synchronized(UI.class) {
@@ -1009,7 +1027,7 @@ public class UI {
 	    return(maxscale);
 	}
     }
-
+    
     public static final Config.Variable<Double> uiscale = Config.Variable.propf("haven.uiscale", null);
     private static double loadscale() {
 	if(uiscale.get() != null)
@@ -1032,7 +1050,21 @@ public class UI {
 	}
 	return Optional.empty();
     }
-
+    
+    public void setGUI(GameUI gui) {
+	synchronized (guiLock) {
+	    this.gui = gui;
+	}
+    }
+    
+    public void clearGUI(GameUI gui) {
+	synchronized (guiLock) {
+	    if(this.gui == gui) {
+		this.gui = null;
+	    }
+	}
+    }
+    
     static {
 	scalef = loadscale();
     }

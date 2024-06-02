@@ -44,6 +44,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.prefs.*;
+import java.security.*;
 import java.util.*;
 import java.util.function.*;
 import java.awt.Graphics;
@@ -51,6 +52,7 @@ import java.awt.Color;
 import java.awt.image.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 public class Utils {
     public static final java.nio.charset.Charset utf8 = java.nio.charset.Charset.forName("UTF-8");
@@ -81,22 +83,7 @@ public class Utils {
 		}
 	    });
     }
-
-    static void drawgay(BufferedImage t, BufferedImage img, Coord c) {
-	Coord sz = imgsz(img);
-	for(int y = 0; y < sz.y; y++) {
-	    for(int x = 0; x < sz.x; x++) {
-		int p = img.getRGB(x, y);
-		if(Utils.rgbm.getAlpha(p) > 128) {
-		    if((p & 0x00ffffff) == 0x00ff0080)
-			t.setRGB(x + c.x, y + c.y, 0);
-		    else
-			t.setRGB(x + c.x, y + c.y, p);
-		}
-	    }
-	}
-    }
-
+    
     public static URI uri(String uri) {
 	try {
 	    return(new URI(uri));
@@ -455,6 +442,10 @@ public class Utils {
 
     public static int iv(Object arg) {
 	return(((Number)arg).intValue());
+    }
+    
+    public static long uiv(Object arg) {
+	return(uint32(iv(arg)));
     }
 
     public static float fv(Object arg) {
@@ -1332,7 +1323,13 @@ public class Utils {
 			 ((x.getBlue()  * f2) + (y.getBlue()  * f1)) / 255,
 			 ((x.getAlpha() * f2) + (y.getAlpha() * f1)) / 255));
     }
-
+    
+    public static Color colmul(Color a, Color b) {
+	return(new Color((a.getRed()  * b.getRed() ) / 255, (a.getGreen() * b.getGreen()) / 255,
+	    (a.getBlue() * b.getBlue()) / 255, (a.getAlpha() * b.getAlpha()) / 255));
+    }
+    
+    
     public static Color blendcol(double a, Color... cols) {
 	a = clip(a, 0, 1);
 	if(cols.length > 2) {
@@ -1845,8 +1842,8 @@ public class Utils {
 	    return(Collections.unmodifiableMap(bk));
 	}
     }
-
-    public static class Range extends AbstractCollection<Integer> {
+    
+    public static class Range extends AbstractList<Integer> {
 	public final int min, max, step;
 
 	public Range(int min, int max, int step) {
@@ -1858,30 +1855,20 @@ public class Utils {
 	public int size() {
 	    return(Math.max((max - min + step - 1) / step, 0));
 	}
-
-	public Iterator<Integer> iterator() {
-	    return(new Iterator<Integer>() {
-		    private int cur = min;
-
-		    public boolean hasNext() {
-			return((step > 0) ? (cur < max) : (cur > max));
-		    }
-
-		    public Integer next() {
-			if(!hasNext())
-			    throw(new NoSuchElementException());
-			int ret = cur;
-			cur += step;
-			return(ret);
-		    }
-		});
+	
+	public Integer get(int idx) {
+	    int rv = min + (step * idx);
+	    if((rv < min) || (rv >= max))
+		throw(new NoSuchElementException());
+	    return(rv);
 	}
     }
-
-    public static Collection<Integer> range(int min, int max, int step) {return(new Range(min, max, step));}
-    public static Collection<Integer> range(int min, int max) {return(range(min, max, 1));}
-    public static Collection<Integer> range(int max) {return(range(0, max));}
-
+    
+    public static List<Integer> range(int min, int max, int step) {return(new Range(min, max, step));}
+    public static List<Integer> range(int min, int max) {return(range(min, max, 1));}
+    public static List<Integer> range(int max) {return(range(0, max));}
+    
+    
     public static <T> Indir<T> cache(Indir<T> src) {
 	return(new Indir<T>() {
 		private T val;
@@ -2210,6 +2197,33 @@ public class Utils {
 		throw(e2);
 	    }
 	}
+    }
+    
+    @SuppressWarnings("unchecked")
+    public static int compare(Object[] a, Object[] b) {
+	int i = 0;
+	for(i = 0; (i < a.length) && (i < b.length); i++) {
+	    if((a[i] == null) && (b[i] == null)) {
+	    } else if(a[i] == null) {
+		return(-1);
+	    } else if(b[i] == null) {
+		return(1);
+	    } else {
+		if(a[i].getClass() != b[i].getClass()) {
+		    return(a[i].getClass().getName().compareTo(b[i].getClass().getName()));
+		} else if(Comparable.class.isAssignableFrom(a[i].getClass())) {
+		    return(((Comparable)a[i]).compareTo(b[i]));
+		} else {
+		    if(a[i] != b[i])
+			return(sidcmp(a[i], b[i]));
+		}
+	    }
+	}
+	if(a.length < b.length)
+	    return(-1);
+	if(a.length > b.length)
+	    return(1);
+	return(0);
     }
 
     public static final Comparator<Object> idcmp = new Comparator<Object>() {

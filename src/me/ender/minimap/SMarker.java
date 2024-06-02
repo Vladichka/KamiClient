@@ -6,9 +6,9 @@ import java.util.Objects;
 
 public class SMarker extends Marker {
     public final long oid;
-    public final Resource.Spec res;
+    public final Resource.Saved res;
     
-    public SMarker(long seg, Coord tc, String nm, long oid, Resource.Spec res) {
+    public SMarker(long seg, Coord tc, String nm, long oid, Resource.Saved res) {
 	super(seg, tc, nm);
 	this.oid = oid;
 	this.res = res;
@@ -26,7 +26,7 @@ public class SMarker extends Marker {
     @Override
     public void draw(GOut g, Coord c, Text tip, final float scale, final MapFile file) {
 	try {
-	    final Resource res = this.res.loadsaved(Resource.remote());
+	    final Resource res = this.res.loadsaved();
 	    final Resource.Image img = res.layer(Resource.imgc);
 	    final Resource.Neg neg = res.layer(Resource.negc);
 	    final Coord cc = neg != null ? neg.cc : img.ssz.div(2);
@@ -41,7 +41,7 @@ public class SMarker extends Marker {
     @Override
     public Area area() {
 	try {
-	    final Resource res = this.res.loadsaved(Resource.remote());
+	    final Resource res = this.res.loadsaved();
 	    final Resource.Image img = res.layer(Resource.imgc);
 	    final Resource.Neg neg = res.layer(Resource.negc);
 	    final Coord cc = neg != null ? neg.cc : img.ssz.div(2);

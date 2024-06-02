@@ -611,7 +611,7 @@ public abstract class ItemInfo {
     
     @SuppressWarnings("unchecked")
     public static Map<Resource, Integer> getBonuses(List<ItemInfo> infos, Map<String, Glob.CAttr> attrs) {
-	List<ItemInfo> slotInfos = ItemInfo.findall("ISlots", infos);
+	List<ItemInfo> slotInfos = ItemInfo.findall(ItemData.INFO_CLASS_SLOTS, infos);
 	List<ItemInfo> gilding = ItemInfo.findall(ItemData.INFO_CLASS_GILDING, infos);
 	Map<Resource, Integer> bonuses = new HashMap<>();
 	try {
@@ -649,7 +649,7 @@ public abstract class ItemInfo {
     }
     
     public static List<Pair<Resource, Integer>> getInputs(List<ItemInfo> infos) {
-	List<ItemInfo> inputInfos = ItemInfo.findall("Inputs", infos);
+	List<ItemInfo> inputInfos = ItemInfo.findall("haven.res.ui.tt.inputs.Inputs", infos);
 	List<Pair<Resource, Integer>> result = new LinkedList<>();
 	try {
 	    for (ItemInfo info : inputInfos) {

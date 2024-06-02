@@ -11,14 +11,14 @@ import haven.MenuGrid.Pagina;
 
 public class ActWindow extends GameUI.Hidewnd {
     private static final int WIDTH = 200;
-
+    
     private final ActList filtered;
     private final TextEntry filter;
     private final List<Pagina> all = new LinkedList<>();
     private final Pattern category;
     private int pagseq = 0;
     private boolean needfilter = false;
-
+    
     public ActWindow(String cap, String category) {
 	super(Coord.z, cap);
 	this.category = Pattern.compile(category);
@@ -28,13 +28,13 @@ public class ActWindow extends GameUI.Hidewnd {
 	    public void activate(String text) {
 		act(filtered.sel.pagina);
 	    }
-
+	    
 	    @Override
 	    protected void changed() {
 		super.changed();
 		needfilter();
 	    }
-
+	    
 	    @Override
 	    public boolean keydown(KeyEvent e) {
 		if(e.getKeyCode() == KeyEvent.VK_UP) {
@@ -60,12 +60,12 @@ public class ActWindow extends GameUI.Hidewnd {
 	filtered.bgcolor = new Color(0, 0, 0, 128);
 	pack();
     }
-
+    
     private void act(Pagina pagina) {
 	ui.gui.menu.use(pagina, false);
 	ActWindow.this.hide();
     }
-
+    
     @Override
     public void show() {
 	super.show();
@@ -74,7 +74,7 @@ public class ActWindow extends GameUI.Hidewnd {
 	filtered.showsel();
 	parent.setfocus(this);
     }
-
+    
     @Override
     public void lostfocus() {
 	super.lostfocus();
@@ -100,7 +100,7 @@ public class ActWindow extends GameUI.Hidewnd {
     private void needfilter() {
 	needfilter = true;
     }
-
+    
     private void filter() {
 	needfilter = false;
 	String filter = this.filter.text().toLowerCase();
@@ -129,11 +129,11 @@ public class ActWindow extends GameUI.Hidewnd {
 	    filtered.showsel();
 	}
     }
-
+    
     @Override
     public void tick(double dt) {
 	super.tick(dt);
-    
+	
 	MenuGrid menu = ui.gui.menu;
 	synchronized (menu.paginae) {
 	    if(pagseq != menu.pagseq) {
@@ -141,10 +141,10 @@ public class ActWindow extends GameUI.Hidewnd {
 		    all.clear();
 		    all.addAll(
 			menu.paginae.stream()
-			    .filter(p -> category.matcher(Pagina.name(p)).matches())
+			    .filter(p -> category.matcher(Pagina.resname(p)).matches())
 			    .collect(Collectors.toList())
 		    );
-
+		    
 		    pagseq = menu.pagseq;
 		    needfilter();
 		}
@@ -154,10 +154,10 @@ public class ActWindow extends GameUI.Hidewnd {
 	    filter();
 	}
     }
-
+    
     public static class ItemComparator implements Comparator<ActList.ActItem> {
 	private final String filter;
-    
+	
 	public ItemComparator(String filter){
 	    this.filter = filter;
 	}

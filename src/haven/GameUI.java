@@ -167,19 +167,13 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	public <T> T context(Class<T> cl) {return(beltctxr.context(cl, this));}
 	private GameUI wdg() {return(GameUI.this);}
     }
-
-    public class PaginaBeltSlot extends BeltSlot {
-	public final MenuGrid.Pagina pagina;
- 
-	public PaginaBeltSlot(int idx, MenuGrid.Pagina p) {
-	    super(idx, p.res, Message.nil, 1);
-	    pagina = p;
-	}
-    }
     
-    public abstract class Belt extends Widget implements DTarget, DropTarget {
-	public Belt(Coord sz) {
-	    super(sz);
+    public static class PagBeltSlot extends BeltSlot {
+	public final MenuGrid.Pagina pag;
+	
+	public PagBeltSlot(int idx, MenuGrid.Pagina pag) {
+	    super(idx);
+	    this.pag = pag;
 	}
 
 	public void draw(GOut g) {
@@ -1146,12 +1140,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    studywnd.hide();
 	    chrwdg = add((CharWnd)child, Utils.getprefc("wndc-chr", new Coord(300, 50)));
 	    chrwdg.hide();
-	    if(CFG.HUNGER_METER.get()) {
-		addcmeter(new HungerMeter(chrwdg.glut));
-	    }
-	    if(CFG.FEP_METER.get()) {
-		addcmeter(new FEPMeter(chrwdg.feps));
-	    }
 	} else if(place == "craft") {
 	    String cap = "";
 	    final Widget mkwdg = child;
@@ -1929,66 +1917,47 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	}
 	syslog.append(msg, logcol);
     }
-
+    
     public void msg(String msg, Color color) {
-	msg(msg, color, true);
+	msg(msg, color, color);
     }
     
     public void msg(String msg, Color color, boolean sfx) {
-	msg(msg, color, sfx ? RootWidget.msgsfx : null);
+	msg(msg, color, sfx ? UI.MessageWidget.msgsfx : null);
     }
     
-    public void msg(String msg, Color color, Resource sfx) {
-	msg(msg, color, color);
-	if(sfx != null) {Audio.play(sfx);}
-    }
-
     public void msg(String msg, Color color, Audio.Clip sfx) {
-	msg(msg, color);
+	msg(msg, color, color);
 	ui.sfxrl(sfx);
     }
-
     
-    public static final Resource errsfx = Resource.local().loadwait("sfx/error");
-    private double lasterrsfx = 0;
     public void error(String msg) {
-	msg(msg, MsgType.ERROR);
-    }
-
-    private double lastmsgsfx = 0;
-    
-    public void msg(String msg) {
-	msg(msg, MsgType.INFO);
-	double now = Utils.rtime();
-	if(now - lastmsgsfx > 0.1) {
-	    ui.sfx(RootWidget.msgsfx);
-	    lastmsgsfx = now;
-	}
 	ui.error(msg);
     }
     
     public void msg(String msg, MsgType type) {
-	msg(msg, type.color, type.logcol);
-	if(type.sfx != null) {
-	    Audio.play(type.sfx);
-	}
+	msg(msg, type.color, type.sfx);
     }
-
+    
     public enum MsgType {
-	INFO(Color.WHITE), GOOD(Color.GREEN), BAD(Color.RED),
-	ERROR(new Color(192, 0, 0), new Color(255, 0, 0), "sfx/error");
-
+	INFO(Color.WHITE, UI.MessageWidget.msgsfx), GOOD(Color.GREEN), BAD(Color.RED),
+	ERROR(new Color(192, 0, 0), new Color(255, 0, 0), UI.MessageWidget.errsfx);
+	
 	public final Color color, logcol;
-	public final Resource sfx;
-
+	public final Audio.Clip sfx;
+	
 	MsgType(Color color) {
 	    this(color, color, null);
 	}
-
-	MsgType(Color color, Color logcol, String sfx) {
+	
+	MsgType(Color color, Color logcol, Audio.Clip sfx) {
 	    this.logcol = logcol;
 	    this.color = color;
-	    this.sfx = (sfx != null) ? Resource.local().loadwait(sfx) : null;
+	    this.sfx = sfx;
+	}
+	
+	MsgType(Color color, Audio.Clip sfx) {
+	    this(color, color, sfx);
 	}
     }
     

@@ -1,8 +1,11 @@
 package haven;
 
 import auto.Bot;
+import haven.render.Pipe;
 import haven.resutil.Curiosity;
 import haven.rx.Reactor;
+import me.ender.ClientUtils;
+import me.ender.Reflect;
 import rx.Subscription;
 
 import java.awt.*;
@@ -101,6 +104,7 @@ public class ExtInventory extends Widget {
 	composer = new Composer(this).hmrgn(margin);
 	composer.addr2(inv, extension);
 	pack();
+	
     }
     
     private void showHelp() {
@@ -124,9 +128,14 @@ public class ExtInventory extends Widget {
 	if(wnd != null) {wnd.placetwdgs();}
     }
     
+    private void minRowsChanged(CFG<Integer> cfg){
+	updateLayout();
+    }
+    
     @Override
     public void unlink() {
-	ui.gui.remInventory(this);
+	CFG.UI_EXT_INV_MIN_ROWS.unobserve(this::minRowsChanged);
+	ui.remInventory(this);
 	if(chb_show.parent != null) {
 	    chb_show.unlink();
 	}
@@ -137,8 +146,14 @@ public class ExtInventory extends Widget {
     }
     
     @Override
+    protected void attached() {
+	CFG.UI_EXT_INV_MIN_ROWS.observe(this::minRowsChanged);
+	ui.addInventory(this);
+	super.attached();
+    }
+    
+    @Override
     protected void added() {
-	ui.gui.addInventory(this);
 	wnd = null;//just in case
 	Window tmp;
 	//do not try to add if we are in the contents window
@@ -207,7 +222,13 @@ public class ExtInventory extends Widget {
 	}
 	extension.move(new Coord(szx + margin, extension.c.y));
 	type.c.y = space.c.y = szy - space.sz.y;
-	list.resize(new Coord(list.sz.x, space.c.y - grouping.sz.y - 2 * margin));
+	int list_h = space.c.y - grouping.sz.y - 2 * margin;
+	int min_items = CFG.UI_EXT_INV_MIN_ROWS.get();
+	if(list_h / itemh < min_items) {
+	    list_h = min_items * itemh;
+	    type.c.y = space.c.y = list.c.y + list_h;
+	}
+	list.resize(new Coord(list.sz.x, list_h));
 	extension.pack();
 	pack();
 	if(wnd != null) {wnd.pack();}
@@ -307,10 +328,7 @@ public class ExtInventory extends Widget {
     
     private void processItem(SortedMap<ItemType, List<WItem>> groups, WItem witem) {
 	try {
-	    Widget winv = witem.item.contents;
-	    if(winv != null && CFG.UI_STACK_EXT_INV_UNPACK.get()) {
-		winv.children(WItem.class).forEach((w) -> processItem(groups, w));
-	    } else {
+	    if(tryToUnpack(groups, witem)) {
 		Double quality = quality(witem, grouping.sel);
 		ItemType type = new ItemType(witem, quality);
 		if(type.loading) {needUpdate = true;}
@@ -319,6 +337,16 @@ public class ExtInventory extends Widget {
 	} catch (Loading ignored) {
 	    needUpdate = true;
 	}
+    }
+    
+    /** returns true if this item should be processed, false if skipped (e.g. stack that's unpacked) */
+    private boolean tryToUnpack(SortedMap<ItemType, List<WItem>> groups, WItem wItem) {
+	Widget inv = wItem.item.contents;
+	if(inv == null || !CFG.UI_STACK_EXT_INV_UNPACK.get()) {
+	    return true;
+	}
+	inv.children(WItem.class).forEach((w) -> processItem(groups, w));
+	return !Reflect.is(inv, "haven.res.ui.stackinv.ItemStack"); //this is just a stack, hide it
     }
     
     private static String name(WItem item) {
@@ -360,7 +388,7 @@ public class ExtInventory extends Widget {
 	final boolean matches;
 	final boolean loading;
 	final Color color;
-	final ColorMask mask;
+	final Pipe.Op state;
 	final String cacheId;
 	
 	public ItemType(WItem w, Double quality) {
@@ -369,7 +397,7 @@ public class ExtInventory extends Widget {
 	    this.quality = quality;
 	    this.matches = w.item.matches();
 	    this.color = w.olcol.get();
-	    this.mask = color == null ? null : new ColorMask(color);
+	    this.state = this.color != null ? new ColorMask(this.color) : null;
 	    loading = name.startsWith("???");
 	    cacheId = String.format("%s@%s", resname, name);
 	}
@@ -430,12 +458,12 @@ public class ExtInventory extends Widget {
 	    } else {
 		quality = type.quality;
 	    }
-	    String quantity = Utils.f2s(items.stream().map(wItem -> wItem.quantity.get()).reduce(0f, Float::sum));
+	    String quantity = ClientUtils.f2s(items.stream().map(wItem -> wItem.quantity.get()).reduce(0f, Float::sum));
 	    this.text[DisplayType.Name.ordinal()] = fnd.render(String.format("×%s %s", quantity, type.name)).tex();
 	    if(!Double.isNaN(quality)) {
 		String avg = type.quality != null ? "" : "~";
 		String sign = (g == Grouping.NONE || g == Grouping.Q) ? "" : "+";
-		String q = String.format("%sq%s%s", avg, Utils.f2s(quality, 1), sign);
+		String q = String.format("%sq%s%s", avg, ClientUtils.f2s(quality, 1), sign);
 		this.text[DisplayType.Quality.ordinal()] = fnd.render(String.format("×%s %s", quantity, q)).tex();
 	    } else {
 		this.text[DisplayType.Quality.ordinal()] = text[DisplayType.Name.ordinal()];
@@ -477,13 +505,13 @@ public class ExtInventory extends Widget {
 		    try {
 			GSprite sprite = sample.item.sprite();
 			if(sprite instanceof GSprite.ImageSprite) {
-			    icon = GobIcon.SettingsWindow.Icon.tex(((GSprite.ImageSprite) sprite).image());
+			    icon = GobIcon.SettingsWindow.ListIcon.tex(((GSprite.ImageSprite) sprite).image());
 			} else {
 			    Resource.Image image = sample.item.resource().layer(Resource.imgc);
 			    if(image == null) {
-				icon = GobIcon.SettingsWindow.Icon.tex(def);
+				icon = GobIcon.SettingsWindow.ListIcon.tex(def);
 			    } else {
-				icon = GobIcon.SettingsWindow.Icon.tex(image.img);
+				icon = GobIcon.SettingsWindow.ListIcon.tex(image.img);
 			    }
 			}
 			cache.put(type.cacheId, icon);
@@ -500,8 +528,8 @@ public class ExtInventory extends Widget {
 		    g.chcolor();
 		}
 		int sx = (itemh - icon.sz().x) / 2;
-		if(type.mask != null) {
-		    g.usestate(type.mask);
+		if(type.state != null) {
+		    g.usestate(type.state);
 		}
 		g.aimage(icon, new Coord(sx, itemh / 2), 0.0, 0.5);
 		g.defstate();
@@ -696,7 +724,7 @@ public class ExtInventory extends Widget {
 	if(inv != ui.gui.maininv) {
 	    return null;
 	}
-	List<Widget> inventories = ui.gui.ExtInventories;
+	List<Widget> inventories = ui.EXT_INVENTORIES;
 	if(inventories.isEmpty()) {
 	    return null;
 	}

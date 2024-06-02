@@ -26,19 +26,23 @@
 
 package haven;
 
-import java.awt.*;
-import java.util.*;
-import java.util.function.*;
 import haven.render.*;
 import haven.res.gfx.fx.msrad.MSRad;
 import integrations.mapv4.MappingClient;
+import me.ender.ClientUtils;
 import me.ender.Reflect;
 import me.ender.ResName;
+import me.ender.gob.KinInfo;
 import me.ender.minimap.AutoMarkers;
+
+import java.awt.*;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static haven.OCache.*;
 
-public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, EquipTarget, RandomSource, Skeleton.HasPose {
+public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, EquipTarget, RandomSource {
     private static final Color COL_READY = new Color(16, 255, 16, 128);
     private static final Color COL_FULL = new Color(215, 63, 250, 64);
     private static final Color COL_EMPTY = new Color(104, 213, 253, 64);
@@ -65,7 +69,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     private Boolean isMe = null;
     public final GeneralGobInfo info;
     private GobWarning warning = null;
-    public StatusUpdates status = new StatusUpdates();
+    private StatusUpdates status = new StatusUpdates();
     private final CustomColor customColor = new CustomColor();
     private final GobCustomScale customScale = new GobCustomScale();
     private final Set<GobTag> tags = new HashSet<>();
@@ -79,7 +83,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     public static final ChangeCallback CHANGED = new ChangeCallback() {
 	@Override
 	public void added(Gob ob) {
-	
+	    
 	}
 	
 	@Override
@@ -158,8 +162,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    }
 	    remove0();
 	    gob.ols.remove(this);
-	    gob.overlaysUpdated();
 	    removed();
+	    gob.overlaysUpdated();
 	}
 
 	public void remove() {
@@ -186,23 +190,23 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    if(slots != null)
 		slots.remove(slot);
 	}
- 
+	
 	public String name() {
-	    try {
-		if(res != null)
-		    return res.get().name;
-		else
-		    return "";
-	    } catch (Loading l) {
-		return "";
+	    Sprite spr = this.spr;
+	    if(spr != null) {
+		Resource res = spr.res;
+		if(res != null) {
+		    return res.name;
+		}
 	    }
+	    return "";
 	}
     }
     
     private static class CustomColor implements SetupMod {
 	Pipe.Op op = null;
 	Color c = null;
- 
+
 	void color(Color c) {
 	    if(Objects.equals(c, this.c)) {
 		return;
@@ -215,7 +219,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    }
 	    this.c = c;
 	}
- 
+    
 	@Override
 	public Pipe.Op gobstate() {
 	    return op;
@@ -298,8 +302,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 
 	private float getz(Coord2d rc, double ra) {
-	    if (((Boolean)CFG.FLATTEN_TERRAIN.get()).booleanValue())
-		return 0.0F;
 	    Coord2d[][] no = this.obst, ro = new Coord2d[no.length][];
 	    {
 		double s = Math.sin(ra), c = Math.cos(ra);
@@ -545,6 +547,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		if((!ol.delign || (ol.spr instanceof Sprite.CDel)) && done) {
 		    ol.remove0();
 		    i.remove();
+		    overlaysUpdated();
 		}
 	    }
 	}
@@ -655,12 +658,13 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
     private void overlayAdded(Overlay item) {
 	try {
-	    Indir<Resource> indir = item.res;
-	    if(indir != null) {
-		Resource res = indir.get();
+	    Sprite spr = item.spr;
+	    if(spr != null) {
+		Resource res = spr.res;
 		if(res != null) {
-		    if(res.name.equals("gfx/fx/floatimg")) {
-			processDmg(item.sdt.clone());
+		    MessageBuf sdt = spr.sdt;
+		    if(sdt != null && res.name.equals("gfx/fx/floatimg")) {
+			processDmg(sdt.clone());
 		    } else if(res.name.equals("gfx/fx/dowse")) {
 		        ProspectingWnd.overlay(this, item);
 		    }
@@ -715,6 +719,13 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	openings = null;
     }
     
+    public void rclick() {
+	try {
+	    MapView map = glob.sess.ui.gui.map;
+	    map.click(this, 3, Coord.z);
+	} catch (Exception ignored) {}
+    }
+
     public void rclick(int modflags) {
 	click(3, modflags);
     }
@@ -798,14 +809,14 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	return false;
     }
-    
+
     /**returns whether icon for this gob is visible on radar, if there's no icon in config returns null*/
     public Boolean isOnRadar() {
 	GobIcon icon = getattr(GobIcon.class);
 	GameUI gui = context(GameUI.class);
 	if(icon == null || gui == null || gui.iconconf == null) {return null;}
 	try {
-	    GobIcon.Setting s = gui.iconconf.get(icon.res.get());
+	    GobIcon.Setting s = gui.iconconf.get(icon.icon());
 	    return s == null ? null : s.show;
 	} catch (Loading ignored) {}
 	return null;
@@ -903,8 +914,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		if(a != prev) drawableUpdated();
 	    } else if(ac == Moving.class) {
 		moving = (Moving) a;
-	    } else if(ac == KinInfo.class) {
-		tagsUpdated();
+	    } else if(KinInfo.isKinInfo(ac)) {
+		kinUpdated();
 	    } else if(ac == GobHealth.class) {
 		status.update(StatusType.info);
 	    }
@@ -937,7 +948,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	public GobClick(Gob gob) {
 	    this.gob = gob;
 	}
-
+	
 	public Object[] clickargs(ClickData cd) {
 	    Object[] ret = {0, (int)gob.id, gob.rc.floor(OCache.posres), 0, -1};
 	    for(Object node : cd.array()) {
@@ -1089,13 +1100,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	return(null);
     }
 
-    public Skeleton.Pose getpose() {
-	Drawable d = drawable;
-	if(d != null)
-	    return(d.getpose());
-	return(null);
-    }
-    
     public String resid() {
 	Drawable d = drawable;
 	if(d != null)
@@ -1116,7 +1120,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	.add(Session.class, g -> g.glob.sess);
     public <T> T context(Class<T> cl) {return(ctxr.context(cl, this));}
     public <T> Optional<T> contextopt(Class<T> cl) {return Optional.ofNullable(context(cl));}
-
 
     /* Because generic functions are too nice a thing for Java. */
     public double getv() {
@@ -1293,7 +1296,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    tt = icon.tooltip();
 	}
 	if(tt == null) {
-	    tt = Utils.prettyResName(resid());
+	    tt = ClientUtils.prettyResName(resid());
 	}
 	return tt;
     }
@@ -1460,6 +1463,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     public void kinUpdated() {status.update(StatusType.kin);}
     
     public void hitboxUpdated() {status.update(StatusType.hitbox);}
+    public void combatUpdated() {status.update(StatusType.combat);}
     
     public void visibilityUpdated() {status.update(StatusType.visibility);}
     
@@ -1473,18 +1477,18 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if(updateseq == 0 || !status.updated()) {return;}
 	StatusUpdates status = this.status;
 	this.status = new StatusUpdates();
- 
+    
 	if(status.updated(StatusType.drawable, StatusType.kin, StatusType.id, StatusType.pose, StatusType.tags, StatusType.overlay)) {
 	    updateTags();
 	    status.update(StatusType.tags);
 	}
- 
-	if(status.updated(StatusType.drawable, StatusType.visibility, StatusType.tags)) {
+    
+	if(status.updated(StatusType.drawable, StatusType.visibility, StatusType.tags, StatusType.icon)) {
 	    if(updateVisibility()) {
 		status.update(StatusType.visibility);
 	    }
 	}
- 
+    
 	if(status.updated(StatusType.drawable) && radius == null) {
 	    Resource res = getres();
 	    if(res != null) {
@@ -1494,19 +1498,19 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	    }
 	}
- 
-	if(status.updated(StatusType.drawable, StatusType.hitbox, StatusType.visibility)) {
+    
+	if(status.updated(StatusType.drawable, StatusType.hitbox, StatusType.visibility, StatusType.combat)) {
 	    updateHitbox();
 	}
- 
+	
 	if(status.updated(StatusType.drawable)) {
 	    customScale.update(this);
 	}
- 
+    
 	if(status.updated(StatusType.drawable, StatusType.id, StatusType.icon)) {
 	    updateIcon();
 	}
- 
+    
 	if(status.updated(StatusType.tags)) {
 	    updateWarnings();
 	}
@@ -1514,7 +1518,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if(status.updated(StatusType.info, StatusType.tags)) {
 	    info.clean();
 	}
- 
+    
 	if(status.updated(StatusType.tags, StatusType.info)) {
 	    updateColor();
 	}
@@ -1541,7 +1545,14 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	customColor.color(c);
     }
     
+    public KinInfo kin() {
+	synchronized (attr) {
+	    return KinInfo.from(this, attr);
+	}
+    }
+    
     public float scale() {return info.growthScale();}
+    
     public String contents() {return info.contents();}
     
     private static class StatusUpdates {
@@ -1568,7 +1579,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     }
     
     private enum StatusType {
-	drawable, overlay, tags, pose, id, info, kin, hitbox, icon, visibility, marker
+	drawable, overlay, tags, pose, id, info, kin, hitbox, icon, visibility, marker, combat
     }
     
     private void updateMovingInfo(GAttrib a, GAttrib prev) {
@@ -1615,5 +1626,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    return glob.sess.ui.gui.equipory.seq;
 	}
 	return 0;
+    }
+
+    public String toString() {
+	return(String.format("#<ob %d %s>", id, getattr(Drawable.class)));
     }
 }

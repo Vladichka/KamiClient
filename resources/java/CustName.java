@@ -1,9 +1,10 @@
 import haven.ItemInfo;
 import haven.L10N;
 
-public abstract class CustName
+public class CustName
     implements ItemInfo.InfoFactory {
-    public ItemInfo build(ItemInfo.Owner owner, Object[] args) {
+    @Override
+    public ItemInfo build(ItemInfo.Owner owner, ItemInfo.Raw raw, Object... args) {
 	String name = (String) args[1];
 	return new ItemInfo.Name(owner, L10N.label(name), name);
     }

@@ -27,7 +27,9 @@
 package haven;
 
 import haven.QualityList.SingleType;
+import haven.render.*;
 import haven.resutil.Curiosity;
+import me.ender.ClientUtils;
 import me.ender.Reflect;
 
 import java.awt.*;
@@ -138,27 +140,37 @@ public class WItem extends Widget implements DTarget2 {
     }
     
     private List<ItemInfo> info() {return(item.info());}
-    public final AttrCache<Color> olcol = new AttrCache<>(this::info, info -> {
-	ArrayList<GItem.ColorInfo> ols = new ArrayList<>();
+    public final AttrCache<Pipe.Op> rstate = new AttrCache<>(this::info, info -> {
+	ArrayList<GItem.RStateInfo> ols = new ArrayList<>();
 	for(ItemInfo inf : info) {
-	    if(inf instanceof GItem.ColorInfo)
-		ols.add((GItem.ColorInfo)inf);
+	    if(inf instanceof GItem.RStateInfo)
+		ols.add((GItem.RStateInfo)inf);
 	}
 	if(ols.size() == 0)
 	    return(() -> null);
-	if(ols.size() == 1)
-	    return(ols.get(0)::olcol);
-	ols.trimToSize();
-	return(() -> {
-	    Color ret = null;
-	    for(GItem.ColorInfo ci : ols) {
-		Color c = ci.olcol();
-		if(c != null)
-		    ret = (ret == null) ? c : Utils.preblend(ret, c);
-	    }
-	    return(ret);
-	});
+	if(ols.size() == 1) {
+	    Pipe.Op op = ols.get(0).rstate();
+	    return(() -> op);
+	}
+	Pipe.Op[] ops = new Pipe.Op[ols.size()];
+	for(int i = 0; i < ops.length; i++)
+	    ops[i] = ols.get(0).rstate();
+	Pipe.Op cmp = Pipe.Op.compose(ops);
+	return(() -> cmp);
     });
+    
+    public final AttrCache<Color> olcol = new AttrCache<>(this::info, info -> {
+	Color c = null;
+	for (ItemInfo inf : info) {
+	    if(inf instanceof GItem.ColorInfo) {
+		c = ((GItem.ColorInfo) inf).olcol();
+		break;
+	    }
+	}
+	final Color color = c;
+	return (() -> color);
+    });
+    
     public final AttrCache<GItem.InfoOverlay<?>[]> itemols = new AttrCache<>(this::info, info -> {
 	ArrayList<GItem.InfoOverlay<?>> buf = new ArrayList<>();
 	for(ItemInfo inf : info) {
@@ -236,10 +248,10 @@ public class WItem extends Widget implements DTarget2 {
     
     public final AttrCache<List<ItemInfo>> gilding = new AttrCache<List<ItemInfo>>(this::info, AttrCache.cache(info -> ItemInfo.findall(ItemData.INFO_CLASS_GILDING, info)));
     
-    public final AttrCache<List<ItemInfo>> slots = new AttrCache<List<ItemInfo>>(this::info, AttrCache.cache(info -> ItemInfo.findall("ISlots", info)));
+    public final AttrCache<List<ItemInfo>> slots = new AttrCache<List<ItemInfo>>(this::info, AttrCache.cache(info -> ItemInfo.findall(ItemData.INFO_CLASS_SLOTS, info)));
     
     public final AttrCache<Boolean> gildable = new AttrCache<Boolean>(this::info, AttrCache.cache(info -> {
-	List<ItemInfo> slots = ItemInfo.findall("ISlots", info);
+	List<ItemInfo> slots = ItemInfo.findall(ItemData.INFO_CLASS_SLOTS, info);
 	for(ItemInfo slot : slots) {
 	    if(Reflect.getFieldValueInt(slot, "left") > 0) {
 		return true;
@@ -289,8 +301,8 @@ public class WItem extends Widget implements DTarget2 {
 	if(spr != null) {
 	    Coord sz = spr.sz();
 	    g.defstate();
-	    if(olcol.get() != null)
-		g.usestate(new ColorMask(olcol.get()));
+	    if(rstate.get() != null)
+		g.usestate(rstate.get());
 	    if(item.matches()) {
 		g.chcolor(MATCH_COLOR);
 		g.rect(Coord.z, sz);
@@ -356,7 +368,7 @@ public class WItem extends Widget implements DTarget2 {
 	    tip = data == null ? null : data.b;
 	} else {
 	    int remaining = remainingSeconds();
-	    if(remaining >= 0) {value = Utils.formatTimeShort(remaining);}
+	    if(remaining >= 0) {value = ClientUtils.formatTimeShort(remaining);}
 	}
 	
 	if(!Objects.equals(tip, cachedTipValue)) {

@@ -39,34 +39,36 @@ public class BAttrWnd extends Widget {
     public final FoodMeter feps;
     public final Constipations cons;
     public final GlutMeter glut;
-
+    
     @RName("battr")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
 	    return(new BAttrWnd(ui.sess.glob));
 	}
     }
-
+    
     public static class Attr extends Widget {
 	public final String nm;
 	public final Text rnm;
 	public final Glob.CAttr attr;
 	public final Tex img;
 	public final Color bg;
+	public final Resource res;
 	private double lvlt = 0.0;
 	private Text ct;
+	private Text bt;
 	private int cbv = -1, ccv = -1;
-
+	
 	private Attr(Glob glob, String attr, Color bg) {
 	    super(new Coord(attrw, attrf.height() + UI.scale(2)));
-	    Resource res = Resource.local().loadwait("gfx/hud/chr/" + attr);
+	    this.res = Resource.local().loadwait("gfx/hud/chr/" + attr);
 	    this.nm = attr;
 	    this.rnm = attrf.render(res.flayer(Resource.tooltip).t);
 	    this.img = new TexI(convolve(res.flayer(Resource.imgc).img, new Coord(this.sz.y, this.sz.y), iconfilter));
 	    this.attr = glob.getcattr(attr);
 	    this.bg = bg;
 	}
-
+	
 	public void tick(double dt) {
 	    if((attr.base != cbv) || (attr.comp != ccv)) {
 		cbv = attr.base; ccv = attr.comp;
@@ -81,11 +83,12 @@ public class BAttrWnd extends Widget {
 		    tooltip = null;
 		}
 		ct = attrf.render(Integer.toString(ccv), c);
+		bt = attrf.render(String.format("(%d)", cbv), Color.WHITE);
 	    }
 	    if((lvlt > 0.0) && ((lvlt -= dt) < 0))
 		lvlt = 0.0;
 	}
-
+	
 	public void draw(GOut g) {
 	    if(lvlt != 0.0)
 		g.chcolor(Utils.blendcol(bg, new Color(128, 255, 128, 128), lvlt));
@@ -98,13 +101,15 @@ public class BAttrWnd extends Widget {
 	    g.aimage(rnm.tex(), cn.add(img.sz().x + UI.scale(10), 1), 0, 0.5);
 	    if(ct != null)
 		g.aimage(ct.tex(), cn.add(sz.x - UI.scale(7), 1), 1, 0.5);
+	    if(bt != null)
+		g.aimage(bt.tex(), cn.add(sz.x - UI.scale(50), 1), 1, 0.5);
 	}
-
+	
 	public void lvlup() {
 	    lvlt = 1.0;
 	}
     }
-
+    
     public static class Constipations extends SListBox<Constipations.El, Widget> {
 	public static final PUtils.Convolution tflt = new PUtils.Hanning(1);
 	public static final Color hilit = new Color(255, 255, 0, 48);
@@ -117,39 +122,43 @@ public class BAttrWnd extends Widget {
 		return(1);
 	    return(0);
 	};
-
+	
+	public static Color color(double a) {
+	    return (a > 1.0) ? buffed : Utils.blendcol(none, full, a);
+	}
+	
 	public class El {
 	    public final ResData t;
 	    public double a;
 	    private boolean hl;
-
+	    
 	    public El(ResData t, double a) {this.t = t; this.a = a;}
 	    public void update(double a) {this.a = a;}
 	}
-
+	
 	public Constipations(Coord sz) {
 	    super(sz, attrf.height() + UI.scale(2));
 	}
-
+	
 	public static class Reordered<T> extends AbstractList<T> {
 	    private final List<T> back;
 	    private final Comparator<? super T> cmp;
 	    private Integer[] order = {};
-
+	    
 	    public Reordered(List<T> back, Comparator<? super T> cmp) {
 		this.back = back;
 		this.cmp = cmp;
 		update();
 	    }
-
+	    
 	    public int size() {
 		return(back.size());
 	    }
-
+	    
 	    public T get(int i) {
 		return(back.get(order[i]));
 	    }
-
+	    
 	    public void update() {
 		if(order.length != back.size()) {
 		    order = new Integer[back.size()];
@@ -159,55 +168,55 @@ public class BAttrWnd extends Widget {
 		Arrays.sort(order, (a, b) -> cmp.compare(back.get(a), back.get(b)));
 	    }
 	}
-
+	
 	private final Reordered<El> oels = new Reordered<>(els, ecmp);
 	protected List<El> items() {return(oels);}
 	protected Widget makeitem(El el, int idx, Coord sz) {return(new Item(sz, el));}
-
+	
 	public static class ItemIcon extends IconText {
 	    public final ItemSpec spec;
-
+	    
 	    public ItemIcon(Coord sz, ItemSpec spec) {
 		super(sz);
 		this.spec = spec;
 	    }
-
+	    
 	    protected BufferedImage img() {return(spec.image());}
 	    protected String text() {return(spec.name());}
 	    protected PUtils.Convolution filter() {return(tflt);}
 	}
-
+	
 	public class Item extends Widget {
 	    public final El el;
 	    private Widget nm, a;
 	    private double da = Double.NaN;
-
+	    
 	    public Item(Coord sz, El el) {
 		super(sz);
 		this.el = el;
 		update();
 	    }
-
+	    
 	    private void update() {
 		if(el.a != da) {
 		    if(nm != null) {nm.reqdestroy(); nm = null;}
 		    if( a != null) { a.reqdestroy();  a = null;}
 		    Label a = adda(new Label(String.format("%d%%", Math.max((int)Math.round((1.0 - el.a) * 100), 1)), attrf),
-				   sz.x - UI.scale(1), sz.y / 2, 1.0, 0.5);
-		    a.setcolor((el.a > 1.0) ? buffed : Utils.blendcol(none, full, el.a));
+			sz.x - UI.scale(1), sz.y / 2, 1.0, 0.5);
+		    a.setcolor(color(el.a));
 		    nm = adda(new ItemIcon(Coord.of(a.c.x - UI.scale(5), sz.y), new ItemSpec(OwnerContext.uictx.curry(Constipations.this.ui), el.t, null)),
-			      0, sz.y / 2, 0.0, 0.5);
+			0, sz.y / 2, 0.0, 0.5);
 		    this.a = a;
 		    da = el.a;
 		}
 	    }
-
+	    
 	    public void draw(GOut g) {
 		update();
 		super.draw(g);
 	    }
 	}
-
+	
 	private ItemInfo.InfoTip lasttip = null;
 	public void draw(GOut g) {
 	    ItemInfo.InfoTip tip = (ui.lasttip instanceof ItemInfo.InfoTip) ? (ItemInfo.InfoTip)ui.lasttip : null;
@@ -226,17 +235,17 @@ public class BAttrWnd extends Widget {
 	    }
 	    super.draw(g);
 	}
-
+	
 	protected void drawslot(GOut g, El el, int idx, Area area) {
 	    g.chcolor(el.hl ? hilit : ((idx % 2) == 0) ? every : other);
 	    g.frect2(area.ul, area.br);
 	    g.chcolor();
 	}
-
+	
 	public boolean unselect(int button) {
 	    return(false);
 	}
-
+	
 	public void update(ResData t, double a) {
 	    prev: {
 		for(Iterator<El> i = els.iterator(); i.hasNext();) {
@@ -254,7 +263,7 @@ public class BAttrWnd extends Widget {
 	    oels.update();
 	}
     }
-
+    
     public static class FoodMeter extends Widget {
 	public static final Tex frame =  Resource.loadtex("gfx/hud/chr/foodm");
 	public static final Coord marg = new Coord(5, 5), trmg = new Coord(10, 10);
@@ -264,13 +273,13 @@ public class BAttrWnd extends Widget {
 	private Indir<Resource> trev = null;
 	private Tex trol;
 	private double trtm = 0;
-
+	
 	@Resource.LayerName("foodev")
 	public static class Event extends Resource.Layer {
 	    public final Color col;
 	    public final String nm;
 	    public final int sort;
-
+	    
 	    public Event(Resource res, Message buf) {
 		res.super();
 		int ver = buf.uint8();
@@ -282,16 +291,16 @@ public class BAttrWnd extends Widget {
 		    throw(new Resource.LoadException("unknown foodev version: " + ver, res));
 		}
 	    }
-
+	    
 	    public void init() {}
 	}
-
+	
 	public static class El {
 	    public final Indir<Resource> res;
 	    public double a;
-
+	    
 	    public El(Indir<Resource> res, double a) {this.res = res; this.a = a;}
-
+	    
 	    private Event ev = null;
 	    public Event ev() {
 		if(ev == null)
@@ -307,11 +316,11 @@ public class BAttrWnd extends Widget {
 		return(a.ev().nm.compareTo(b.ev().nm));
 	    }
 	};
-
+	
 	public FoodMeter() {
 	    super(frame.sz());
 	}
-
+	
 	private BufferedImage mktrol(List<El> els, Indir<Resource> trev) {
 	    BufferedImage buf = TexI.mkbuf(sz.add(trmg.mul(2)));
 	    Coord marg2 = marg.add(trmg);
@@ -329,7 +338,7 @@ public class BAttrWnd extends Widget {
 	    imgblur(buf.getRaster(), trmg.x, trmg.y);
 	    return(buf);
 	}
-
+	
 	private void drawels(GOut g, List<El> els, int alpha) {
 	    double x = 0;
 	    int w = sz.x - (marg.x * 2);
@@ -344,7 +353,7 @@ public class BAttrWnd extends Widget {
 		}
 	    }
 	}
-
+	
 	public void tick(double dt) {
 	    if(enew != null) {
 		try {
@@ -359,14 +368,14 @@ public class BAttrWnd extends Widget {
 		    Collections.sort(etr, dcmp);
 		    GameUI gui = getparent(GameUI.class);
 		    if(gui != null)
-			gui.msg(String.format("You gained " + Loading.waitfor(trev).flayer(Event.class).nm), Color.WHITE);
+			gui.msg(String.format("You gained " + Loading.waitfor(trev).flayer(Event.class).nm), Color.WHITE, UI.MessageWidget.msgsfx);
 		    trol = new TexI(mktrol(etr, trev));
 		    trtm = Utils.rtime();
 		    trev = null;
 		} catch(Loading l) {}
 	    }
 	}
-
+	
 	public void draw(GOut g) {
 	    double d = (trtm > 0)?(Utils.rtime() - trtm):Double.POSITIVE_INFINITY;
 	    g.chcolor(0, 0, 0, 255);
@@ -384,7 +393,7 @@ public class BAttrWnd extends Widget {
 		trtm = 0;
 	    }
 	}
-
+	
 	public void update(Object... args) {
 	    int n = 0;
 	    this.cap = Utils.fv(args[n++]);
@@ -396,12 +405,12 @@ public class BAttrWnd extends Widget {
 	    }
 	    this.enew = enew;
 	}
-
+	
 	public void trig(Indir<Resource> ev) {
 	    etr = (enew != null)?enew:els;
 	    trev = ev;
 	}
-
+	
 	private Tex rtip = null;
 	public Object tooltip(Coord c, Widget prev) {
 	    if(rtip == null) {
@@ -424,18 +433,18 @@ public class BAttrWnd extends Widget {
 	    return(rtip);
 	}
     }
-
+    
     public static class GlutMeter extends Widget {
 	public static final Tex frame = Resource.loadtex("gfx/hud/chr/glutm");
 	public static final Coord marg = new Coord(5, 5);
 	public Color fg = Color.BLACK, bg = Color.BLACK;
 	public double glut, lglut, gmod;
 	public String lbl;
-
+	
 	public GlutMeter() {
 	    super(frame.sz());
 	}
-
+	
 	public void draw(GOut g) {
 	    Coord isz = sz.sub(marg.mul(2));
 	    g.chcolor(bg);
@@ -445,7 +454,7 @@ public class BAttrWnd extends Widget {
 	    g.chcolor();
 	    g.image(frame, Coord.z);
 	}
-
+	
 	public void update(Object... args) {
 	    int a = 0;
 	    this.glut = Utils.dv(args[a++]);
@@ -456,16 +465,27 @@ public class BAttrWnd extends Widget {
 	    this.fg = (Color)args[a++];
 	    rtip = null;
 	}
-
+	
 	private Tex rtip = null;
 	public Object tooltip(Coord c, Widget prev) {
 	    if(rtip == null) {
-		rtip = RichText.render(String.format("%s: %.1f\u2030\nFood efficacy: %d%%", lbl, glut * 1000, Math.round(gmod * 100)), -1).tex();
+		rtip = RichText.render(String.format("%s: %.1f\u2030\n%s: %d%%", lbl, lglut * 1000, L10N.label("Food efficacy"), Math.round(gmod * 100)), -1).tex();
 	    }
 	    return(rtip);
 	}
     }
-
+    
+    @Override
+    protected void attached() {
+	super.attached();
+	if(CFG.HUNGER_METER.get()) {
+	    ui.gui.addcmeter(new HungerMeter(glut));
+	}
+	if(CFG.FEP_METER.get()) {
+	    ui.gui.addcmeter(new FEPMeter(feps));
+	}
+    }
+    
     public BAttrWnd(Glob glob) {
 	Widget prev;
 	prev = add(CharWnd.settip(new Img(catf.render("Base Attributes").tex()), "gfx/hud/chr/tips/base"), Coord.z);
@@ -483,7 +503,7 @@ public class BAttrWnd extends Widget {
 	prev = Frame.around(this, attrs);
 	prev = add(CharWnd.settip(new Img(catf.render("Food Event Points").tex()), "gfx/hud/chr/tips/fep"), prev.pos("bl").x(0).adds(0, 10));
 	feps = add(new FoodMeter(), prev.pos("bl").adds(5, 2));
-
+	
 	int ah = attrs.get(attrs.size() - 1).pos("bl").y - attrs.get(0).pos("ul").y;
 	prev = add(CharWnd.settip(new Img(catf.render("Food Satiations").tex()), "gfx/hud/chr/tips/constip"), width, 0);
 	cons = add(new Constipations(Coord.of(attrw, ah)), prev.pos("bl").adds(5, 0).add(wbox.btloff()));
@@ -492,7 +512,7 @@ public class BAttrWnd extends Widget {
 	glut = add(new GlutMeter(), prev.pos("bl").adds(5, 2));
 	pack();
     }
-
+    
     public void uimsg(String nm, Object... args) {
 	if(nm == "food") {
 	    feps.update(args);

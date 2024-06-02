@@ -701,7 +701,7 @@ public class FightWnd extends Widget {
 	count = add(new Label(""), p.c.add(p.sz.x + UI.scale(10), 0));
 
 	int y = 260;
-	savelist = add(new Savelist(UI.scale(370), 3), UI.scale(new Coord(5, y)).add(wbox.btloff()));
+	savelist = add(new Savelist(UI.scale(370, 60)), UI.scale(new Coord(5, y)).add(wbox.btloff()));
 	Frame.around(this, Collections.singletonList(savelist));
 	add(new Button(UI.scale(110), "Load", false) {
 		public void click() {

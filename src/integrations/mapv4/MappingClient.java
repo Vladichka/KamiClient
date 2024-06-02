@@ -408,13 +408,6 @@ public class MappingClient {
 		    Gob gob = g.oc.getgob(id);
 		    t.name = "???";
 		    t.type = "white";
-		    if(gob != null) {
-			KinInfo ki = gob.getattr(KinInfo.class);
-			if(ki != null) {
-			    t.name = ki.name;
-			    t.type = Integer.toHexString(BuddyWnd.gc[ki.group].getRGB());
-			}
-		    }
 		}
 	    }
 	    t.gridId = gridId;
