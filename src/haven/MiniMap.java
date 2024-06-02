@@ -290,7 +290,7 @@ public class MiniMap extends Widget {
 	}
 	
 	public void dispupdate() {
-	    if((this.rc == null) || (sessloc == null) || (dloc == null) || (dloc.seg != sessloc.seg))
+	    if((this.rc == null) || (sessloc == null) || (dloc == null) || (dloc.seg.id != sessloc.seg.id))
 		this.sc = null;
 	    else
 		this.sc = p2c(this.rc);
@@ -715,7 +715,7 @@ public class MiniMap extends Widget {
     }
     
     public void drawicons(GOut g) {
-	if((sessloc == null) || (dloc.seg != sessloc.seg))
+	if((sessloc == null) || (dloc.seg.id != sessloc.seg.id))
 	    return;
 	for(DisplayIcon disp : icons) {
 	    if((disp.sc == null) || filter(disp))
@@ -760,7 +760,7 @@ public class MiniMap extends Widget {
     public void drawparts(GOut g){
 	drawmap(g);
 	drawmarkers(g);
-	boolean playerSegment = (sessloc != null) && ((curloc == null) || (sessloc.seg == curloc.seg));
+	boolean playerSegment = (sessloc != null) && ((curloc == null) || (sessloc.seg.id == curloc.seg.id));
 	if(zoomlevel <= 2 && CFG.MMAP_GRID.get()) {drawgrid(g);}
 	if(playerSegment && zoomlevel <= 1 && CFG.MMAP_VIEW.get()) {drawview(g);}
 	if(playerSegment && CFG.MMAP_SHOW_PATH.get()) {drawMovement(g);}

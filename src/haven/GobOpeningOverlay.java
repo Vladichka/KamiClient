@@ -120,7 +120,7 @@ public class GobOpeningOverlay extends GobInfo {
 		    g.chcolor(OPENINGS.get(buff.res.get().name));
 		    g.frect(sc, buffSize);
 		    g.chcolor(Color.WHITE);
-		    Tex number = openingValue(buff.ameter);
+		    Tex number = openingValue(buff.ameter());
 		    g.aimage(number, sc.add(buffSizeCenter), 0.5, 0.5);
 		    sc.x += buffSize.x + UI.scale(1);
 		    continue;
