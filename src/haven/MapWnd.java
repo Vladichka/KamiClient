@@ -513,16 +513,16 @@ public class MapWnd extends WindowX implements Console.Directory {
     }
     
     public static class SMarkerType extends MarkerType {
-	private Resource.Spec spec;
+	private Resource.Saved spec;
 	private Tex icon = null;
-	
-	public SMarkerType(Resource.Spec spec) {
+
+	public SMarkerType(Resource.Saved spec) {
 	    this.spec = spec;
 	}
 	
 	public Tex icon() {
 	    if(icon == null) {
-		BufferedImage img = spec.loadsaved().flayer(Resource.imgc).img;
+		BufferedImage img = spec.get().flayer(Resource.imgc).img;
 		icon = new TexI(PUtils.uiscale(img, new Coord((iconsz * img.getWidth())/ img.getHeight(), iconsz)));
 	    }
 	    return(icon);
@@ -849,56 +849,56 @@ public class MapWnd extends WindowX implements Console.Directory {
     public void markobj(long gobid, long oid, Indir<Resource> resid, String nm) {
 	synchronized(deferred) {
 	    deferred.add(new Runnable() {
-		double f = 0;
-		public void run() {
-		    Resource res = resid.get();
-		    String rnm = nm;
-		    if(rnm == null) {
-			Resource.Tooltip tt = res.layer(Resource.tooltip);
-			if(tt == null)
-			    return;
-			rnm = tt.t;
-		    }
-		    double now = Utils.rtime();
-		    if(f == 0)
-			f = now;
-		    Gob gob = ui.sess.glob.oc.getgob(gobid);
-		    if(gob == null) {
-			if(now - f < 1.0)
-			    throw(new Loading());
-			return;
-		    }
-		    Coord tc = gob.rc.floor(tilesz);
-		    MCache.Grid obg = ui.sess.glob.map.getgrid(tc.div(cmaps));
-		    SMarker mark;
-		    if(!view.file.lock.writeLock().tryLock())
-			throw(new Loading());
-		    try {
-			MapFile.GridInfo info = view.file.gridinfo.get(obg.id);
-			if(info == null)
-			    throw(new Loading());
-			Coord sc = tc.add(info.sc.sub(obg.gc).mul(cmaps));
-			SMarker prev = view.file.smarker(res.name, info.seg, sc);
-			if(prev == null) {
-			    mark = new SMarker(info.seg, sc, rnm, oid, new Resource.Spec(Resource.remote(), res.name, res.ver));
-			    view.file.add(mark);
-			} else {
-			    mark = prev;
-			    if((prev.seg != info.seg) || !eq(prev.tc, sc) || !eq(prev.nm, rnm)) {
-				prev.seg = info.seg;
-				prev.tc = sc;
-				prev.nm = rnm;
-				view.file.update(prev);
-			    }
+		    double f = 0;
+		    public void run() {
+			Resource res = resid.get();
+			String rnm = nm;
+			if(rnm == null) {
+			    Resource.Tooltip tt = res.layer(Resource.tooltip);
+			    if(tt == null)
+				return;
+			    rnm = tt.t;
 			}
-		    } finally {
-			view.file.lock.writeLock().unlock();
+			double now = Utils.rtime();
+			if(f == 0)
+			    f = now;
+			Gob gob = ui.sess.glob.oc.getgob(gobid);
+			if(gob == null) {
+			    if(now - f < 1.0)
+				throw(new Loading());
+			    return;
+			}
+			Coord tc = gob.rc.floor(tilesz);
+			MCache.Grid obg = ui.sess.glob.map.getgrid(tc.div(cmaps));
+			SMarker mark;
+			if(!view.file.lock.writeLock().tryLock())
+			    throw(new Loading());
+			try {
+			    MapFile.GridInfo info = view.file.gridinfo.get(obg.id);
+			    if(info == null)
+				throw(new Loading());
+			    Coord sc = tc.add(info.sc.sub(obg.gc).mul(cmaps));
+			    SMarker prev = view.file.smarker(res.name, info.seg, sc);
+			    if(prev == null) {
+				mark = new SMarker(info.seg, sc, rnm, oid, new Resource.Saved(Resource.remote(), res.name, res.ver));
+				view.file.add(mark);
+			    } else {
+				mark = prev;
+				if((prev.seg != info.seg) || !eq(prev.tc, sc) || !eq(prev.nm, rnm)) {
+				    prev.seg = info.seg;
+				    prev.tc = sc;
+				    prev.nm = rnm;
+				    view.file.update(prev);
+				}
+			    }
+			} finally {
+			    view.file.lock.writeLock().unlock();
+			}
+			synchronized(gob) {
+			    gob.setattr(new MarkerID(gob, mark));
+			}
 		    }
-		    synchronized(gob) {
-			gob.setattr(new MarkerID(gob, mark));
-		    }
-		}
-	    });
+		});
 	}
     }
     

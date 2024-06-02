@@ -63,12 +63,7 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 	this.hostname = hostname;
 	this.port = port;
     }
-    
-    @Override
-    public String title() {
-	return null;
-    }
-    
+
     public Bootstrap() {
 	this(defserv.get(), mainport.get());
 	if(useinitauth) {
@@ -110,21 +105,19 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 	return(ret);
     }
 
-    private void transtoken() {
-	/* XXX: Transitory, remove when appropriate. */
-	String oldtoken = getpref("savedtoken", "");
-	String tokenname = getpref("tokenname", "");
-	if((oldtoken.length() == 64) && (tokenname.length() > 0)) {
-	    setpref("savedtoken-" + tokenname, oldtoken);
-	    setpref("savedtoken", "");
-	}
+    private static String mangleuser(String user) {
+	if(user.length() <= 32)
+	    return(user);
+	/* Mangle name because Java pref names have a somewhat
+	 * ridiculously short limit. */
+	return(Utils.byte2hex(Digest.hash(Digest.MD5, user.getBytes(Utils.utf8))));
     }
 
-    public static byte[] gettoken2(String user, String hostname) {
-	return(getprefb("savedtoken-" + user, hostname, null, false));
+    public static byte[] gettoken(String user, String hostname) {
+	return(getprefb("savedtoken-" + mangleuser(user), hostname, null, false));
     }
 
-    public static void rottokens2(String user, String hostname, boolean creat, boolean rm) {
+    public static void rottokens(String user, String hostname, boolean creat, boolean rm) {
 	List<String> names = new ArrayList<>(Utils.getprefsl("saved-tokens@" + hostname, new String[] {}));
 	creat = creat || (!rm && names.contains(user));
 	if(rm || creat)
@@ -134,27 +127,10 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 	Utils.setprefsl("saved-tokens@" + hostname, names);
     }
 
-    public static void settoken2(String user, String hostname, byte[] token) {
-	Utils.setpref("savedtoken-" + user + "@" + hostname, (token == null) ? "" : Utils.byte2hex(token));
-	rottokens(user, hostname, token != null, true);
-    }
-    
-    public static byte[] gettoken(String user, String hostname) {
-	return AccountList.getToken(user, hostname);
-    }
-    
-    public static void rottokens(String user, String hostname, boolean creat, boolean rm) {
-	if(rm && !creat) {
-	    AccountList.removeToken(user, hostname);
-	}
-    }
-    
     public static void settoken(String user, String hostname, byte[] token) {
-	if(token == null) {
-	    AccountList.removeToken(user, hostname);
-	} else {
-	    AccountList.setToken(user, hostname, token);
-	}
+	String prefnm = user;
+	Utils.setpref("savedtoken-" + mangleuser(user) + "@" + hostname, (token == null) ? "" : Utils.byte2hex(token));
+	rottokens(user, hostname, token != null, true);
     }
 
     private Message getmsg() throws InterruptedException {
@@ -185,11 +161,9 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 
     public UI.Runner run(UI ui) throws InterruptedException {
 	ui.setreceiver(this);
-	ui.bind(ui.root.add(new LoginScreen(hostname)), 1);
+	ui.newwidgetp(1, ($1, $2) -> new LoginScreen(hostname), 0, new Object[] {Coord.z});
 	String loginname = getpref("loginname", "");
 	boolean savepw = false;
-	String tokenhex;
-	transtoken();
 	String authserver = (authserv.get() == null) ? hostname : authserv.get();
 	int authport = Bootstrap.authport.get();
 	Session sess;
@@ -207,14 +181,13 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		this.inittoken = null;
 		authed: try(AuthClient auth = new AuthClient(authserver, authport)) {
 		    authaddr = auth.address();
-		    if(!Arrays.equals(inittoken, getprefb("lasttoken-" + inituser, hostname, null, false))) {
+		    if(!Arrays.equals(inittoken, getprefb("lasttoken-" + mangleuser(inituser), hostname, null, false))) {
 			String authed = auth.trytoken(inituser, inittoken);
-			setpref("lasttoken-" + inituser, Utils.byte2hex(inittoken));
+			setpref("lasttoken-" + mangleuser(inituser), Utils.byte2hex(inittoken));
 			if(authed != null) {
 			    acctname = authed;
 			    cookie = auth.getcookie();
 			    settoken(authed, hostname, auth.gettoken());
-			    AccountList.storeAccount(authed, Utils.byte2hex(auth.gettoken()));
 			    break authed;
 			}
 		    }
@@ -241,8 +214,8 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		    Message msg = getmsg();
 		    if(msg.id == 1) {
 			if(msg.name == "login") {
-			    creds = (AuthClient.Credentials) msg.args[0];
-			    savepw = (Boolean) msg.args[1];
+			    creds = (AuthClient.Credentials)msg.args[0];
+			    savepw = (Boolean)msg.args[1];
 			    loginname = creds.name();
 			    break;
 			}
@@ -262,7 +235,6 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		    if(savepw) {
 			byte[] ntoken = (creds instanceof AuthClient.TokenCred) ? ((AuthClient.TokenCred)creds).token : auth.gettoken();
 			settoken(acctname, hostname, ntoken);
-			AccountList.storeAccount(acctname, Utils.byte2hex(ntoken));
 		    }
 		} catch(UnknownHostException e) {
 		    ui.uimsg(1, "error", "Could not locate server");
@@ -288,7 +260,7 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 			    break connect;
 			} catch(Connection.SessionConnError err) {
 			} catch(Connection.SessionError err) {
-			    ui.uimsg(1, "error", err.toString());
+			    ui.uimsg(1, "error", err.getMessage());
 			    continue retry;
 			}
 		    }

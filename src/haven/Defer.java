@@ -109,7 +109,7 @@ public class Defer extends ThreadGroup {
 	}
     }
 
-    public class Future<T> implements Runnable, Prioritized {
+    public class Future<T> implements Runnable, Prioritized, haven.Future<T> {
 	public final Callable<T> task;
 	private Runnable callback;
 	private final AccessControlContext secctx;
@@ -330,6 +330,13 @@ public class Defer extends ThreadGroup {
     public static <T> Future<T> later(Callable<T> task) {
 	Defer d = getgroup();
 	return(d.defer(task));
+    }
+
+    public static <T> Future<T> later(Runnable task, T result) {
+	return(later(() -> {
+		    task.run();
+		    return(result);
+		}));
     }
 
     public String stats() {

@@ -43,14 +43,14 @@ import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.util.List;
 import java.util.regex.Matcher;
-
+import haven.render.Location;
+import static haven.Inventory.invsq;
 import static haven.Action.*;
 import static haven.Inventory.*;
 import static haven.ItemFilter.*;
 import static haven.KeyBinder.*;
 
 public class GameUI extends ConsoleHost implements Console.Directory, UI.MessageWidget {
-    public static final Text.Foundry msgfoundry = RootWidget.msgfoundry;
     private static final int blpw = UI.scale(142), brpw = UI.scale(142);
     public final String chrid, genus;
     public final long plid;
@@ -115,31 +115,54 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     public long lastopponent = -1;
     public Thread keyboundActionThread;
 
-    private static final OwnerContext.ClassResolver<BeltSlot> beltctxr = new OwnerContext.ClassResolver<BeltSlot>()
+    public static abstract class BeltSlot {
+	public final int idx;
+
+	public BeltSlot(int idx) {
+	    this.idx = idx;
+	}
+
+	public abstract void draw(GOut g);
+	public abstract void use(MenuGrid.Interaction iact);
+    }
+
+    private static final OwnerContext.ClassResolver<ResBeltSlot> beltctxr = new OwnerContext.ClassResolver<ResBeltSlot>()
 	.add(GameUI.class, slot -> slot.wdg())
 	.add(Glob.class, slot -> slot.wdg().ui.sess.glob)
 	.add(Session.class, slot -> slot.wdg().ui.sess);
-    public class BeltSlot implements GSprite.Owner {
-	public final int idx, lst;
-	public final Indir<Resource> res;
-	public final Message sdt;
+    public class ResBeltSlot extends BeltSlot implements GSprite.Owner, RandomSource {
+	public final ResData rdt;
 
-	public BeltSlot(int idx, Indir<Resource> res, Message sdt, int lst) {
-	    this.idx = idx;
-	    this.res = res;
-	    this.sdt = sdt;
-	    this.lst = lst;
+	public ResBeltSlot(int idx, ResData rdt) {
+	    super(idx);
+	    this.rdt = rdt;
 	}
 
 	private GSprite spr = null;
 	public GSprite spr() {
 	    GSprite ret = this.spr;
 	    if(ret == null)
-		ret = this.spr = GSprite.create(this, res.get(), new MessageBuf(sdt));
+		ret = this.spr = GSprite.create(this, rdt.res.get(), new MessageBuf(rdt.sdt));
 	    return(ret);
 	}
 
-	public Resource getres() {return(res.get());}
+	public void draw(GOut g) {
+	    try {
+		spr().draw(g);
+	    } catch(Loading l) {}
+	}
+
+	public void use(MenuGrid.Interaction iact) {
+	    Object[] args = {idx, iact.btn, iact.modflags};
+	    if(iact.mc != null) {
+		args = Utils.extend(args, iact.mc.floor(OCache.posres));
+		if(iact.click != null)
+		    args = Utils.extend(args, iact.click.clickargs());
+	    }
+	    GameUI.this.wdgmsg("belt", args);
+	}
+
+	public Resource getres() {return(rdt.res.get());}
 	public Random mkrandoom() {return(new Random(System.identityHashCode(this)));}
 	public <T> T context(Class<T> cl) {return(beltctxr.context(cl, this));}
 	private GameUI wdg() {return(GameUI.this);}
@@ -159,45 +182,51 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    super(sz);
 	}
 
+	public void draw(GOut g) {
+	    try {
+		MenuGrid.PagButton btn = pag.button();
+		btn.draw(g, btn.spr());
+	    } catch(Loading l) {
+	    }
+	}
+
+	public void use(MenuGrid.Interaction iact) {
+	    try {
+		pag.scm.use(pag.button(), iact, false);
+	    } catch(Loading l) {
+	    }
+	}
+
+	public static MenuGrid.Pagina resolve(MenuGrid scm, Indir<Resource> resid) {
+	    Resource res = resid.get();
+	    Resource.AButton act = res.layer(Resource.action);
+	    /* XXX: This is quite a hack. Is there a better way? */
+	    if((act != null) && (act.ad.length == 0))
+		return(scm.paginafor(res.indir()));
+	    return(scm.paginafor(resid));
+	}
+    }
+
+    /* XXX: Remove me */
+    public BeltSlot mkbeltslot(int idx, ResData rdt) {
+	Resource res = rdt.res.get();
+	Resource.AButton act = res.layer(Resource.action);
+	if(act != null) {
+	    if(act.ad.length == 0)
+		return(new PagBeltSlot(idx, menu.paginafor(res.indir())));
+	    return(new PagBeltSlot(idx, menu.paginafor(rdt.res)));
+	}
+	return(new ResBeltSlot(idx, rdt));
+    }
+
+    public abstract class Belt extends Widget implements DTarget, DropTarget {
+	public Belt(Coord sz) {
+	    super(sz);
+	}
+
 	public void act(int idx, MenuGrid.Interaction iact) {
-	    BeltSlot slot = belt[idx];
-	    boolean local = false;
-	    Resource res = null;
-	    if(slot != null) {
-		if(slot.lst == 1) {
-		    local = true;
-		} else if(slot.lst < 0) {
-		    try {
-			res = slot.res.get();
-			local = res.layer(Resource.action) != null;
-		    } catch(Loading l) {
-		    }
-		}
-	    }
-	    if(local && (menu != null)) {
-		if(res != null) {
-		    MenuGrid.Pagina pag;
-		    /* XXX: This is a hack. The pagina system needs to be remade. */
-		    if(res != null)
-			pag = menu.paginafor(res.indir());
-		    else
-			pag = menu.paginafor(slot.res);
-		    try {
-			MenuGrid.PagButton btn = pag.button();
-			menu.use(btn, iact, false);
-		    } catch(Loading l) {
-		    }
-		}
-	    } else {
-		Object[] args = {idx, iact.btn, iact.modflags};
-		if(iact.mc != null) {
-		    args = Utils.extend(args, iact.mc.floor(OCache.posres));
-		    if(iact.click != null)
-			args = Utils.extend(args, iact.click.clickargs());
-		}
-		GameUI.this.wdgmsg("belt", args);
-		return;
-	    }
+	    if(belt[idx] != null)
+		belt[idx].use(iact);
 	}
 
 	public void keyact(int slot) {
@@ -246,12 +275,16 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	public boolean dropthing(Coord c, Object thing) {
 	    int slot = beltslot(c);
 	    if(slot != -1) {
-		if(thing instanceof Resource) {
-		    Resource res = (Resource)thing;
-		    if(res.layer(Resource.action) != null) {
-			GameUI.this.wdgmsg("setbelt", slot, res.name);
-			return(true);
+		if(thing instanceof MenuGrid.Pagina) {
+		    MenuGrid.Pagina pag = (MenuGrid.Pagina)thing;
+		    try {
+			if(pag.id instanceof Indir)
+			    GameUI.this.wdgmsg("setbelt", slot, "res", pag.res().name);
+			else
+			    GameUI.this.wdgmsg("setbelt", slot, "pag", pag.id);
+		    } catch(Loading l) {
 		    }
+		    return(true);
 		}
 	    }
 	    return(false);
@@ -262,7 +295,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
 	    String chrid = (String)args[0];
-	    long plid = Utils.uint32((Integer)args[1]);
+	    long plid = Utils.uiv(args[1]);
 	    String genus = "";
 	    if(args.length > 2)
 		genus = (String)args[2];
@@ -750,7 +783,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	public Hidewnd(Coord sz, String cap, boolean lg) {
 	    super(sz, cap, lg);
 	}
-    
+ 
 	public Hidewnd(Coord sz, String cap) {
 	    super(sz, cap);
 	}
@@ -762,7 +795,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    }
 	    super.wdgmsg(sender, msg, args);
 	}
-    
+ 
 	public void toggle() {
 	    show(!visible);
 	    if(visible) {this.raise();}
@@ -1201,6 +1234,11 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 			    }
 			}
 			break;
+		    case "obj":
+			if(child instanceof Window) {
+			    ((Window)child).settrans(new GobTrans(map, Utils.uiv(opta[1])));
+			}
+			break;
 		    }
 		}
 	    }
@@ -1212,6 +1250,55 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	}
     }
 
+    public static class GobTrans implements Window.Transition<GobTrans.Anim, GobTrans.Anim> {
+	public static final double time = 0.1;
+	public final MapView map;
+	public final long gobid;
+
+	public GobTrans(MapView map, long gobid) {
+	    this.map = map;
+	    this.gobid = gobid;
+	}
+
+	private Coord oc() {
+	    Gob gob = map.ui.sess.glob.oc.getgob(gobid);
+	    if(gob == null)
+		return(null);
+	    Location.Chain loc = Utils.el(gob.getloc());
+	    if(loc == null)
+		return(null);
+	    return(map.screenxf(loc.fin(Matrix4f.id).mul4(Coord3f.o).invy()).round2());
+	}
+
+	public class Anim extends Window.NormAnim {
+	    public final Window wnd;
+	    private Coord oc;
+
+	    public Anim(Window wnd, boolean hide, Anim from) {
+		super(time, from, hide);
+		this.wnd = wnd;
+		this.oc = wnd.c.add(wnd.sz.div(2));
+	    }
+
+	    public void draw(GOut g, Tex tex) {
+		GOut pg = g.reclipl(wnd.c.inv(), wnd.parent.sz);
+		Coord cur = oc();
+		if(cur != null)
+		    this.oc = cur;
+		Coord sz = tex.sz();
+		double na = Utils.smoothstep(this.na);
+		pg.chcolor(255, 255, 255, (int)(na * 255));
+		double fac = 1.0 - na;
+		Coord c = this.oc.sub(sz.div(2)).mul(1.0 - na).add(wnd.c.mul(na));
+		pg.image(tex, c.add((int)(sz.x * fac * 0.5), (int)(sz.y * fac * 0.5)),
+			 Coord.of((int)(sz.x * (1.0 - fac)), (int)(sz.y * (1.0 - fac))));
+	    }
+	}
+
+	public Anim show(Window wnd, Anim hide) {return(new Anim(wnd, false, hide));}
+	public Anim hide(Window wnd, Anim show) {return(new Anim(wnd, true,  show));}
+    }
+
     public void cdestroy(Widget w) {
 	if(w instanceof Window) {
 	    String wndid = wndids.reverse().get((Window)w);
@@ -1221,7 +1308,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    }
 	}
 	if(w instanceof GItem) {
-	    Collection<DraggedItem> hand = handHidden ? handSave : this.hand; 
+	    Collection<DraggedItem> hand = handHidden ? handSave : this.hand;
 	    for(Iterator<DraggedItem> i = hand.iterator(); i.hasNext();) {
 		DraggedItem di = i.next();
 		if(di.item == w) {
@@ -1334,7 +1421,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     
     private String iconconfname() {
 	StringBuilder buf = new StringBuilder();
-	buf.append("data/mm-icons");
+	buf.append("data/mm-icons-2");
 	if(genus != null)
 	    buf.append("/" + genus);
 	if(ui.sess != null)
@@ -1343,18 +1430,13 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     }
 
     private GobIcon.Settings loadiconconf() {
-	if(ResCache.global == null)
-	    return(new GobIcon.Settings());
+	String nm = iconconfname();
 	try {
-	    try(StreamMessage fp = new StreamMessage(ResCache.global.fetch(iconconfname()))) {
-		return(GobIcon.Settings.load(fp, ui));
-	    }
-	} catch(java.io.FileNotFoundException e) {
-	    return(new GobIcon.Settings());
+	    return(GobIcon.Settings.load(ui, nm));
 	} catch(Exception e) {
-	    new Warning(e, "failed to load icon-conf").issue();
-	    return(new GobIcon.Settings());
+	    new Warning(e, "could not load icon-conf").issue();
 	}
+	return(new GobIcon.Settings(ui, nm));
     }
 
     public void saveiconconf() {
@@ -1486,14 +1568,14 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	if(msg == "err") {
 	    String err = (String)args[0];
 	    Reactor.EMSG.onNext(err);
-	    error(err);
+	    ui.error(err);
 	} else if(msg == "msg") {
 	    String text = (String)args[0];
 	    Reactor.IMSG.onNext(text);
-	    msg(text);
+	    ui.msg(text);
 	} else if(msg == "prog") {
 	    if(args.length > 0) {
-		double p = ((Number)args[0]).doubleValue() / 100.0;
+		double p = Utils.dv(args[0]) / 100.0;
 		if(prog == null)
 		    prog = adda(new Progress(p), 0.5, 0.35);
 		else
@@ -1505,23 +1587,51 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		}
 	    }
 	} else if(msg == "setbelt") {
-	    int slot = (Integer)args[0];
+	    int slot = Utils.iv(args[0]);
 	    if(args.length < 2) {
 		belt[slot] = null;
 	    } else {
-		Indir<Resource> res = ui.sess.getres((Integer)args[1]);
+		Indir<Resource> res = ui.sess.getresv(args[1]);
 		Message sdt = Message.nil;
 		if(args.length > 2)
 		    sdt = new MessageBuf((byte[])args[2]);
-		int lst = -1;
-		if(args.length > 3)
-		    lst = (Integer)args[3];
-		belt[slot] = new BeltSlot(slot, res, sdt, lst);
+		ResData rdt = new ResData(res, sdt);
+		ui.sess.glob.loader.defer(() -> {
+			belt[slot] = mkbeltslot(slot, rdt);
+		    }, null);
+	    }
+	} else if(msg == "setbelt2") {
+	    int slot = Utils.iv(args[0]);
+	    if(args.length < 2) {
+		belt[slot] = null;
+	    } else {
+		switch((String)args[1]) {
+		case "p": {
+		    Object id = args[2];
+		    belt[slot] = new PagBeltSlot(slot, menu.paginafor(id, null));
+		    break;
+		}
+		case "r": {
+		    Indir<Resource> res = ui.sess.getresv(args[2]);
+		    ui.sess.glob.loader.defer(() -> {
+			    belt[slot] = new PagBeltSlot(slot, PagBeltSlot.resolve(menu, res));
+			}, null);
+		    break;
+		}
+		case "d": {
+		    Indir<Resource> res = ui.sess.getresv(args[2]);
+		    Message sdt = Message.nil;
+		    if(args.length > 2)
+			sdt = new MessageBuf((byte[])args[3]);
+		    belt[slot] = new ResBeltSlot(slot, new ResData(res, sdt));
+		    break;
+		}
+		}
 	    }
 	} else if(msg == "polowner") {
-	    int id = (Integer)args[0];
+	    int id = Utils.iv(args[0]);
 	    String o = (String)args[1];
-	    boolean n = ((Integer)args[2]) != 0;
+	    boolean n = Utils.bv(args[2]);
 	    if(o != null)
 		o = o.intern();
 	    String cur = polowners.get(id);
@@ -1534,54 +1644,26 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    }
 	    polowners.put(id, o);
 	} else if(msg == "showhelp") {
-	    Indir<Resource> res = ui.sess.getres((Integer)args[0]);
+	    Indir<Resource> res = ui.sess.getresv(args[0]);
 	    if(help == null)
 		help = adda(new HelpWnd(res), 0.5, 0.25);
 	    else
 		help.res = res;
 	} else if(msg == "map-mark") {
-	    long gobid = Utils.uint32((Integer)args[0]);
+	    long gobid = Utils.uiv(args[0]);
 	    long oid = ((Number)args[1]).longValue();
-	    Indir<Resource> res = ui.sess.getres((Integer)args[2]);
+	    Indir<Resource> res = ui.sess.getresv(args[2]);
 	    String nm = (String)args[3];
 	    if(mapfile != null)
 		mapfile.markobj(gobid, oid, res, nm);
 	} else if(msg == "map-icons") {
 	    GobIcon.Settings conf = this.iconconf;
-	    int tag = (Integer)args[0];
+	    int tag = Utils.iv(args[0]);
 	    if(args.length < 2) {
 		if(conf.tag != tag)
 		    wdgmsg("map-icons", conf.tag);
-	    } else if(args[1] instanceof String) {
-		Resource.Spec res = new Resource.Spec(null, (String)args[1], (Integer)args[2]);
-		GobIcon.Setting cset = new GobIcon.Setting(res);
-		boolean has = conf.settings.containsKey(res.name);
-		cset.show = cset.defshow = ((Integer)args[3]) != 0;
-		conf.receive(tag, new GobIcon.Setting[] {cset});
-		saveiconconf();
-		if(!has && conf.notify) {
-		    ui.sess.glob.loader.defer(() -> {
-			    Resource lres = Resource.remote().load(res.name, res.ver).get();
-			    Resource.Tooltip tip = lres.layer(Resource.tooltip);
-			    if(tip != null)
-				msg(String.format("%s added to list of seen icons.", tip.t));
-			}, (Supplier<Object>)() -> null);
-		}
-	    } else if(args[1] instanceof Object[]) {
-		Object[] sub = (Object[])args[1];
-		int a = 0;
-		Collection<GobIcon.Setting> csets = new ArrayList<>();
-		while(a < sub.length) {
-		    String resnm = (String)sub[a++];
-		    int resver = (Integer)sub[a++];
-		    int fl = (Integer)sub[a++];
-		    Resource.Spec res = new Resource.Spec(null, resnm, resver);
-		    GobIcon.Setting cset = new GobIcon.Setting(res);
-		    cset.show = cset.defshow = ((fl & 1) != 0);
-		    csets.add(cset);
-		}
-		conf.receive(tag, csets.toArray(new GobIcon.Setting[0]));
-		saveiconconf();
+	    } else {
+		conf.receive(args);
 	    }
 	} else {
 	    super.uimsg(msg, args);
@@ -1713,18 +1795,16 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		    Utils.setprefb("wndvis-map", mapfile.visible());
 	    });
 	    add(new MenuCheckBox("lbtn-ico", kb_ico, "Icon settings"), 0, 0).state(() -> wndstate(iconwnd)).click(() -> {
-		if(iconconf == null)
-		    return;
-		if(iconwnd == null) {
-		    //TODO: switch when custom settings re-implemented
-		    iconwnd = new GobIcon.SettingsWindow(iconconf, () -> Utils.defer(GameUI.this::saveiconconf));
-		    //iconwnd = new GobIconSettings(iconconf, () -> Utils.defer(GameUI.this::saveiconconf));
-		    fitwdg(GameUI.this.add(iconwnd, Utils.getprefc("wndc-icon", new Coord(200, 200))));
-		} else {
-		    ui.destroy(iconwnd);
-		    iconwnd = null;
-		}
-	    });
+		    if(iconconf == null)
+			return;
+		    if(iconwnd == null) {
+			iconwnd = new GobIcon.SettingsWindow(iconconf);
+			fitwdg(GameUI.this.add(iconwnd, Utils.getprefc("wndc-icon", new Coord(200, 200))));
+		    } else {
+			ui.destroy(iconwnd);
+			iconwnd = null;
+		    }
+		});
 	}
 
 	public void draw(GOut g) {
@@ -1835,7 +1915,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     
     public void msg(String msg, Color color, Color logcol) {
 	msgtime = Utils.rtime();
-	lastmsg = msgfoundry.render(msg, color);
+	lastmsg = RootWidget.msgfoundry.render(msg, color);
 	Gob g = detectGob;
 	if(g != null) {
 	    Matcher m = GeneralGobInfo.GOB_Q.matcher(msg);
@@ -1862,6 +1942,12 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	msg(msg, color, color);
 	if(sfx != null) {Audio.play(sfx);}
     }
+
+    public void msg(String msg, Color color, Audio.Clip sfx) {
+	msg(msg, color);
+	ui.sfxrl(sfx);
+    }
+
     
     public static final Resource errsfx = Resource.local().loadwait("sfx/error");
     private double lasterrsfx = 0;
@@ -1878,6 +1964,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    ui.sfx(RootWidget.msgsfx);
 	    lastmsgsfx = now;
 	}
+	ui.error(msg);
     }
     
     public void msg(String msg, MsgType type) {
@@ -2003,7 +2090,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		g.image(invsq, beltc(i));
 		try {
 		    if(belt[slot] != null)
-			belt[slot].spr().draw(g.reclip(c.add(UI.scale(1), UI.scale(1)), invsq.sz().sub(UI.scale(2), UI.scale(2))));
+			belt[slot].draw(g.reclip(c.add(UI.scale(1), UI.scale(1)), invsq.sz().sub(UI.scale(2), UI.scale(2))));
 		} catch(Loading e) {}
 		g.chcolor(156, 180, 158, 255);
 		FastText.aprintf(g, c.add(invsq.sz().sub(UI.scale(2), 0)), 1, 1, "F%d", i + 1);
@@ -2092,7 +2179,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		g.image(invsq, beltc(i));
 		try {
 		    if(belt[slot] != null) {
-			belt[slot].spr().draw(g.reclip(c.add(UI.scale(1), UI.scale(1)), invsq.sz().sub(UI.scale(2), UI.scale(2))));
+			belt[slot].draw(g.reclip(c.add(UI.scale(1), UI.scale(1)), invsq.sz().sub(UI.scale(2), UI.scale(2))));
 		    }
 		} catch(Loading e) {}
 		g.chcolor(156, 180, 158, 255);

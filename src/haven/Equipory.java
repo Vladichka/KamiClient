@@ -77,7 +77,7 @@ public class Equipory extends Widget implements DTarget {
 	STORE_HAT(16), //16: Hat from store
 	EYES(17),      //17: Eyes
 	MOUTH(18);     //18: Mouth
-    
+ 
 	public final int idx;
 	SLOTS(int idx) {
 	    this.idx = idx;
@@ -120,7 +120,7 @@ public class Equipory extends Widget implements DTarget {
 	    else if(args[0] == null)
 		gobid = -1;
 	    else
-		gobid = Utils.uint32((Integer)args[0]);
+		gobid = Utils.uiv(args[0]);
 	    return(new Equipory(gobid));
 	}
     }

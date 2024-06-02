@@ -29,20 +29,21 @@ package haven;
 import integrations.food.FoodService;
 import rx.functions.Action0;
 
+import java.util.*;
+import haven.render.*;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
-import java.util.*;
 
 import static haven.WItem.*;
 
-public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owner {
+public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owner, RandomSource {
     private static ItemFilter filter;
     private static long lastFilter = 0;
     public Indir<Resource> res;
     public MessageBuf sdt;
     public int meter = 0;
-    public long meterUpdated = 0; //last time meter was updated, ms 
+    public long meterUpdated = 0; //last time meter was updated, ms
     public int num = -1;
     public Widget contents = null;
     public String contentsnm = null;
@@ -67,14 +68,26 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
     @RName("item")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
-	    int res = (Integer)args[0];
-	    Message sdt = (args.length > 1)?new MessageBuf((byte[])args[1]):Message.nil;
-	    return(new GItem(ui.sess.getres(res), sdt));
+	    Indir<Resource> res = ui.sess.getresv(args[0]);
+	    Message sdt = (args.length > 1) ? new MessageBuf((byte[])args[1]) : Message.nil;
+	    return(new GItem(res, sdt));
 	}
     }
 
-    public interface ColorInfo {
+    public interface RStateInfo {
+	public Pipe.Op rstate();
+    }
+
+    public interface ColorInfo extends RStateInfo {
 	public Color olcol();
+
+	public default Pipe.Op rstate() {
+	    return(buf -> {
+		    Color col = olcol();
+		    if(col != null)
+			new ColorMask(col).apply(buf);
+		});
+	}
     }
 
     public interface OverlayInfo<T> {
@@ -321,11 +334,11 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 
     public void uimsg(String name, Object... args) {
 	if(name == "num") {
-	    num = (Integer)args[0];
+	    num = Utils.iv(args[0]);
 	} else if(name == "chres") {
 	    synchronized(this) {
-		res = ui.sess.getres((Integer)args[0]);
-		sdt = (args.length > 1)?new MessageBuf((byte[])args[1]):MessageBuf.nil;
+		res = ui.sess.getresv(args[0]);
+		sdt = (args.length > 1) ? new MessageBuf((byte[])args[1]) : MessageBuf.nil;
 		spr = null;
 	    }
 	} else if(name == "tt") {
@@ -336,7 +349,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    meterUpdated = System.currentTimeMillis();
 	    if(sendttupdate){wdgmsg("ttupdate");}
 	} else if(name == "meter") {
-	    meterUpdated = System.currentTimeMillis();	    
+	    meterUpdated = System.currentTimeMillis();
 	    meter = (int)((Number)args[0]).doubleValue();
 	} else if(name == "contopen") {
 	    if(contentswnd != null) {
@@ -344,7 +357,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 		if(args[0] == null)
 		    nst = (contentswnd.st != "wnd");
 		else
-		    nst = ((Integer)args[0]) != 0;
+		    nst = Utils.bv(args[0]);
 		contentswnd.wndshow(nst);
 	    }
 	} else {

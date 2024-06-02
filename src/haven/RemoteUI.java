@@ -26,6 +26,8 @@
 
 package haven;
 
+import java.util.*;
+
 public class RemoteUI implements UI.Receiver, UI.Runner {
     public final Session sess;
 
@@ -76,7 +78,7 @@ public class RemoteUI implements UI.Receiver, UI.Runner {
 			if (cargs[0].toString().equals(Config.getPlayerName()) && pargs[0].toString().equals("misc"))
 			    createWidget = false;
 		    if (createWidget)
-		    	ui.newwidget(id, type, parent, pargs, cargs);
+		    	ui.newwidgetp(id, type, parent, pargs, cargs);
 		} else if(msg.type == RMessage.RMSG_WDGMSG) {
 		    int id = msg.int32();
 		    String name = msg.string();
@@ -90,7 +92,24 @@ public class RemoteUI implements UI.Receiver, UI.Runner {
 		    Object[] pargs = msg.list();
 		    ui.addwidget(id, parent, pargs);
 		} else if(msg.type == RMessage.RMSG_WDGBAR) {
-		    /* Ignore for now. */
+		    Collection<Integer> deps = new ArrayList<>();
+		    while(!msg.eom()) {
+			int dep = msg.int32();
+			if(dep == -1)
+			    break;
+			deps.add(dep);
+		    }
+		    Collection<Integer> bars = deps;
+		    if(!msg.eom()) {
+			bars = new ArrayList<>();
+			while(!msg.eom()) {
+			    int bar = msg.int32();
+			    if(bar == -1)
+				break;
+			    bars.add(bar);
+			}
+		    }
+		    ui.wdgbarrier(deps, bars);
 		}
 	    }
 	} finally {

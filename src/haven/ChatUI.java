@@ -1128,7 +1128,7 @@ public class ChatUI extends Widget {
 	    String name = (String)args[0];
 	    Channel ret = new SimpleChat(false, name);
 	    if(args.length > 1)
-		ret.icon(ui.sess.getres((Integer)args[1]));
+		ret.icon(ui.sess.getresv(args[1]));
 	    return(ret);
 	}
     }
@@ -1136,10 +1136,10 @@ public class ChatUI extends Widget {
     public static class $MChat implements Factory {
 	public Widget create(UI ui, Object[] args) {
 	    String name = (String)args[0];
-	    int urgency = (Integer)args[1];
+	    int urgency = Utils.iv(args[1]);
 	    Channel ret = new MultiChat(false, name, urgency);
 	    if(args.length > 2)
-		ret.icon(ui.sess.getres((Integer)args[2]));
+		ret.icon(ui.sess.getresv(args[2]));
 	    return(ret);
 	}
     }
@@ -1148,17 +1148,17 @@ public class ChatUI extends Widget {
 	public Widget create(UI ui, Object[] args) {
 	    Channel ret = new PartyChat();
 	    if(args.length > 0)
-		ret.icon(ui.sess.getres((Integer)args[0]));
+		ret.icon(ui.sess.getresv(args[0]));
 	    return(ret);
 	}
     }
     @RName("pmchat")
     public static class $PMChat implements Factory {
 	public Widget create(UI ui, Object[] args) {
-	    int other = (Integer)args[0];
+	    int other = Utils.iv(args[0]);
 	    Channel ret = new PrivChat(true, other);
 	    if(args.length > 1)
-		ret.icon(ui.sess.getres((Integer)args[1]));
+		ret.icon(ui.sess.getresv(args[1]));
 	    return(ret);
 	}
     }
