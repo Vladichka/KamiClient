@@ -5,7 +5,7 @@ import haven.*;
 import haven.resutil.*;
 import java.util.*;
 
-@haven.FromResource(name = "lib/plants", version = 10)
+@haven.FromResource(name = "lib/plants", version = 11)
 public class TrellisPlant implements Sprite.Factory {
     public final int num;
 
