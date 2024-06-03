@@ -209,7 +209,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	}
 	
 	public void mousemove(Coord c) {
-	    if(drag != null && tool.visible) {
+	    if(drag != null) {
 		Coord nsz = parentpos(MapWnd.this, c).add(dragc);
 		nsz.x = Math.max(nsz.x, UI.scale(150));
 		nsz.y = Math.max(nsz.y, UI.scale(150));
