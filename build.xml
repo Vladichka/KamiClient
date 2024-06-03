@@ -6,6 +6,7 @@
   <target name="build-env">
     <mkdir dir="build" />
     <mkdir dir="build/classes" />
+    <mkdir dir="lib/ext" />
     <available property="has-res-jar" file="bin/builtin-res.jar" />
     <available property="unpacked-lib" file="build/classes-lib" />
   </target>

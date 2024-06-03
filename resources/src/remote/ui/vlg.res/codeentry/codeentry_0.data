@@ -4,11 +4,11 @@
 #String key[0]
 wdg
 #String value[0]
-Village
+haven.res.ui.vlg.Village
 #start of requirements
 #int32 length
 1
 #String resource
 ui/polity
 #uint16 version
-10
+11

@@ -271,6 +271,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    if(slot != -1) {
 		if(thing instanceof MenuGrid.Pagina) {
 		    MenuGrid.Pagina pag = (MenuGrid.Pagina)thing;
+		    if(ToolBelt.setCustomPagina(GameUI.this, pag, slot)) {
+			return (true);
+		    }
 		    try {
 			if(pag.id instanceof Indir)
 			    GameUI.this.wdgmsg("setbelt", slot, "res", pag.res().name);
@@ -1613,6 +1616,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 			sdt = new MessageBuf((byte[])args[3]);
 		    belt[slot] = new ResBeltSlot(slot, new ResData(res, sdt));
 		    break;
+		}
+		case "s": {
+		    belt[slot] = ToolBelt.makeCustom(this, slot, (String) args[2]);
 		}
 		}
 	    }

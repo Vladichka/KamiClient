@@ -1,4 +1,4 @@
-#CODE LAYER FOR RES www//\ui\vlg.res
+#CODE LAYER FOR RES ui/vlg.res
 #String class_name
 #Note: the .class file will have the same name as this file
-Village
+haven.res.ui.vlg.Village
