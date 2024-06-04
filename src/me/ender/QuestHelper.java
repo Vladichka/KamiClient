@@ -97,8 +97,11 @@ public class QuestHelper extends GameUI.Hidewnd {
 	    GameUI gui = ui.gui;
 	    if(gui == null || gui.chrwdg == null) {return;}
 	    QuestWnd questWnd = gui.chrwdg.quest;
-	    int currentQuest = Optional.ofNullable(questWnd.quest)
+	    if (questWnd == null || questWnd.quest == null)
+		return;
+	    int currentQuest = Optional.of(questWnd.quest)
 		.map(QuestWnd.Quest.Info::questid).orElse(-1);
+	    
 	    
 	    if(!refresh) {
 		if(prevQuest != currentQuest) {

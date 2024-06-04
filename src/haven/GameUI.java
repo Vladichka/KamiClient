@@ -296,7 +296,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    String genus = "";
 	    if(args.length > 2)
 		genus = (String)args[2];
-	    return(new GameUI(chrid, plid, genus));
+	    GameUI gui = new GameUI(chrid, plid, genus);
+	    ui.setGUI(gui);
+	    return gui;
 	}
     }
     
