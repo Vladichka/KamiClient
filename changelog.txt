@@ -1,4 +1,8 @@
 $size[14]{$u{update on 04.06.2024:}
+  * fixed decal click on chests
+  * added disable window animation option
+
+$size[14]{$u{update on 04.06.2024:}
   * fixed compact mode map resizing
   * maybe fixed a login crash with quest helper.. Can't reproduce on will
 
