@@ -2238,7 +2238,7 @@ public class MapView extends PView implements DTarget, Console.Directory {
 		Gob g = ui.sess.glob.oc.getgob((int)args[5]);
 		if (g != null)
 		{
-		    if (g.getres().name.equals("gfx/terobjs/cupboard") && (int)args[3] != 2) {
+		    if ((g.getres().name.contains("cupboard") || g.getres().name.contains("chest")) && (int)args[3] != 2) {
 			args[4] = 0;
 			args[7] = 0;
 		    }

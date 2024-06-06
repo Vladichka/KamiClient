@@ -1324,6 +1324,9 @@ public class OptWnd extends WindowX {
 	y += STEP;
 	panel.add(new CFGBox("Improve weapon damage tooltip", CFG.IMPROVE_DAMAGE_TIP, "Make damage tooltip show base damage and damage based on its quality and your strength"), new Coord(x, y));
 	
+	y += STEP;
+	panel.add(new CFGBox("Disable window animation", CFG.DISABLE_WINDOW_ANIMATION, "Disabled fade-in and fade-out animation for windows"), new Coord(x, y));
+	
 	my = Math.max(my, y);
 	
 	panel.add(new PButton(UI.scale(200), "Back", 27, main), new Coord(0, my + UI.scale(35)));

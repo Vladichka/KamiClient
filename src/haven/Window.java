@@ -763,6 +763,9 @@ public class Window extends Widget implements DTarget {
 	public double a = 0.0, na = 0.0;
 	
 	public NormAnim(double t, double fromn, boolean rev) {
+	    if (CFG.DISABLE_WINDOW_ANIMATION.get())
+		t = 0;
+	    
 	    this.s = 1.0 / t;
 	    this.na = fromn;
 	    this.rev = rev;
@@ -785,11 +788,9 @@ public class Window extends Widget implements DTarget {
     
     public static class FadeAnim extends NormAnim {
 	public static final double minfac = 0.1;
-	public static final double time = 0.1;
+	public static double time = 0.1;
 	
-	public FadeAnim(boolean hide, FadeAnim from) {
-	    super(time, from, hide);
-	}
+	public FadeAnim(boolean hide, FadeAnim from) {super(time, from, hide);}
 	
 	public void draw(GOut g, Tex tex) {
 	    double na = Utils.smoothstep(this.na);

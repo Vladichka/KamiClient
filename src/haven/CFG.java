@@ -121,6 +121,7 @@ public class CFG<T> {
     public static final CFG<Boolean> DISPLAY_CRACKING_TEXTURE = new CFG("display.display_cracking_texture", true);
     public static final CFG<Boolean> ENHANCE_WATERFALL = new CFG("display.enhance_waterfall", true);
     public static final CFG<Boolean> IGNORE_CERTAIN_REMOTE_UI = new CFG("display.ignore_certain_remote_ui", false);
+    public static final CFG<Boolean> DISABLE_WINDOW_ANIMATION = new CFG("ui.disable_window_animation", false);
     
     
     private static final String CONFIG_JSON = "config.json";
