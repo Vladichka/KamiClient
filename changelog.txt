@@ -1,6 +1,7 @@
-$size[14]{$u{update on 04.06.2024:}
+$size[14]{$u{update on 06.06.2024:}
   * fixed decal click on chests
   * added disable window animation option
+  * grid tickness is based on render scale now. (You need to re-enable grid after changing the scale)
 
 $size[14]{$u{update on 04.06.2024:}
   * fixed compact mode map resizing
