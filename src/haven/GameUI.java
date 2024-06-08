@@ -318,8 +318,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		    blpanel.move();
 		if(fold_bl[2] != null)
 		    fold_bl[2].presize();
-		if (qqview != null)
-		    qqview.presize();
+		if (questPanel != null)
+		    ((AlignPanel)questPanel).move();
 	    }
 	});
 	chat.show(Utils.getprefb("chatvis", true));
@@ -344,7 +344,16 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 			y = GameUI.this.sz.y - mapmenupanel.sz.y;
 		    return(new Coord(0, Math.min(x,y)));
 		}
-	    }, new Coord(-1, 0)));
+	    }, new Coord(-1, 0))
+	{
+	    @Override
+	    public void move(double a)
+	    {
+		super.move(a);
+		if (questPanel != null)
+		    ((AlignPanel)questPanel).move();
+	    }
+	});
 	brpanel = add(new Hidepanel("gui-br", null, new Coord( 1,  1)) {
 		public void move(double a) {
 		    super.move(a);
@@ -385,10 +394,12 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	CFG.Observer<Boolean> change = cfg -> {
 	    synchronized (this) {
 		if (!blpanel.tvis && CFG.VANILLA_CHAT.get()) {
-		    blpanel.cshow(true);
-		    mapmenupanel.cshow(true);
+		    blpanel.mshow2(true);
+		    mapmenupanel.mshow2(true);
 		}
-		resizeLayout(GameUI.this.sz);
+		if (questPanel != null)
+		    ((AlignPanel)questPanel).move();
+		resize(GameUI.this.sz);
 	    }
 	};
 	CFG.VANILLA_CHAT.observe(change);
@@ -761,6 +772,18 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    updfold(false);
 	    return(vis);
 	}
+	
+	public boolean mshow2(final boolean vis) {
+	    clearanims(Anim.class);
+	    if(vis)
+		show();
+	    if(!vis)
+		hide();
+	    move(0);
+	    tvis = vis;
+	    updfold(false);
+	    return(vis);
+	}
 
 	public boolean mshow() {
 	    return(mshow(Utils.getprefb(id + "-visible", true)));
@@ -1060,6 +1083,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     }
 
     private final BMap<String, Window> wndids = new HashBMap<String, Window>();
+    
+    private Widget questPanel;
 
     public void addchild(Widget child, Object... args) {
 	String place = ((String)args[0]).intern();
@@ -1185,18 +1210,25 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    if(qqview != null)
 		qqview.reqdestroy();
 	    final Widget cref = qqview = child;
-	    add(new AlignPanel() {
+	    questPanel = add(new AlignPanel() {
 		    {add(cref);}
-
-		    protected Coord getc() {
-			return(new Coord(10, mapmenupanel.c.y - this.sz.y - 10));
-		    }
-
-		    public void cdestroy(Widget ch) {
-			qqview = null;
-			destroy();
-		    }
-		});
+			
+		public final Hidepanel mapmenureference = mapmenupanel;
+		
+		protected Coord getc() {
+		    return(new Coord(10, mapmenureference.c.y - this.sz.y - 10));
+		}
+		
+		@Override
+		public void move(Coord c) {
+		    super.move(getc());
+		}
+		
+		public void cdestroy(Widget ch) {
+		    qqview = null;
+		    destroy();
+		}
+	    });
 	} else if(place == "misc") {
 	    Coord c;
 	    int a = 1;

@@ -119,13 +119,17 @@ public class Widget {
     
     public static abstract class AlignPanel extends Widget {
 	protected abstract Coord getc();
-	
 	public <T extends Widget> T add(T child) {
 	    super.add(child);
 	    pack();
 	    if(parent != null)
 		presize();
 	    return(child);
+	}
+	
+	public void move()
+	{
+	    move(getc());
 	}
 	
 	public void cresize(Widget ch) {
