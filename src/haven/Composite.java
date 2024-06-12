@@ -117,6 +117,7 @@ public class Composite extends Drawable implements EquipTarget {
 		np.set(nposesold?0:ipollen);
 		this.poses = nposes.stream().map(pose -> pose.res.get().name).collect(Collectors.toList());
 		gob.poseUpdated();
+		gob.updPose(new HashSet<>(poses));
 		nposes = null;
 		updequ();
 	    } catch(Loading e) {}

@@ -28,6 +28,9 @@ package haven;
 
 import haven.render.*;
 import haven.res.gfx.fx.msrad.MSRad;
+import haven.sprites.ArcheryRadiusSprite;
+import haven.sprites.ArcheryVectorSprite;
+import haven.sprites.AuraCircleSprite;
 import integrations.mapv4.MappingClient;
 import me.ender.ClientUtils;
 import me.ender.Reflect;
@@ -79,6 +82,18 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     private GobRadius radius = null;
     private long eseq = 0;
     private GobOpeningOverlay openings;
+    public Boolean knocked = null;
+    public int playerPoseUpdatedCounter = 0;
+    public Boolean isMannequin = null;
+    private Boolean playerAlarmPlayed = false;
+    public Boolean isComposite = false;
+    public Boolean isDeadPlayer = false;
+    public double gobSpeed = 0;
+    public Boolean imInCoracle = false;
+    public Boolean imOnSkis = false;
+    public Boolean imDrinking = false;
+    private Overlay archeryVector;
+    private Overlay archeryRadius;
     
     public static final ChangeCallback CHANGED = new ChangeCallback() {
 	@Override
@@ -654,6 +669,14 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		return(ol);
 	}
 	return(null);
+    }
+    
+    public void removeOl(Overlay ol) {
+	if (ol != null) {
+	    synchronized (ols) {
+		ol.remove();
+	    }
+	}
     }
 
     private void overlayAdded(Overlay item) {
@@ -1526,6 +1549,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if(status.updated(StatusType.marker, StatusType.id)) {
 	    markGob();
 	}
+	
+	if (CFG.SHOW_CRITTER_AURA.get())
+	    toggleCritterAuras();
     }
     
     private void updateColor() {
@@ -1631,4 +1657,196 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     public String toString() {
 	return(String.format("#<ob %d %s>", id, getattr(Drawable.class)));
     }
+    
+    public void updPose(HashSet<String> poses) {
+	isComposite = true;
+	Iterator<String> iter = poses.iterator();
+	while (iter.hasNext()) {
+	    String s = iter.next();
+	    if (s.contains("knock") || s.contains("dead") || s.contains("waterdead")) {
+		knocked = true;
+		break;
+	    } else {
+		knocked = false;
+	    }
+	    if (s.contains("mannequin")){
+		isMannequin = true;
+		break;
+	    } else {
+		isMannequin = false;
+	    }
+	}
+	if (knocked != null && knocked) {
+	    try {
+		delattr(GobAura.class);
+		customRadiusOverlay = null;
+	    } catch (Exception e){
+		/*CrashLogger.logCrash(e);*/
+	    }
+	} else {
+	    knocked = false;
+	}
+	if (this.getres().name.equals("gfx/borka/body") && isMannequin != null && !isMannequin){
+	    boolean imOnLand = true;
+	    imInCoracle = false;
+	    imOnSkis = false;
+	    Iterator<String> iter2 = poses.iterator();
+	    while (iter2.hasNext()) {
+		String s = iter2.next();
+		if (s.contains("coracleidle") || s.contains("coraclerowan")) {
+		    imOnLand = false;
+		    imInCoracle = true;
+		    break;
+		}
+		if (s.contains("skian-idle") || s.contains("skian-walk") || s.contains("skian-run")) {
+		    imOnSkis = true;
+		    break;
+		}
+		if (s.contains("rowboat") || s.contains("snekkja") || s.contains("knarr") || s.contains("dugout")) {
+		    imOnLand = false;
+		    break;
+		}
+	    }
+	    if (poses.contains("spear-ready")) {
+		archeryIndicator(155, imOnLand);
+	    } else if (poses.contains("sling-aim")) {
+		archeryIndicator(155, imOnLand);
+	    } else if (poses.contains("drawbow")) {
+		for (GAttrib g : this.attr.values()) {
+		    if (g instanceof Drawable) {
+			if (g instanceof Composite) {
+			    Composite c = (Composite) g;
+			    if (c.comp.cequ.size() > 0) {
+				for (Composited.ED item : c.comp.cequ) {
+				    if (item.res.res.get().basename().equals("huntersbow"))
+					archeryIndicator(195, imOnLand);
+				    else if (item.res.res.get().basename().equals("rangersbow"))
+					archeryIndicator(252, imOnLand);
+				}
+			    }
+			}
+		    }
+		}
+	    } else {
+		removeOl(archeryVector);
+		archeryVector = null;
+		removeOl(archeryRadius);
+		archeryRadius = null;
+	    }
+	    if (poses.contains("drinkan")) {
+		imDrinking = true;
+	    } else {
+		imDrinking = false;
+	    }
+	    if  (!isDeadPlayer){
+		checkIfPlayerIsDead(poses);
+		if (playerPoseUpdatedCounter >= 2) { // ND: Do this to prevent the sounds from being played if you load in an already knocked/killed hearthling.
+		    // TODO: Implement...
+		    //knockedOrDeadPlayerSoundEfect(poses);
+		}
+		playerPoseUpdatedCounter = playerPoseUpdatedCounter + 1;
+	    }
+	}
+    }
+    
+    public void checkIfPlayerIsDead(HashSet<String> poses){
+	Gob hearthling = this;
+	final Timer timer = new Timer(); // ND: Need to do this with a timer cause the knocked out birds get loaded a few miliseconds later. I hope 100 is enough to prevent any issues.
+	timer.schedule(new TimerTask(){
+	    @Override
+	    public void run() {
+		if (poses.contains("rigormortis")) {
+		    isDeadPlayer = true;
+		    return;
+		}
+		if (poses.contains("knock") || poses.contains("drowned")) {
+		    isDeadPlayer = true;
+		    for (GAttrib g : hearthling.attr.values()) {
+			if (g instanceof Drawable) {
+			    if (g instanceof Composite) {
+				Composite c = (Composite) g;
+				if (c.comp.cequ.size() > 0) {
+				    for (Composited.ED item : c.comp.cequ) {
+					if (item.res.res.get().basename().equals("knockchirp")) {
+					    isDeadPlayer = false;
+					    break;
+					}
+				    }
+				}
+			    }
+			}
+		    }
+		}
+		timer.cancel();
+	    }
+	}, 100);
+    }
+    
+    private void archeryIndicator(int range, boolean imOnLand) {
+	if (CFG.FLATTEN_TERRAIN.get() && imOnLand){
+	    if (this.archeryVector == null) {
+		archeryVector = new Overlay(this, new ArcheryVectorSprite(this, range));
+		synchronized (ols) {
+		    addol(archeryVector);
+		}
+	    }
+	}
+	if (this.archeryRadius == null) {
+	    archeryRadius = new Overlay(this, new ArcheryRadiusSprite(this, range));
+	    synchronized (ols) {
+		addol(archeryRadius);
+	    }
+	}
+    }
+    
+    public void toggleCritterAuras() {
+	if (getres() != null) {
+	    String resourceName = getres().name;
+	    if (knocked != null && knocked == false) {
+		if (Arrays.stream(Utils.CRITTERAURA_PATHS).anyMatch(resourceName::matches)) {
+		    setCritterAura(CFG.SHOW_CRITTER_AURA.get(), false);
+		} else if (resourceName.matches(".*(rabbit|bunny)$")) {
+		    setCritterAura(CFG.SHOW_CRITTER_AURA.get(), true);
+		}
+	    } else if (knocked != null && knocked == true) {
+		if (Arrays.stream(Utils.CRITTERAURA_PATHS).anyMatch(resourceName::matches)) {
+		    setCritterAura(false, false);
+		} else if (resourceName.matches(".*(rabbit|bunny)$")) {
+		    setCritterAura(false, true);
+		}
+	    }
+	    else if (!isComposite) { //ND: This also works for critters that can't have a knocked status, like insects.
+		if (Arrays.stream(Utils.CRITTERAURA_PATHS).anyMatch(resourceName::matches)) {
+		    setCritterAura(CFG.SHOW_CRITTER_AURA.get(), false);
+		} else if (resourceName.matches(".*(rabbit|bunny)$")) {
+		    setCritterAura(CFG.SHOW_CRITTER_AURA.get(), true);
+		}
+	    }
+	}
+    }
+
+    public void setCritterAura(boolean on, boolean rabbit) {
+	if (rabbit) {
+	    setCircleOl(AuraCircleSprite.rabbitAuraColor, on);
+	} else {
+	    setCircleOl(AuraCircleSprite.genericCritterAuraColor, on);
+	}
+    }
+    private GobAura customRadiusOverlay = null;
+    private void setCircleOl(Color col, boolean on) {
+	if (on) {
+	    if (customRadiusOverlay != null) {
+		delattr(GobAura.class);
+		customRadiusOverlay = null;
+	    }
+	    customRadiusOverlay = new GobAura(this, new AuraCircleSprite(this, col));
+	    synchronized (ols) {
+		setattr(customRadiusOverlay);
+	    }
+	} else if (customRadiusOverlay != null) {
+	    delattr(GobAura.class);
+	    customRadiusOverlay = null;
+	}
+    }
+    
 }

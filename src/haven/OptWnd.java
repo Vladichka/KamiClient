@@ -1163,6 +1163,9 @@ public class OptWnd extends WindowX {
 	y += STEP;
 	panel.add(new CFGBox("Display enhanced waterfall", CFG.ENHANCE_WATERFALL, "Enables the waterfall animation / foam from Bullfinch Falls update. (Needs area reload)", true), x, y);
 	
+	y += STEP;
+	panel.add(new CFGBox("Display critter auras (Havoc)", CFG.SHOW_CRITTER_AURA, "Displays a circle around critters", true), x, y);
+	
 	panel.add(new PButton(UI.scale(200), "Back", 27, main), new Coord(0, my + UI.scale(35)));
 	panel.pack();
 	title.c.x = (panel.sz.x - title.sz.x) / 2;
@@ -1227,6 +1230,9 @@ public class OptWnd extends WindowX {
 	
 	y += STEP;
 	panel.add(new CFGBox("Always show UI on start", CFG.DISABLE_UI_HIDING), x, y);
+	
+	y += STEP;
+	panel.add(new CFGBox("Enable container window spreading", CFG.UI_DISABLE_CONTAINER_POS, "If enabled container windows would be auto positioned next to other, if enabled then they will stack in same position."), x, y);
 	
 	y += STEP;
 	panel.add(new CFGBox("Show F-key tool bar", CFG.SHOW_TOOLBELT_0), x, y);

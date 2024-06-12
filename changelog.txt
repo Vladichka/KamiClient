@@ -1,3 +1,8 @@
+$size[14]{$u{update on 12.06.2024:}
+  * Added critter aura from havoc
+  * Added option to spread container windows from ender
+  * minor crash fixes
+
 $size[14]{$u{update on 06.06.2024:}
   * fixed decal click on chests
   * added disable window animation option
