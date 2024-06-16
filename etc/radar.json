@@ -32,5 +32,6 @@
   {"match": "gfx/terobjs/items/truffle-white2", "icon": "gfx/invobjs/herbs/truffle-white", "visible": true},
   {"match": "gfx/terobjs/items/arrow", "icon": "gfx/invobjs/arrow", "visible": true},
   {"match": "gfx/kritter/midgeswarm/midgeswarm", "icon": "radar/midgeswarm", "visible": true},
-  {"match": "gfx/terobjs/trees/oldtrunk", "icon":  "gfx/invobjs/wblock-mirkwood", "visible":  true}
+  {"match": "gfx/terobjs/trees/oldtrunk", "icon":  "gfx/invobjs/wblock-mirkwood", "visible":  false},
+  {"match":  "gfx/terobjs/vehicle/plow", "icon":  "paginae/bld/metalplow", "visible":  false}
 ]
