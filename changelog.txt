@@ -1,6 +1,10 @@
+$size[14]{$u{update on 16.06.2024:}
+  * added metal plow to radar
+  * minor crash fixes
+
 $size[14]{$u{update on 12.06.2024:}
-  * Added critter aura from havoc
-  * Added option to spread container windows from ender
+  * added critter aura from havoc
+  * added option to spread container windows from ender
   * minor crash fixes
 
 $size[14]{$u{update on 06.06.2024:}
