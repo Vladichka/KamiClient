@@ -681,7 +681,7 @@ public class QuestWnd extends Widget {
 	if(!wdgs.isEmpty()) {
 	    for (Quest.Box wdg : wdgs) {
 		for (int i = 0; i < wdg.cond.length; i++) {
-		    if(wdg.cond[i].desc.contains(name)) {
+		    if(wdg.cond[i].desc != null && wdg.cond[i].desc.contains(name)) {
 			return i;
 		    }
 		}
