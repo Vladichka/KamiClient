@@ -33,40 +33,42 @@ import javax.sound.sampled.*;
 import dolda.xiphutil.*;
 
 public class Audio {
-    public static boolean enabled = true;
-    private static Player player;
     public static final AudioFormat fmt = new AudioFormat(44100, 16, 2, true, false);
+    public static boolean enabled = true;
     public static double volume = Double.parseDouble(Utils.getpref("sfxvol", "1.0"));
-    public static int bufsize = CFG.AUDIO_BUFFER.get();
-
+    //FIXME: check if we can use loftar's buffer settings, or switch to custom
+    //public static int bufsize = CFG.AUDIO_BUFFER.get();
+    private static int bufsize = Utils.getprefi("audiobuf", Math.round(fmt.getSampleRate() * 0.05f)) * fmt.getFrameSize();
+    private static Player player;
+    
     public static void setvolume(double volume) {
 	Audio.volume = volume;
 	Utils.setpref("sfxvol", Double.toString(volume));
     }
-
+    
     public interface CS {
 	public int get(double[][] buf, int len);
     }
-
+    
     public interface Clip extends Resource.IDLayer<String> {
 	public CS stream();
 	public default String layerid() {return("");}
 	public default double bvol() {return(1.0);}
     }
     public static final Class<Clip> clip = Clip.class;
-
+    
     public static class Mixer implements CS {
 	public final boolean cont;
 	private final Collection<CS> clips = new LinkedList<CS>();
-
+	
 	public Mixer(boolean continuous) {
 	    this.cont = continuous;
 	}
-
+	
 	public Mixer() {
 	    this(false);
 	}
-
+	
 	public int get(double[][] dst, int ns) {
 	    int nch = dst.length;
 	    double[][] buf = new double[nch][ns];
@@ -106,13 +108,13 @@ public class Audio {
 		return((max > 0)?max:-1);
 	    }
 	}
-
+	
 	public void add(CS clip) {
 	    synchronized(clips) {
 		clips.add(clip);
 	    }
 	}
-
+	
 	public void stop(CS clip) {
 	    synchronized(clips) {
 		for(Iterator<CS> i = clips.iterator(); i.hasNext();) {
@@ -123,7 +125,7 @@ public class Audio {
 		}
 	    }
 	}
-
+	
 	public boolean playing(CS clip) {
 	    synchronized(clips) {
 		for(CS cs : clips) {
@@ -133,32 +135,32 @@ public class Audio {
 	    }
 	    return(false);
 	}
-
+	
 	public int size() {
 	    synchronized(clips) {
 		return(clips.size());
 	    }
 	}
-
+	
 	public boolean empty() {
 	    synchronized(clips) {
 		return(clips.isEmpty());
 	    }
 	}
-
+	
 	public Collection<CS> current() {
 	    synchronized(clips) {
 		return(new ArrayList<CS>(clips));
 	    }
 	}
-
+	
 	public void clear() {
 	    synchronized(clips) {
 		clips.clear();
 	    }
 	}
     }
-
+    
     public static class PCMClip implements CS {
 	public static final int UN8 = 0, SN8 = 1, SN16 = 2, SN32 = 3;
 	public final InputStream clip;
@@ -167,24 +169,24 @@ public class Audio {
 	private final byte[] dbuf = new byte[256];
 	private int head = 0, tail = 0;
 	private boolean eof = false;
-
+	
 	public PCMClip(InputStream clip, int nch, int sfmt) {
 	    this.clip = clip;
 	    this.sch = nch;
 	    switch(this.sfmt = sfmt) {
-	    case UN8:  ssz = 1; break;
-	    case SN8:  ssz = 1; break;
-	    case SN16: ssz = 2; break;
-	    case SN32: ssz = 4; break;
-	    default: throw(new IllegalArgumentException("sfmt " + sfmt));
+		case UN8:  ssz = 1; break;
+		case SN8:  ssz = 1; break;
+		case SN16: ssz = 2; break;
+		case SN32: ssz = 4; break;
+		default: throw(new IllegalArgumentException("sfmt " + sfmt));
 	    }
 	}
-
+	
 	public PCMClip size(int size) {
 	    this.size = size;
 	    return(this);
 	}
-
+	
 	private int read(byte[] buf, int off, int len) {
 	    if(eof)
 		return(-1);
@@ -210,7 +212,7 @@ public class Audio {
 		return(-1);
 	    }
 	}
-
+	
 	public int get(double[][] dst, int ns) {
 	    int nch = dst.length;
 	    double[] dec = new double[sch];
@@ -229,24 +231,24 @@ public class Audio {
 		}
 		for(int ch = 0; ch < sch; ch++) {
 		    switch(sfmt) {
-		    case UN8:
-			dec[ch] = ((dbuf[head++] & 0xff) - 0x80) * 0x1.0p-7;
-			break;
-		    case SN8:
-			dec[ch] = dbuf[head++] * 0x1.0p-7;
-			break;
-		    case SN16:
-			dec[ch] = ((int)(short)((dbuf[head++] & 0xff) |
-						((dbuf[head++] & 0xff) << 8)))
-			    * 0x1.0p-15;
-			break;
-		    case SN32:
-			dec[ch] = ((dbuf[head++] & 0xff) |
-				   ((dbuf[head++] & 0xff) << 8) |
-				   ((dbuf[head++] & 0xff) << 16) |
-				   ((dbuf[head++] & 0xff) << 24))
-			    * 0x1.0p-31;
-			break;
+			case UN8:
+			    dec[ch] = ((dbuf[head++] & 0xff) - 0x80) * 0x1.0p-7;
+			    break;
+			case SN8:
+			    dec[ch] = dbuf[head++] * 0x1.0p-7;
+			    break;
+			case SN16:
+			    dec[ch] = ((int)(short)((dbuf[head++] & 0xff) |
+				((dbuf[head++] & 0xff) << 8)))
+				* 0x1.0p-15;
+			    break;
+			case SN32:
+			    dec[ch] = ((dbuf[head++] & 0xff) |
+				((dbuf[head++] & 0xff) << 8) |
+				((dbuf[head++] & 0xff) << 16) |
+				((dbuf[head++] & 0xff) << 24))
+				* 0x1.0p-31;
+			    break;
 		    }
 		}
 		for(int ch = 0; ch < nch; ch++)
@@ -254,14 +256,14 @@ public class Audio {
 	    }
 	    return(ns);
 	}
-
+	
 	public static CS fromwav(InputStream clip) throws IOException {
 	    if(s32(clip) != 0x46464952)
 		throw(new IOException("Not a WAVE file (non-RIFF header)"));
 	    int tsz = s32(clip);
 	    if(s32(clip) != 0x45564157)
 		throw(new IOException("Not a WAVE file (non-WAVE format)"));
-
+	    
 	    int nch = -1, rate = -1, fmt = -1;
 	    while(true) {
 		int id, sz;
@@ -290,11 +292,11 @@ public class Audio {
 		    if(((ssz * nch) != blsz) || ((ssz * nch * rate) != brate))
 			throw(new IOException("Malformed wave file (non-matching sample sizes)"));
 		    switch(ssz) {
-		    case 1: fmt = UN8;  break;
-		    case 2: fmt = SN16; break;
-		    case 4: fmt = SN32; break;
-		    default:
-			throw(new IOException("Unexpected sample format: " + ssz));
+			case 1: fmt = UN8;  break;
+			case 2: fmt = SN16; break;
+			case 4: fmt = SN32; break;
+			default:
+			    throw(new IOException("Unexpected sample format: " + ssz));
 		    }
 		} else if(id == 0x61746164) {
 		    if(nch < 0)
@@ -315,7 +317,7 @@ public class Audio {
 		}
 	    }
 	}
-
+	
 	private static int u8(InputStream clip) throws IOException {
 	    int ret = clip.read();
 	    if(ret < 0)
@@ -329,20 +331,20 @@ public class Audio {
 	    return(u8(clip) | (u8(clip) << 8) | (u8(clip) << 16) | (u8(clip) << 24));
 	}
     }
-
+    
     public static class VorbisClip implements CS {
 	public final VorbisStream clip;
 	private float[][] data = new float[1][0];
 	private int dp = 0;
-
+	
 	public VorbisClip(VorbisStream clip) {
 	    this.clip = clip;
 	}
-
+	
 	public VorbisClip(InputStream bs) throws IOException {
 	    this(new VorbisStream(bs));
 	}
-
+	
 	public int get(double[][] dst, int ns) {
 	    int nch = dst.length;
 	    if(data == null)
@@ -364,21 +366,21 @@ public class Audio {
 	    return(ns);
 	}
     }
-
+    
     public static class VolAdjust implements CS {
 	public final CS bk;
 	public double vol = 1.0, bal = 0.0;
 	private double[] cvol = {};
-
+	
 	public VolAdjust(CS bk, double vol) {
 	    this.bk = bk;
 	    this.vol = vol;
 	}
-
+	
 	public VolAdjust(CS bk) {
 	    this(bk, 1.0);
 	}
-
+	
 	public int get(double[][] dst, int ns) {
 	    int nch = dst.length;
 	    int ret = bk.get(dst, ns);
@@ -399,7 +401,7 @@ public class Audio {
 	    return(ret);
 	}
     }
-
+    
     public static class Resampler implements CS {
 	public final CS bk;
 	public double irate, orate;
@@ -408,21 +410,21 @@ public class Audio {
 	private double[] lval = {0}, nval = {0};
 	private double[][] data = {};
 	private int dp = 0, dl = 0;
-
+	
 	public Resampler(CS bk, double irate, double orate) {
 	    this.bk = bk;
 	    this.irate = irate;
 	    this.orate = orate;
 	}
-
+	
 	public Resampler(CS bk, double irate) {
 	    this(bk, irate, fmt.getSampleRate());
 	}
-
+	
 	public Resampler(CS bk) {
 	    this(bk, fmt.getSampleRate());
 	}
-
+	
 	public int get(double[][] dst, int ns) {
 	    int nch = dst.length;
 	    if(nval.length != nch) {
@@ -452,18 +454,18 @@ public class Audio {
 	    }
 	    return(ns);
 	}
-
+	
 	public Resampler sp(double sp) {this.sp = sp; return(this);}
     }
-
+    
     public static class Monitor implements CS {
 	public final CS bk;
 	public boolean eof = false;
-
+	
 	public Monitor(CS bk) {
 	    this.bk = bk;
 	}
-
+	
 	public int get(double[][] dst, int ns) {
 	    int ret = bk.get(dst, ns);
 	    if((ret < 0) && !eof) {
@@ -472,13 +474,13 @@ public class Audio {
 	    }
 	    return(ret);
 	}
-
+	
 	protected void eof() {
 	    synchronized(this) {
 		notifyAll();
 	    }
 	}
-
+	
 	public void finwait() throws InterruptedException {
 	    synchronized(this) {
 		while(!eof) {
@@ -487,10 +489,10 @@ public class Audio {
 	    }
 	}
     }
-
+    
     public static abstract class Repeater implements CS {
 	private CS cur = null;
-
+	
 	public int get(double[][] buf, int ns) {
 	    while(true) {
 		if(cur == null) {
@@ -503,24 +505,24 @@ public class Audio {
 		cur = null;
 	    }
 	}
-
+	
 	protected abstract CS cons();
     }
-
+    
     public static class LDump implements CS {
 	public final CS bk;
 	private double val = 0.0;
 	private int n = 0, iv;
-
+	
 	public LDump(CS bk, int iv) {
 	    this.bk = bk;
 	    this.iv = iv;
 	}
-
+	
 	public LDump(CS bk) {
 	    this(bk, 44100);
 	}
-
+	
 	public int get(double[][] buf, int ns) {
 	    int nch = buf.length;
 	    int ret = bk.get(buf, ns);
@@ -542,19 +544,19 @@ public class Audio {
 	    return(ret);
 	}
     }
-
+    
     private static class Player extends HackThread {
 	private final CS stream;
 	private final int nch;
 	private volatile boolean reopen = false;
-
+	
 	Player(CS stream) {
 	    super("Haven audio player");
 	    this.stream = stream;
 	    nch = fmt.getChannels();
 	    setDaemon(true);
 	}
-
+	
 	private int fillbuf(byte[] dst, int off, int len) {
 	    int ns = len / (2 * nch);
 	    double[][] val = new double[nch][ns];
@@ -583,11 +585,15 @@ public class Audio {
 	    }
 	    return(wr);
 	}
-
+	
 	public void run() {
 	    SourceDataLine line = null;
 	    try {
 		while(true) {
+		    synchronized(this) {
+			reopen = false;
+			this.notifyAll();
+		    }
 		    try {
 			line = (SourceDataLine)AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, fmt));
 			line.open(fmt, bufsize);
@@ -595,10 +601,6 @@ public class Audio {
 		    } catch(Exception e) {
 			e.printStackTrace();
 			return;
-		    }
-		    synchronized(this) {
-			reopen = false;
-			this.notifyAll();
 		    }
 		    byte[] buf = new byte[bufsize / 2];
 		    while(true) {
@@ -623,12 +625,12 @@ public class Audio {
 		    line.close();
 	    }
 	}
-
-	void reopen() {
+	
+	void reopen(boolean async) {
 	    try {
 		synchronized(this) {
 		    reopen = true;
-		    while(reopen && isAlive())
+		    while(!async && reopen && isAlive())
 			this.wait();
 		}
 	    } catch(InterruptedException e) {
@@ -636,7 +638,7 @@ public class Audio {
 	    }
 	}
     }
-
+    
     private static Player ckpl(boolean creat) {
 	synchronized(Audio.class) {
 	    if(enabled) {
@@ -654,7 +656,7 @@ public class Audio {
 	    }
 	}
     }
-
+    
     public static void play(CS clip) {
 	if(clip == null)
 	    throw(new NullPointerException());
@@ -662,13 +664,13 @@ public class Audio {
 	if(pl != null)
 	    ((Mixer)pl.stream).add(clip);
     }
-
+    
     public static void stop(CS clip) {
 	Player pl = ckpl(false);;
 	if(pl != null)
 	    ((Mixer)pl.stream).stop(clip);
     }
-
+    
     private static Map<Resource, Clip> resclips = new HashMap<>();
     public static Clip resclip(Resource res) {
 	Collection<Clip> clips = res.layers(Audio.clip, null);
@@ -684,40 +686,52 @@ public class Audio {
 	    List<Clip> clipl = new ArrayList<>(clips);
 	    if(clipl.size() == 2) {
 		ret = new Clip() {
-			public CS stream() {
-			    return(clipl.get((int)(Math.random() * 2)).stream());
-			}
-		    };
+		    public CS stream() {
+			return(clipl.get((int)(Math.random() * 2)).stream());
+		    }
+		};
 	    } else {
 		ret = new Clip() {
-			int last = -1;
-
-			public CS stream() {
-			    int c;
-			    if(last < 0) {
-				c = (int)(Math.random() * clipl.size());
-			    } else {
-				c = (int)(Math.random() * (clipl.size() - 1));
-				if(c >= last)
-				    c++;
-			    }
-			    return(clipl.get(last = c).stream());
+		    int last = -1;
+		    
+		    public CS stream() {
+			int c;
+			if(last < 0) {
+			    c = (int)(Math.random() * clipl.size());
+			} else {
+			    c = (int)(Math.random() * (clipl.size() - 1));
+			    if(c >= last)
+				c++;
 			}
-		    };
+			return(clipl.get(last = c).stream());
+		    }
+		};
 	    }
 	    resclips.put(res, ret);
 	    return(ret);
 	}
     }
-
+    
     public static CS fromres(Resource res) {
 	return(resclip(res).stream());
     }
-
+    
     public static void play(Resource res) {
 	play(fromres(res));
     }
-
+    
+    public static int bufsize() {
+	return(bufsize / fmt.getFrameSize());
+    }
+    
+    public static void bufsize(int nsz, boolean async) {
+	bufsize = nsz * fmt.getFrameSize();
+	Player pl = ckpl(false);
+	if(pl != null)
+	    pl.reopen(async);
+	Utils.setprefi("audiobuf", nsz);
+    }
+    
     public static void main(String[] args) throws Exception {
 	Collection<Monitor> clips = new LinkedList<Monitor>();
 	for(int i = 0; i < args.length; i++) {
@@ -733,31 +747,25 @@ public class Audio {
 	for(Monitor c : clips)
 	    c.finwait();
     }
-
+    
     static {
 	Console.setscmd("sfx", new Console.Command() {
-		public void run(Console cons, String[] args) {
-		    play(Loading.waitfor(Resource.remote().load(args[1])));
-		}
-	    });
-	Console.setscmd("sfxvol", new Console.Command() {
-		public void run(Console cons, String[] args) {
-		    setvolume(Double.parseDouble(args[1]));
-		}
-	    });
-	Console.setscmd("audiobuf", (cons, args) -> {
-	    int nsz = Integer.parseInt(args[1]);
-	    audiobuf(nsz);
+	    public void run(Console cons, String[] args) {
+		play(Loading.waitfor(Resource.remote().load(args[1])));
+	    }
 	});
-    }
-    
-    public static void audiobuf(int nsz) throws Exception {
-	if(nsz > 44100)
-	    throw(new Exception("Rejecting buffer longer than 1 second"));
-	bufsize = nsz * 4;
-	Player pl = ckpl(false);
-	if(pl != null)
-	    pl.reopen();
-	CFG.AUDIO_BUFFER.set(bufsize);
+	Console.setscmd("sfxvol", new Console.Command() {
+	    public void run(Console cons, String[] args) {
+		setvolume(Double.parseDouble(args[1]));
+	    }
+	});
+	Console.setscmd("audiobuf", new Console.Command() {
+	    public void run(Console cons, String[] args) throws Exception {
+		int nsz = Integer.parseInt(args[1]);
+		if(nsz > fmt.getSampleRate())
+		    throw(new Exception("Rejecting buffer longer than 1 second"));
+		bufsize(nsz, false);
+	    }
+	});
     }
 }
