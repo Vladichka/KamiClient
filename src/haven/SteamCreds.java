@@ -26,35 +26,37 @@
 
 package haven;
 
-public class UID extends Number {
-    public static final UID nil = new UID(0);
-    public final long bits;
+import java.io.*;
+import com.codedisaster.steamworks.*;
 
-    private UID(long bits) {
-	this.bits = bits;
-    }
-    public static UID of(long bits) {
-	if(bits == 0)
-	    return(nil);
-	return(new UID(bits));
-    }
+public class SteamCreds extends AuthClient.Credentials {
+    private final Steam api;
+    private final String name;
 
-    public long longValue() {return(bits);}
-
-    public byte byteValue() {return((byte)bits);}
-    public short shortValue() {return((short)bits);}
-    public int intValue() {return((int)bits);}
-    public float floatValue() {return((float)bits);}
-    public double doubleValue() {return((double)bits);}
-
-    public int hashCode() {
-	return(Long.hashCode(bits));
-    }
-    public boolean equals(Object x) {
-	return((x instanceof UID) && (((UID)x).bits == bits));
+    public SteamCreds() throws IOException {
+	if((api = Steam.get()) == null)
+	    throw(new IOException("Steam is not running"));
+	name = api.displayname();
     }
 
-    public String toString() {
-	return(Long.toUnsignedString(bits, 16));
+    public String name() {return(name);}
+
+    public String tryauth(AuthClient cl) throws IOException {
+	try(Steam.WebTicket tkt = api.webticket()) {
+	    Message rpl = cl.cmd("steam", Utils.byte2hex(tkt.data));
+	    String stat = rpl.string();
+	    if(stat.equals("ok")) {
+		String acct = rpl.string();
+		return(acct);
+	    } else if(stat.equals("no")) {
+		throw(new AuthException(rpl.string()));
+	    } else {
+		throw(new RuntimeException("Unexpected reply `" + stat + "' from auth server"));
+	    }
+	} catch(InterruptedException e) {
+	    throw(new IOException("interrupted", e));
+	} catch(Steam.SvcError e) {
+	    throw(new AuthException(e.getMessage()));
+	}
     }
 }

@@ -57,7 +57,7 @@ public class Resource implements Serializable {
     public static Class<Audio> audio = Audio.class;
     public static Class<Tooltip> tooltip = Tooltip.class;
     
-    private Collection<Layer> layers = new LinkedList<Layer>();
+    protected Collection<Layer> layers = new LinkedList<Layer>();
     public final String name;
     public int ver;
     public ResSource source;
@@ -171,15 +171,27 @@ public class Resource implements Serializable {
     
     public static interface Resolver {
 	public Indir<Resource> getres(int id);
-	
+
+	public default Indir<Resource> dynres(UID uid) {
+	    return(() -> {throw(new NoSuchResourceException(String.format("dyn/%x", uid.longValue()), 1, null));});
+	}
+
 	public default Indir<Resource> getresv(Object desc) {
 	    if(desc == null)
 		return(null);
+	    if(desc instanceof UID)
+		return(dynres((UID)desc));
 	    if(desc instanceof Number) {
 		int id = ((Number)desc).intValue();
 		if(id < 0)
 		    return(null);
 		return(this.getres(id));
+	    }
+	    if(desc instanceof Resource)
+		return(((Resource)desc).indir());
+	    if(desc instanceof Indir) {
+		@SuppressWarnings("unchecked") Indir<Resource> ret = (Indir<Resource>)desc;
+		return(ret);
 	    }
 	    throw(new ClassCastException("unknown type for resource id: " + desc));
 	}
@@ -223,7 +235,11 @@ public class Resource implements Serializable {
 	    public Indir<Resource> getres(int id) {
 		return(bk.getres(map.get(id)));
 	    }
-	    
+
+	    public Indir<Resource> dynres(UID uid) {
+		return(bk.dynres(uid));
+	    }
+
 	    public String toString() {
 		return(map.toString());
 	    }
@@ -235,7 +251,21 @@ public class Resource implements Serializable {
 	this.name = name;
 	this.ver = ver;
     }
-    
+
+    public static class Virtual extends Resource {
+	public Virtual(Pool pool, String name, int ver) {
+	    super(pool, name, ver);
+	}
+
+	public Virtual(String name, int ver) {
+	    this(remote(), name, ver);
+	}
+
+	public void add(Layer layer) {
+	    layers.add(layer);
+	}
+    }
+	
     public static void setcache(ResCache cache) {
 	prscache = cache;
     }
@@ -381,66 +411,29 @@ public class Resource implements Serializable {
 **/
     
     public static class HttpSource implements ResSource, Serializable {
-	public static final String USER_AGENT;
-	private final transient SslHelper ssl;
 	public URI base;
-	
-	static {
-	    StringBuilder buf = new StringBuilder();
-	    buf.append("Haven/1.0");
-	    if(!Config.confid.equals(""))
-		buf.append(" (" + Config.confid + ")");
-	    String jv = Utils.getprop("java.version", null);
-	    if((jv != null) && !jv.equals(""))
-		buf.append(" Java/" + jv);
-	    USER_AGENT = buf.toString();
-	}
-	
-	{
-	    ssl = new SslHelper();
-	    try {
-		ssl.trust(Resource.class.getResourceAsStream("ressrv.crt"));
-	    } catch(java.security.cert.CertificateException e) {
-		throw(new Error("Invalid built-in certificate", e));
-	    } catch(IOException e) {
-		throw(new Error(e));
-	    }
-	    ssl.ignoreName();
-	}
-	
+
 	public HttpSource(URI base) {
 	    this.base = base;
 	}
-	
+
 	private URI encodeuri(URI raw) throws IOException {
 	    /* This is kinda crazy, but it is, actually, how the Java
 	     * documentation recommends that it be done... */
 	    try {
-		return(new URI(new URI(raw.getScheme(), raw.getAuthority(), raw.getPath(), raw.getFragment()).toASCIIString()));
+		return(new URI(new URI(raw.getScheme(), raw.getUserInfo(), raw.getHost(), raw.getPort(), raw.getPath(), raw.getQuery(), raw.getFragment()).toASCIIString()));
 	    } catch(URISyntaxException e) {
 		throw(new IOException(e));
 	    }
 	}
 	
 	public InputStream get(String name) throws IOException {
-	    URL resurl = encodeuri(base.resolve(name + ".res")).toURL();
-	    RetryingInputStream ret = new RetryingInputStream() {
-		protected InputStream create() throws IOException {
-		    URLConnection c;
-		    if(resurl.getProtocol().equals("https"))
-			c = ssl.connect(resurl);
-		    else
-			c = resurl.openConnection();
-		    /* Apparently, some versions of Java Web Start has
-		     * a bug in its internal cache where it refuses to
-		     * reload a URL even when it has changed. */
-		    c.setUseCaches(false);
-		    c.addRequestProperty("User-Agent", USER_AGENT);
-		    return(c.getInputStream());
-		}
-	    };
-	    ret.check();
-	    return(ret);
+	    return(Http.fetch(encodeuri(base.resolve(name + ".res")).toURL(), c -> {
+			/* Apparently, some versions of Java Web Start has
+			 * a bug in its internal cache where it refuses to
+			 * reload a URL even when it has changed. */
+			c.setUseCaches(false);
+		    }));
 	}
 	
 	public String toString() {

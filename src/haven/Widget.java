@@ -680,7 +680,21 @@ public class Widget {
 	    setfocusctl(true);
 	this.focustab = focustab;
     }
-    
+	
+    public static class HandlerMaker extends Resource.PublishedCode.Instancer.Chain<MessageHandler> {
+	public HandlerMaker() {super(MessageHandler.class);}
+	{
+	    add(new Direct<>(MessageHandler.class));
+	    add(new StaticCall<>(MessageHandler.class, "uimsg", Void.TYPE, new Class<?>[] {Widget.class, Object[].class},
+				 (handle) -> (tgt, args) -> handle.apply(new Object[] {tgt, args})));
+	}
+    }
+
+    @Resource.PublishedCode(name = "uimsg", instancer = HandlerMaker.class)
+    public static interface MessageHandler {
+	public void handle(Widget tgt, Object... args);
+    }
+
     public void uimsg(String msg, Object... args) {
 	if(msg == "tabfocus") {
 	    setfocustab(Utils.bv(args[0]));
@@ -732,6 +746,8 @@ public class Widget {
 		    gkey = key;
 		}
 	    }
+	} else if(msg == "ext") {
+	    ui.sess.getresv(args[0]).get().getcode(MessageHandler.class, true).handle(this, Utils.splice(args, 1));
 	} else {
 	    new Warning("unhandled widget message: " + msg).issue();
 	}
@@ -903,7 +919,12 @@ public class Widget {
 	}
 	return(false);
     }
-    
+
+    public Widget setgkey(KeyMatch gkey) {
+	this.gkey = gkey;
+	return(this);
+    }
+	
     public Widget setgkey(KeyBinding gkey) {
 	kb_gkey = gkey;
 	if((tooltip == null) && (kb_gkey != null))
@@ -1155,7 +1176,48 @@ public class Widget {
 	}
 	return(y + maxh);
     }
-    
+
+    public Coord addvlp(Coord c, int pad, Widget... children) {
+	int x = c.x, y = c.y;
+	int maxw = 0;
+	for(Widget child : children)
+	    maxw = Math.max(maxw, child.sz.x);
+	for(Widget child : children) {
+	    add(child, x + ((maxw - child.sz.x) / 2), y);
+	    y += child.sz.y + pad;
+	}
+	return(Coord.of(x + maxw, y - pad));
+    }
+
+    public int addvlp(Coord c, int pad, int h, Widget... children) {
+	int ch = (h - ((children.length - 1) * pad)) / children.length;
+	for(Widget wdg : children)
+	    wdg.resizeh(ch);
+	return(addvl(c, h, children));
+    }
+
+    public int addvl(Coord c, int h, Widget... children) {
+	int x = c.x, y = c.y;
+	if(children.length == 1) {
+	    adda(children[0], x, y + (h / 2), 0.0, 0.5);
+	    return(x + children[0].sz.x);
+	}
+	int maxw = 0, ch = 0;
+	for(Widget child : children) {
+	    ch += child.sz.y;
+	    maxw = Math.max(maxw, child.sz.x);
+	}
+	int tpad = h - ch, npad = children.length - 1, perror = 0;
+	for(Widget child : children) {
+	    add(child, x + ((maxw - child.sz.x) / 2), y);
+	    y += child.sz.y;
+	    perror += tpad;
+	    y += perror / npad;
+	    perror %= npad;
+	}
+	return(x + maxw);
+    }
+
     public void raise() {
 	synchronized((ui != null)?ui:new Object()) {
 	    unlink();

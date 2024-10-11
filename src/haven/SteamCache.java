@@ -26,35 +26,26 @@
 
 package haven;
 
-public class UID extends Number {
-    public static final UID nil = new UID(0);
-    public final long bits;
+import java.io.*;
 
-    private UID(long bits) {
-	this.bits = bits;
-    }
-    public static UID of(long bits) {
-	if(bits == 0)
-	    return(nil);
-	return(new UID(bits));
+public class SteamCache implements ResCache {
+    private final Steam api;
+    private final String prefix;
+
+    public SteamCache(Steam api) {
+	this.api = api;
+	this.prefix = String.format("%s/%s/", api.appid(), api.userid());
     }
 
-    public long longValue() {return(bits);}
-
-    public byte byteValue() {return((byte)bits);}
-    public short shortValue() {return((short)bits);}
-    public int intValue() {return((int)bits);}
-    public float floatValue() {return((float)bits);}
-    public double doubleValue() {return((double)bits);}
-
-    public int hashCode() {
-	return(Long.hashCode(bits));
-    }
-    public boolean equals(Object x) {
-	return((x instanceof UID) && (((UID)x).bits == bits));
+    public InputStream fetch(String name) throws IOException {
+	return(new ByteArrayInputStream(api.readfile(name)));
     }
 
-    public String toString() {
-	return(Long.toUnsignedString(bits, 16));
+    public OutputStream store(String name) throws IOException {
+	return(new ByteArrayOutputStream() {
+		public void close() throws IOException {
+		    api.writefile(name, toByteArray());
+		}
+	    });
     }
 }
