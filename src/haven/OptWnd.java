@@ -1523,6 +1523,7 @@ public class OptWnd extends WindowX {
 	    mappingLabel.settext("Mapping URL: " + (automapper.CheckEndpoint() ? "Valid" : "Invalid"));
 	} catch (Exception ex) {
 	    CFG.AUTOMAP_UPLOAD.set(false);
+	    CFG.AUTOMAP_UPLOAD_MARKERS.set(false);
 	    CFG.AUTOMAP_TRACK.set(false);
 	    CFG.AUTOFOOD_TRACK.set(false);
 	}
@@ -1532,6 +1533,9 @@ public class OptWnd extends WindowX {
 	y += STEP;
 	
 	panel.add(new CFGBox("Tracking enabled", CFG.AUTOMAP_TRACK), x, y);
+	y += STEP;
+	
+	panel.add(new CFGBox("Marker upload enabled", CFG.AUTOMAP_UPLOAD_MARKERS), x, y);
 	y += STEP;
  
 	panel.add(new CFGBox("Food Tracking Enabled", CFG.AUTOFOOD_TRACK), x, y);

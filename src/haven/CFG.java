@@ -98,6 +98,7 @@ public class CFG<T> {
     public static final CFG<Boolean> Q_SHOW_SINGLE = new CFG<>("ui.q.showsingle", true);
     
     public static final CFG<Boolean> AUTOMAP_UPLOAD = new CFG<>("automap.upload", false);
+    public static final CFG<Boolean> AUTOMAP_UPLOAD_MARKERS = new CFG<>("automap.upload_markers", false);
     public static final CFG<Boolean> AUTOMAP_TRACK = new CFG<>("automap.track", false);
     public static final CFG<Boolean> AUTOFOOD_TRACK = new CFG<>("autofood.track", false);
     public static final CFG<Set<BuddyWnd.Group>> AUTOMAP_MARKERS = new CFG<>("automap.markers", new HashSet<>(), new TypeToken<Set<BuddyWnd.Group>>(){});

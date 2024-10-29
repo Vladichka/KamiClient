@@ -1107,7 +1107,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		MapFile file;
 		try {
 		    file = MapFile.load(mapstore, mapfilename());
-		    if(CFG.AUTOMAP_UPLOAD.get()) {
+		    if(CFG.AUTOMAP_UPLOAD_MARKERS.get()) {
 			MappingClient.getInstance().ProcessMap(file, (m) -> {
 			    if(m instanceof PMarker) {
 				return CFG.AUTOMAP_MARKERS.get().stream()
