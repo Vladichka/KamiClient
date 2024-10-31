@@ -559,6 +559,15 @@ public class UI {
 		mousegrab.remove(this);
 	    }
 	};
+	//
+	ArrayList<Grab> gList = new ArrayList<>();
+	for (Grab gx : mousegrab ){
+	    if (gx.wdg == wdg)
+		gList.add(gx);
+	}
+	for (Grab gd : gList)
+	    gd.remove();
+	//
 	mousegrab.addFirst(g);
 	return(g);
     }
