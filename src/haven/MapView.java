@@ -1982,6 +1982,10 @@ public class MapView extends PView implements DTarget, Console.Directory {
 		lastmc = pc;
 	    }
 	}
+
+	public String toString() {
+	    return("#<plob>");
+	}
     }
     
     private Collection<String> olflash = null;
@@ -2282,7 +2286,7 @@ public class MapView extends PView implements DTarget, Console.Directory {
 	    }
 	}
 	if(button == 2) {
-	    if(((Camera)camera).click(c)) {
+	    if((camdrag == null) && ((Camera)camera).click(c)) {
 		camdrag = ui.grabmouse(this);
 	    }
 	} else if((placing_l != null) && placing_l.done()) {
