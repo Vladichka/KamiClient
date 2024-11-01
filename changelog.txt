@@ -1,3 +1,11 @@
+$size[14]{$u{update on 01.11.2024:}
+  * fixed map upload features:
+    you are now able to upload maptiles / markers / location all individually
+  * fixed an issue where alt+tab might cause you to click through the UI
+  * merged loftars changes
+  * If you experience crashes, please reach out to me on the forums
+    My client logs errors in it's own folder
+
 $size[14]{$u{update on 16.06.2024:}
   * added metal plow to radar
   * minor crash fixes
