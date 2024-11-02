@@ -148,11 +148,12 @@ public class FoodService {
 		    if (info instanceof ItemInfo.Name) {
 			parsedFoodInfo.itemName = ((ItemInfo.Name) info).str.text;
 		    }
-		    if (info.getClass().getName().equals("Ingredient")) {
+		    System.out.println(info.getClass().getName());
+		    if (info.getClass().getName().contains("Ingredient")) {
 			String name = (String) info.getClass().getField("name").get(info);
 			Double value = (Double) info.getClass().getField("val").get(info);
 			parsedFoodInfo.ingredients.add(new FoodIngredient(name, (int) (value * 100)));
-		    } else if (info.getClass().getName().equals("Smoke")) {
+		    } else if (info.getClass().getName().contains("Smoke")) {
 			String name = (String) info.getClass().getField("name").get(info);
 			Double value = (Double) info.getClass().getField("val").get(info);
 			parsedFoodInfo.ingredients.add(new FoodIngredient(name, (int) (value * 100)));
