@@ -559,7 +559,12 @@ public class MiniMap extends Widget {
 	    CachedImage ret;
 	    synchronized(olimg_c) {
 		if((ret = olimg_c.get(tag)) == null)
-		    olimg_c.put(tag, ret = new CachedImage(grid -> Defer.later(() -> new TexI(grid.olrender(sc.mul(cmaps), tag)))));
+		{
+		    if (tag == "heightmap")
+			olimg_c.put(tag, ret = new CachedImage(grid -> Defer.later(() -> new TexI(grid.heightrender(sc.mul(cmaps), tag)))));
+		    else
+			olimg_c.put(tag, ret = new CachedImage(grid -> Defer.later(() -> new TexI(grid.olrender(sc.mul(cmaps), tag)))));
+		}
 	    }
 	    return(ret.get());
 	}

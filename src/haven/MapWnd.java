@@ -159,6 +159,10 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    .set(CFG.PVP_MAP::set)
 	    .settip("Enable PVP Mode");
 	
+	btn = topbar.add(new ICheckBox("gfx/hud/mmap/view", "", "-d", "-h"), btn.pos("ur"))
+	    .changed(a -> toggleol("heightmap", a))
+	    .settip("Enalbe Heightmap");
+	
 	topbar.pack();
 	tool = add(new Toolbox2());;
 	compact(Utils.getprefb("compact-map", false));
@@ -320,6 +324,8 @@ public class MapWnd extends WindowX implements Console.Directory {
 			img = disp.olimg(tag);
 			
 		    }
+		    if (tag == "heightmap")
+			alpha = 200;
 		    if(img != null) {
 			g.chcolor(255, 255, 255, alpha);
 			g.image(img, ul, UI.scale(img.sz()).mul(scale));

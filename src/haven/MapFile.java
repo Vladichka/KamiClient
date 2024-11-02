@@ -570,7 +570,56 @@ public class MapFile {
 	    }
 	    return(PUtils.rasterimg(buf));
 	}
-
+	
+	public static int GetByte(double val, double percent)
+	{
+	    try {
+		int n = (int) (val * percent);
+		if (n < 0)
+		    n = 0;
+		if (n > 255)
+		    n = 255;
+		return n;
+	    } catch (Exception ex) {}
+	    return 0;
+	}
+	
+	public static Color GetColorForZ(double z)
+	{
+	    double p;
+	    if (z < -50)
+		return new Color (0,0,255);
+	    if (z < 25)
+	    {
+		p = (z+50) / 75.;
+		return new Color(0,GetByte(255, p), GetByte(255, 1-p));
+	    }
+	    if (z < 150)
+	    {
+		p = (z-25) / 125.;
+		return new Color(GetByte(255, p), GetByte(255, 1-p),0);
+	    }
+	    if (z >= 150)
+		return new Color(255,0,0);
+	    return new Color(255,255,255);
+	}
+	
+	public BufferedImage heightrender(Coord off, String tag) {
+	    WritableRaster buf = PUtils.imgraster(cmaps);
+	    
+	    Coord c = new Coord();
+	    for(c.y = 0; c.y < cmaps.y; c.y++) {
+		for(c.x = 0; c.x < cmaps.x; c.x++) {
+		    Color col = GetColorForZ(getfz(c));
+		    buf.setSample(c.x, c.y, 0, col.getRed() );
+		    buf.setSample(c.x, c.y, 1, col.getGreen() );
+		    buf.setSample(c.x, c.y, 2, col.getBlue() );
+		    buf.setSample(c.x, c.y, 3, 255);
+		}
+	    }
+	    return(PUtils.rasterimg(buf));
+	}
+	
 	public static void savetiles(Message fp, TileInfo[] tilesets, int[] tiles) {
 	    fp.adduint16(tilesets.length);
 	    for(int i = 0; i < tilesets.length; i++) {
