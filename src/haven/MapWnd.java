@@ -370,7 +370,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 		domark = false;
 		return(true);
 	    }
-	    if(!press && (sessloc != null) && (loc.seg == sessloc.seg)) {
+	    if(!press && (sessloc != null) && (loc.seg.id == sessloc.seg.id)) {
 		mvclick(mv, null, loc, null, button);
 		return(true);
 	    }
