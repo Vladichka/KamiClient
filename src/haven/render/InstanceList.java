@@ -709,6 +709,8 @@ public class InstanceList implements RenderList<Rendered>, RenderList.Adapter, D
 	synchronized(this) {
 	    InstKey key = uslotmap.get(slot);
 	    if(key == null) {
+		if (!invalid.containsKey(slot))
+		    return; // Probably not good but. Whatever.
 		if(invalid.remove(slot) != Boolean.TRUE)
 		    throw(new IllegalStateException("removing non-present slot"));
 		ninvalid--;
