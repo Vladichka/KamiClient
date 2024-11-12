@@ -1959,12 +1959,28 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	syslog.append(msg, logcol);
     }
     
+    public static interface LogMessage extends UI.Notice {
+	public ChatUI.Channel.Message logmessage();
+    }
+    
+    public void msg(UI.Notice msg) {
+	ChatUI.Channel.Message logged;
+	if(msg instanceof LogMessage)
+	    logged = ((LogMessage)msg).logmessage();
+	else
+	    logged = new ChatUI.Channel.SimpleMessage(msg.message(), msg.color());
+	msgtime = Utils.rtime();
+	lastmsg = RootWidget.msgfoundry.render(msg.message(), msg.color());
+	syslog.append(logged);
+	ui.sfxrl(msg.sfx());
+    }
+    
     public void msg(String msg, Color color) {
 	msg(msg, color, color);
     }
     
     public void msg(String msg, Color color, boolean sfx) {
-	msg(msg, color, sfx ? UI.MessageWidget.msgsfx : null);
+	msg(msg, color, sfx ? UI.InfoMessage.sfx : null);
     }
     
     public void msg(String msg, Color color, Audio.Clip sfx) {
@@ -1981,8 +1997,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     }
     
     public enum MsgType {
-	INFO(Color.WHITE, UI.MessageWidget.msgsfx), GOOD(Color.GREEN), BAD(Color.RED),
-	ERROR(new Color(192, 0, 0), new Color(255, 0, 0), UI.MessageWidget.errsfx);
+	INFO(Color.WHITE, UI.InfoMessage.sfx), GOOD(Color.GREEN), BAD(Color.RED),
+	ERROR(new Color(192, 0, 0), new Color(255, 0, 0), UI.ErrorMessage.sfx);
 	
 	public final Color color, logcol;
 	public final Audio.Clip sfx;

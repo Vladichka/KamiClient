@@ -18,7 +18,7 @@ public class GobWarning extends GAttrib implements RenderTree.Node {
 	tgt = categorize(gob);
 	if(tgt != null) {
 	    if(WarnCFG.get(tgt, message)) {
-		gob.glob.sess.ui.message(String.format("%s spotted!", tgt.message), tgt.mcol, UI.MessageWidget.errsfx);
+		gob.glob.sess.ui.message(String.format("%s spotted!", tgt.message), tgt.mcol, UI.ErrorMessage.sfx);
 	    }
 	    radius = new ColoredRadius(gob, tgt.radius, tgt.scol, tgt.ecol);
 	} else {
