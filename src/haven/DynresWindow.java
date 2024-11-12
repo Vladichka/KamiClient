@@ -41,7 +41,7 @@ import javax.swing.JFileChooser;
 import static haven.PUtils.*;
 import static haven.render.Texture.Filter.*;
 
-public class DynresWindow extends Window {
+public class DynresWindow extends WindowX {
     public static final Config.Variable<URI> service = Config.Services.var("dynresurl", "");
     public static final Coord itemsz = UI.scale(128, 128);
     public final Future<List<Preview.Spec>> previews = Preview.Spec.fetch();
@@ -257,7 +257,7 @@ public class DynresWindow extends Window {
 		    try {
 			BufferedImage img = proc.get();
 			if(img != null)
-			    getparent(GameUI.class).addchild(new PreviewWindow(img, previews.get()), "misc", new Coord2d(0.2, 0.2));
+			    getparent(GameUI.class).addchild(new PreviewWindow(img, previews.get(), false), "misc", new Coord2d(0.2, 0.2));
 		    } catch(Defer.DeferredException e) {
 			ui.error(e.getCause().getMessage());
 		    }
@@ -480,6 +480,12 @@ public class DynresWindow extends Window {
 		}
 	    }
 	}
+	
+	private void preview() {
+	    if(this.img == null)
+		this.img = res.get().flayer(TexR.class).tex().fill();
+	    getparent(GameUI.class).addchild(new PreviewWindow(img, previews.get(), true), "misc", new Coord2d(0.2, 0.2));
+	}
 
 	public DataFlavor[] getTransferDataFlavors() {
 	    return(new DataFlavor[] {DataFlavor.imageFlavor});
@@ -499,6 +505,7 @@ public class DynresWindow extends Window {
 		menu = SListMenu.of(UI.scale(250, 200), null,
 				    Arrays.asList(SListMenu.Action.of("Paint Sketch", () -> craft(false)),
 						  SListMenu.Action.of("Paint Masterpiece", () -> craft(true)),
+						  SListMenu.Action.of("Preview", this::preview),
 						  SListMenu.Action.of("Copy to clipboard", this::copy),
 						  SListMenu.Action.of("Remove", this::delete)))
 		    .addat(this, pos("cbl"));
@@ -785,26 +792,36 @@ public class DynresWindow extends Window {
 	}
     }
 
-    public static class PreviewWindow extends Window {
+    public static class PreviewWindow extends WindowX {
 	public final BufferedImage img;
 	public final TexL tex;
 	private final Display display;
-	private final Button uploadbtn;
+	private Button uploadbtn;
 	private Upload upload;
 	private Progress prog;
-
-	public PreviewWindow(BufferedImage img, List<Preview.Spec> previews) {
+	
+	public void wdgmsg(Widget sender, String msg, Object... args) {
+	    if((sender == this) && (msg == "close")) {
+		reqdestroy();
+		close();
+	    } else {
+		super.wdgmsg(sender, msg, args);
+	    }
+	}
+	
+	public PreviewWindow(BufferedImage img, List<Preview.Spec> previews, boolean disableUpload) {
 	    super(Coord.z, "Preview", true);
 	    this.img = img;
 	    this.tex = new TexL.Fixed(img);
 	    tex.mipmap(Mipmapper.dav);
 	    tex.img.magfilter(LINEAR).minfilter(LINEAR).mipfilter(LINEAR);
-	    Widget prev = display = add(new Display(tex.sz().max(128, 128)), 0, 0);
+	    Widget prev = display = add(new Display(tex.sz().max(128, 128)), 0, 49);
 	    if(previews != null)
-		prev = add(new Preview(display.sz.x, previews, tex), prev.pos("bl").adds(0, 10));
-	    uploadbtn = add(new Button(UI.scale(100), "Upload", false, this::upload), prev.pos("bl").adds(0, 10));
+		prev = add(new Preview(display.sz.x, previews, tex), prev.pos("ur").adds(10, -49));
+	    if (!disableUpload)
+	    	uploadbtn = add(new Button(UI.scale(100), "Upload", false, this::upload), prev.pos("bl").adds(0, 10));
 	    pack();
-	    display.move(Coord.of((csz().x - display.sz.x) / 2, display.c.y));
+	    //display.move(Coord.of((csz().x - display.sz.x) / 2, display.c.y));
 	}
 
 	public class Display extends Widget {
