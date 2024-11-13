@@ -1,4 +1,10 @@
 $size[14]{$u{update on 01.11.2024:}
+  * fixed some crashes, ignored other causes
+  * improved image upload. Fixed close button. Added preview to uploaded pictures
+  * kind of fixed refill but. It still says cancelled tho...
+  * I think there was more but i don't remember.
+
+$size[14]{$u{update on 01.11.2024:}
   * fixed map upload features:
     you are now able to upload maptiles / markers / location all individually
   * fixed an issue where alt+tab might cause you to click through the UI

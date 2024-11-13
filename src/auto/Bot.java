@@ -172,7 +172,7 @@ public class Bot implements Defer.Callable<Void> {
 	    }
 	    if(barrel == null) {
 		waterTile = MapHelper.nearbyWaterTile(gui);
-	    } 
+	    }
 	}
 	
 	final Coord2d tile = barrel != null ? barrel.rc : waterTile;
@@ -181,7 +181,7 @@ public class Bot implements Defer.Callable<Void> {
 	    interact = (t, b) -> gui.map.wdgmsg("itemact", Coord.z, tile.floor(OCache.posres), 0);
 	} else if(barrel != null) {
 	    final Gob gob = barrel;
-	    interact = (t, b) -> gui.map.wdgmsg("itemact", Coord.z, Coord.z, UI.MOD_META, 0, (int) gob.id, gob.rc.floor(OCache.posres), 0, -1);
+	    interact = (t, b) -> gob.itemact(UI.MOD_META);
 	    
 	} else {
 	    gui.error("You must be near tile or barrel with fresh water to refill drinks!");
