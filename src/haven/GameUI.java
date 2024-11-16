@@ -1971,6 +1971,17 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    logged = new ChatUI.Channel.SimpleMessage(msg.message(), msg.color());
 	msgtime = Utils.rtime();
 	lastmsg = RootWidget.msgfoundry.render(msg.message(), msg.color());
+	Gob g = detectGob;
+	if(g != null) {
+	    Matcher m = GeneralGobInfo.GOB_Q.matcher(msg.message());
+	    if(m.matches()) {
+		try {
+		    int q = Integer.parseInt(m.group(1));
+		    g.setQuality(q);
+		} catch (Exception ignored) {}
+		detectGob = null;
+	    }
+	}
 	syslog.append(logged);
 	ui.sfxrl(msg.sfx());
     }
