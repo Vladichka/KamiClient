@@ -1,9 +1,6 @@
 package integrations.food;
 
-import haven.CFG;
-import haven.ItemInfo;
-import haven.QualityList;
-import haven.Resource;
+import haven.*;
 import haven.resutil.FoodInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -38,7 +35,7 @@ public class FoodService {
     public static final String API_ENDPOINT = CFG.AUTOMAP_ENDPOINT.get();
     private static final String FOOD_DATA_URL = "/data/food-info.json";
     private static final File FOOD_DATA_CACHE_FILE = new File("food_data.json");
-    private static String token = "Purus-Pasta-the-new-2";  //Config.confid maybe ArdClient also works
+    private static String token = "KamiClient";  //Config.confid maybe ArdClient also works
     
     private static final Map<String, ParsedFoodInfo> cachedItems = new ConcurrentHashMap<>();
     private static final Queue<HashedFoodInfo> sendQueue = new ConcurrentLinkedQueue<>();
@@ -57,7 +54,7 @@ public class FoodService {
 	try {
 	    if (FOOD_DATA_CACHE_FILE.exists()) {
 		String jsonData = String.join("", Files.readAllLines(FOOD_DATA_CACHE_FILE.toPath(), StandardCharsets.UTF_8));
-		//System.out.println("load from file: " + jsonData);
+		System.out.println("load from file: " + jsonData);
 		JSONObject object = new JSONObject(jsonData);
 		object.keySet().forEach(key -> cachedItems.put(key, new ParsedFoodInfo()));
 		System.out.println("Loaded food data file: " + cachedItems.size() + " entries");
@@ -97,10 +94,8 @@ public class FoodService {
 		    //System.out.println("load from remote: " + content);
 		    
 		    Files.write(FOOD_DATA_CACHE_FILE.toPath(), Collections.singleton(content), StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
-		    System.out.println("load from remote 2: " + content);
 		    JSONObject object = new JSONObject(content);
 		    object.keySet().forEach(key -> cachedItems.put(key, new ParsedFoodInfo()));
-		    System.out.println("Updated food data file: " + cachedItems.size() + " entries");
 		} catch (Exception ex) {
 		    System.err.println("Cannot load remote food data file: " + ex.getMessage());
 		}
@@ -129,7 +124,8 @@ public class FoodService {
 		ParsedFoodInfo parsedFoodInfo = new ParsedFoodInfo();
 		parsedFoodInfo.resourceName = resName;
 		parsedFoodInfo.energy = (int) (Math.round(foodInfo.end * 100));
-		parsedFoodInfo.hunger = round2Dig(foodInfo.glut * 100);
+		parsedFoodInfo.hunger = round2Dig(foodInfo.glut * 1000 / Math.sqrt(multiplier));
+		parsedFoodInfo.quality = quality;
 		
 		for (int i = 0; i < foodInfo.evs.length; i++) {
 		    parsedFoodInfo.feps.add(new FoodFEP(foodInfo.evs[i].ev.nm, round2Dig(foodInfo.evs[i].a / multiplier)));
@@ -148,15 +144,17 @@ public class FoodService {
 		    if (info instanceof ItemInfo.Name) {
 			parsedFoodInfo.itemName = ((ItemInfo.Name) info).str.text;
 		    }
-		    System.out.println(info.getClass().getName());
+
 		    if (info.getClass().getName().contains("Ingredient")) {
 			String name = (String) info.getClass().getField("name").get(info);
+			String iResName = ((GItem)info.owner).resname();
 			Double value = (Double) info.getClass().getField("val").get(info);
-			parsedFoodInfo.ingredients.add(new FoodIngredient(name, (int) (value * 100)));
+			parsedFoodInfo.ingredients.add(new FoodIngredient(name, (int) (value * 100), iResName));
 		    } else if (info.getClass().getName().contains("Smoke")) {
 			String name = (String) info.getClass().getField("name").get(info);
 			Double value = (Double) info.getClass().getField("val").get(info);
-			parsedFoodInfo.ingredients.add(new FoodIngredient(name, (int) (value * 100)));
+			String iResName = ((GItem)info.owner).resname();
+			parsedFoodInfo.ingredients.add(new FoodIngredient(name, (int) (value * 100), iResName));
 		    }
 		}
 		
@@ -207,13 +205,12 @@ public class FoodService {
 		    JSONObject o = new JSONObject();
 		    toSend.forEach((k,v) -> o.put(k, new JSONObject(v)));
 		    System.out.println(o.toString());
-		    out.write(o.toString().getBytes(StandardCharsets.UTF_8));
+		    //out.write(o.toString().getBytes(StandardCharsets.UTF_8));
 		}
 		StringBuilder stringBuilder = new StringBuilder();
 		try (BufferedReader inputStream = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
 		    stringBuilder.append(inputStream.readLine());
 		}
-		
 		int code = connection.getResponseCode();
 		if (code != 200) {
 		    System.out.println("Response: " + stringBuilder.toString());
@@ -261,10 +258,12 @@ public class FoodService {
     public static class FoodIngredient {
 	private String name;
 	private Integer percentage;
+	private String resourceName;
 	
-	public FoodIngredient(String name, Integer percentage) {
+	public FoodIngredient(String name, Integer percentage, String resourceName) {
 	    this.name = name;
 	    this.percentage = percentage;
+	    this.resourceName = resourceName;
 	}
 	
 	@Override
@@ -279,6 +278,8 @@ public class FoodService {
 	public String getName() {
 	    return name;
 	}
+	
+	public String getResourceName() {return resourceName;}
     }
     
     public static class FoodFEP {
@@ -309,6 +310,8 @@ public class FoodService {
 	public String resourceName;
 	public Integer energy;
 	public double hunger;
+	public double quality;
+	public int version = 2;
 	public ArrayList<FoodIngredient> ingredients;
 	public ArrayList<FoodFEP> feps;
 	
@@ -347,5 +350,6 @@ public class FoodService {
 	public Integer getEnergy() {
 	    return energy;
 	}
+	public Integer getVersion() { return version; }
     }
 }
