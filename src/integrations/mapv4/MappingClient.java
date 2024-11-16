@@ -233,7 +233,7 @@ public class MappingClient {
      * @param uploadCheck
      */
     public void ProcessMap(MapFile mapfile, Predicate<Marker> uploadCheck) {
-	scheduler.schedule(new ExtractMapper(mapfile, uploadCheck), 5, TimeUnit.SECONDS);
+	scheduler.schedule(new ExtractMapper(mapfile, uploadCheck), 1, TimeUnit.SECONDS);
 	
     }
     
@@ -250,14 +250,20 @@ public class MappingClient {
 	@Override
 	public void run() {
 	    if(mapfile.lock.readLock().tryLock()) {
-		List<MarkerData> markers = mapfile.markers.stream().map(m -> {
-		    Coord mgc = new Coord(Math.floorDiv(m.tc.x, 100), Math.floorDiv(m.tc.y, 100));
-		    Indir<MapFile.Grid> indirGrid = mapfile.segments.get(m.seg).grid(mgc);
-		    return new MarkerData(m, indirGrid);
-		}).collect(Collectors.toList());
-		System.out.println("collected " + markers.size() + " markers");
+		try {
+		    List<MarkerData> markers = mapfile.markers.stream().map(m -> {
+			Coord mgc = new Coord(Math.floorDiv(m.tc.x, 100), Math.floorDiv(m.tc.y, 100));
+			Indir<MapFile.Grid> indirGrid = mapfile.segments.get(m.seg).grid(mgc);
+			return new MarkerData(m, indirGrid);
+		    }).collect(Collectors.toList());
+		    System.out.println("collected " + markers.size() + " markers");
+		    
+		    scheduler.schedule(new ProcessMapper(mapfile, markers), 15, TimeUnit.SECONDS);
+		} catch (Exception ex)
+		{
+		    System.out.println("Error while collection markers: " +ex);
+		}
 		mapfile.lock.readLock().unlock();
-		scheduler.execute(new ProcessMapper(mapfile, markers));
 	    } else {
 		if(retries-- > 0) {
 		    System.out.println("rescheduling upload");
@@ -323,10 +329,14 @@ public class MappingClient {
 			}
 			loadedMarkers.add(o);
 		    } catch (Loading ex) {
+			System.out.println(ex);
+			System.out.println("Rescheduling marker upload processing...");
+			scheduler.schedule(this, 5, TimeUnit.SECONDS);
+			return;
 		    }
 		}
 	 
-		System.out.println("scheduling marker upload");
+		System.out.println("scheduling upload for " + loadedMarkers.size() + " markers");
 		try {
 		    scheduler.execute(new MarkerUpdate(new JSONArray(loadedMarkers.toArray())));
 		} catch (Exception ex) {
