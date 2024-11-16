@@ -147,14 +147,12 @@ public class FoodService {
 
 		    if (info.getClass().getName().contains("Ingredient")) {
 			String name = (String) info.getClass().getField("name").get(info);
-			String iResName = ((GItem)info.owner).resname();
 			Double value = (Double) info.getClass().getField("val").get(info);
-			parsedFoodInfo.ingredients.add(new FoodIngredient(name, (int) (value * 100), iResName));
+			parsedFoodInfo.ingredients.add(new FoodIngredient(name, (int) (value * 100)));
 		    } else if (info.getClass().getName().contains("Smoke")) {
 			String name = (String) info.getClass().getField("name").get(info);
 			Double value = (Double) info.getClass().getField("val").get(info);
-			String iResName = ((GItem)info.owner).resname();
-			parsedFoodInfo.ingredients.add(new FoodIngredient(name, (int) (value * 100), iResName));
+			parsedFoodInfo.ingredients.add(new FoodIngredient(name, (int) (value * 100)));
 		    }
 		}
 		
@@ -204,8 +202,8 @@ public class FoodService {
 		    // object.keySet().forEach(key -> cachedItems.put(key, new ParsedFoodInfo()));
 		    JSONObject o = new JSONObject();
 		    toSend.forEach((k,v) -> o.put(k, new JSONObject(v)));
-		    System.out.println(o.toString());
-		    //out.write(o.toString().getBytes(StandardCharsets.UTF_8));
+		    //System.out.println(o.toString());
+		    out.write(o.toString().getBytes(StandardCharsets.UTF_8));
 		}
 		StringBuilder stringBuilder = new StringBuilder();
 		try (BufferedReader inputStream = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
@@ -258,12 +256,10 @@ public class FoodService {
     public static class FoodIngredient {
 	private String name;
 	private Integer percentage;
-	private String resourceName;
 	
-	public FoodIngredient(String name, Integer percentage, String resourceName) {
+	public FoodIngredient(String name, Integer percentage) {
 	    this.name = name;
 	    this.percentage = percentage;
-	    this.resourceName = resourceName;
 	}
 	
 	@Override
@@ -278,8 +274,7 @@ public class FoodService {
 	public String getName() {
 	    return name;
 	}
-	
-	public String getResourceName() {return resourceName;}
+
     }
     
     public static class FoodFEP {

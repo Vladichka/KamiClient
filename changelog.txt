@@ -1,3 +1,10 @@
+$size[14]{$u{update on 16.11.2024:}
+  * fixed bugs
+  * fixed steam launch
+  * image upload preview is always showing default entry (should be village banner)
+  * fixed bug in marker upload
+  * changed food upload to fix hunger
+
 $size[14]{$u{update on 13.11.2024:}
   * fixed some crashes, ignored other causes
   * improved image upload. Fixed close button. Added preview to uploaded pictures
