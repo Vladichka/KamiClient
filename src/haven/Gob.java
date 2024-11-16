@@ -1697,67 +1697,69 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	} else {
 	    knocked = false;
 	}
-	if (this.getres().name.equals("gfx/borka/body") && isMannequin != null && !isMannequin){
-	    boolean imOnLand = true;
-	    imInCoracle = false;
-	    imOnSkis = false;
-	    Iterator<String> iter2 = poses.iterator();
-	    while (iter2.hasNext()) {
-		String s = iter2.next();
-		if (s.contains("coracleidle") || s.contains("coraclerowan")) {
-		    imOnLand = false;
-		    imInCoracle = true;
-		    break;
+	try {
+	    if(this.getres().name.equals("gfx/borka/body") && isMannequin != null && !isMannequin) {
+		boolean imOnLand = true;
+		imInCoracle = false;
+		imOnSkis = false;
+		Iterator<String> iter2 = poses.iterator();
+		while (iter2.hasNext()) {
+		    String s = iter2.next();
+		    if(s.contains("coracleidle") || s.contains("coraclerowan")) {
+			imOnLand = false;
+			imInCoracle = true;
+			break;
+		    }
+		    if(s.contains("skian-idle") || s.contains("skian-walk") || s.contains("skian-run")) {
+			imOnSkis = true;
+			break;
+		    }
+		    if(s.contains("rowboat") || s.contains("snekkja") || s.contains("knarr") || s.contains("dugout")) {
+			imOnLand = false;
+			break;
+		    }
 		}
-		if (s.contains("skian-idle") || s.contains("skian-walk") || s.contains("skian-run")) {
-		    imOnSkis = true;
-		    break;
-		}
-		if (s.contains("rowboat") || s.contains("snekkja") || s.contains("knarr") || s.contains("dugout")) {
-		    imOnLand = false;
-		    break;
-		}
-	    }
-	    if (poses.contains("spear-ready")) {
-		archeryIndicator(155, imOnLand);
-	    } else if (poses.contains("sling-aim")) {
-		archeryIndicator(155, imOnLand);
-	    } else if (poses.contains("drawbow")) {
-		for (GAttrib g : this.attr.values()) {
-		    if (g instanceof Drawable) {
-			if (g instanceof Composite) {
-			    Composite c = (Composite) g;
-			    if (c.comp.cequ.size() > 0) {
-				for (Composited.ED item : c.comp.cequ) {
-				    if (item.res.res.get().basename().equals("huntersbow"))
-					archeryIndicator(195, imOnLand);
-				    else if (item.res.res.get().basename().equals("rangersbow"))
-					archeryIndicator(252, imOnLand);
+		if(poses.contains("spear-ready")) {
+		    archeryIndicator(155, imOnLand);
+		} else if(poses.contains("sling-aim")) {
+		    archeryIndicator(155, imOnLand);
+		} else if(poses.contains("drawbow")) {
+		    for (GAttrib g : this.attr.values()) {
+			if(g instanceof Drawable) {
+			    if(g instanceof Composite) {
+				Composite c = (Composite) g;
+				if(c.comp.cequ.size() > 0) {
+				    for (Composited.ED item : c.comp.cequ) {
+					if(item.res.res.get().basename().equals("huntersbow"))
+					    archeryIndicator(195, imOnLand);
+					else if(item.res.res.get().basename().equals("rangersbow"))
+					    archeryIndicator(252, imOnLand);
+				    }
 				}
 			    }
 			}
 		    }
+		} else {
+		    removeOl(archeryVector);
+		    archeryVector = null;
+		    removeOl(archeryRadius);
+		    archeryRadius = null;
 		}
-	    } else {
-		removeOl(archeryVector);
-		archeryVector = null;
-		removeOl(archeryRadius);
-		archeryRadius = null;
-	    }
-	    if (poses.contains("drinkan")) {
-		imDrinking = true;
-	    } else {
-		imDrinking = false;
-	    }
-	    if  (!isDeadPlayer){
-		checkIfPlayerIsDead(poses);
-		if (playerPoseUpdatedCounter >= 2) { // ND: Do this to prevent the sounds from being played if you load in an already knocked/killed hearthling.
-		    // TODO: Implement...
-		    //knockedOrDeadPlayerSoundEfect(poses);
+		if(poses.contains("drinkan")) {
+		    imDrinking = true;
+		} else {
+		    imDrinking = false;
 		}
-		playerPoseUpdatedCounter = playerPoseUpdatedCounter + 1;
+		if(!isDeadPlayer) {
+		    checkIfPlayerIsDead(poses);
+		    if(playerPoseUpdatedCounter >= 2) { // ND: Do this to prevent the sounds from being played if you load in an already knocked/killed hearthling.
+			// TODO: Implement...
+			//knockedOrDeadPlayerSoundEfect(poses);
+		    }
+		    playerPoseUpdatedCounter = playerPoseUpdatedCounter + 1;
+		}
 	    }
-	}
+	} catch(Exception ex) {}
     }
     
     public void checkIfPlayerIsDead(HashSet<String> poses){
