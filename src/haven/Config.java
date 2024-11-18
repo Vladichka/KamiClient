@@ -94,7 +94,7 @@ public class Config {
     private static File getHomeDir() {
 	String dir = get().getprop("config.homedir", "workdir");
 	if("hashdir".equals(dir)) {
-	    File file = new File(HashDirCache.findbase().getParent() + File.separator + "ender-client");
+	    File file = new File(HashDirCache.findbase().getParent() + File.separator + "kami-client");
 	    file.mkdirs();
 	    return file.getAbsoluteFile();
 	}
