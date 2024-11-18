@@ -29,15 +29,12 @@ public class CustomPagButton extends MenuGrid.PagButton {
     }
     
     @Override
-    public void use() {
-	action.perform(pag.button());
-	if(toggleState != null) {
-	    pag.scm.ui.sfxrl(toggleState.get() ? sfx_on : sfx_off);
-	}
-    }
+    public void use() {use(null);}
     
     @Override
     public void use(MenuGrid.Interaction iact) {
-	use();
+	if(action.perform(pag.button(), iact) && toggleState != null) {
+	    pag.scm.ui.sfxrl(toggleState.get() ? sfx_on : sfx_off);
+	}
     }
 }

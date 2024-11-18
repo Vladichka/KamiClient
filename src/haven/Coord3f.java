@@ -40,7 +40,7 @@ public class Coord3f {
 	this.y = y;
 	this.z = z;
     }
-
+    
     public Coord3f(Coord3f c) {
 	this(c.x, c.y, c.z);
     }
@@ -48,23 +48,24 @@ public class Coord3f {
     public Coord3f(Coord c) {
 	this(c.x, c.y, 0);
     }
-
+    
     public static Coord3f of(float x, float y, float z) {return(new Coord3f(x, y, z));}
     public static Coord3f of(Coord3f c) {return(of(c.x, c.y, c.z));}
     public static Coord3f of(HomoCoord4f c) {return(of(c.x, c.y, c.z));}
+    public static Coord3f of(Coord c) {return(of(c.x, c.y, 0));}
     
     public boolean equals(Coord3f o) {
 	return((o.x == x) && (o.y == y) && (o.z == z));
     }
-
+    
     public boolean equals(Object o) {
 	return((o instanceof Coord3f) && equals((Coord3f)o));
     }
-
+    
     public Coord3f add(float ax, float ay, float az) {
 	return(of(x + ax, y + ay, z + az));
     }
-
+    
     public Coord3f add(Coord3f b) {
 	return(add(b.x, b.y, b.z));
     }
@@ -80,7 +81,7 @@ public class Coord3f {
     public Coord3f sub(float ax, float ay, float az) {
 	return(of(x - ax, y - ay, z - az));
     }
-
+    
     public Coord3f sub(Coord3f b) {
 	return(sub(b.x, b.y, b.z));
     }
@@ -88,23 +89,23 @@ public class Coord3f {
     public Coord3f mul(float f) {
 	return(of(x * f, y * f, z * f));
     }
-
+    
     public Coord3f mul(float X, float Y, float Z) {
 	return(of(x * X, y * Y, z * Z));
     }
-
+    
     public Coord3f mul(Coord3f b) {
 	return(mul(b.x, b.y, b.z));
     }
-
+    
     public Coord3f div(float f) {
 	return(of(x / f, y / f, z / f));
     }
-
+    
     public Coord3f div(float X, float Y, float Z) {
 	return(of(x / X, y / Y, z / Z));
     }
-
+    
     public Coord3f div(Coord3f b) {
 	return(div(b.x, b.y, b.z));
     }
@@ -112,7 +113,7 @@ public class Coord3f {
     public Coord3f inv() {
 	return(of(-x, -y, -z));
     }
-
+    
     public Coord3f invy() {
 	return(of(x, -y, z));
     }
@@ -124,11 +125,11 @@ public class Coord3f {
     public float dmul(Coord3f b) {
 	return(dmul(b.x, b.y, b.z));
     }
-
+    
     public Coord3f cmul(float X, float Y, float Z) {
 	return(of(y * Z - z * Y, z * X - x * Z, x * Y - y * X));
     }
-
+    
     public Coord3f cmul(Coord3f b) {
 	return(cmul(b.x, b.y, b.z));
     }
@@ -137,27 +138,27 @@ public class Coord3f {
 	float c = (float)Math.cos(a), s = (float)Math.sin(a), C = 1.0f - c;
 	float ax = p.x, ay = p.y, az = p.z;
 	return(of((x * ((ax * ax * C) + c)) +
-		  (y * ((ay * ax * C) - (az * s))) +
-		  (z * ((az * ax * C) + (ay * s))),
-		  (x * ((ax * ay * C) + (az * s))) +
-		  (y * ((ay * ay * C) + c)) +
-		  (z * ((az * ay * C) - (ax * s))),
-		  (x * ((ax * az * C) - (ay * s))) +
-		  (y * ((ay * az * C) + (ax * s))) +
-		  (z * ((az * az * C) + c))));
+		(y * ((ay * ax * C) - (az * s))) +
+		(z * ((az * ax * C) + (ay * s))),
+	    (x * ((ax * ay * C) + (az * s))) +
+		(y * ((ay * ay * C) + c)) +
+		(z * ((az * ay * C) - (ax * s))),
+	    (x * ((ax * az * C) - (ay * s))) +
+		(y * ((ay * az * C) + (ax * s))) +
+		(z * ((az * az * C) + c))));
     }
-
+    
     public float abs() {
 	return((float)Math.sqrt((x * x) + (y * y) + (z * z)));
     }
-
+    
     public Coord3f norm() {
 	float a = abs();
 	if(a == 0.0)
 	    return(of(0, 0, 0));
 	return(div(a));
     }
-
+    
     public float dist(Coord3f o) {
 	float dx = o.x - x;
 	float dy = o.y - y;
@@ -199,7 +200,7 @@ public class Coord3f {
     public boolean isect(Coord c, Coord s) {
 	return((x >= c.x) && (y >= c.y) && (x < c.x + s.x) && (y < c.y + s.y));
     }
-
+    
     public String toString() {
 	return(String.format("(%f, %f, %f)", x, y, z));
     }

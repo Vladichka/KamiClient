@@ -26,6 +26,9 @@
 
 package haven;
 
+import auto.Actions;
+import me.ender.gob.GobCombatInfo;
+
 import java.util.*;
 import static haven.Utils.uint32;
 
@@ -45,6 +48,13 @@ public class Fightview extends Widget {
     public Relation current = null;
     public Indir<Resource> blk, batk, iatk;
     public double atkcs, atkct;
+    
+    @Override
+    public void remove() {
+	GobCombatInfo.clear();
+	super.remove();
+    }
+    
     public Indir<Resource> lastact = null;
     public double lastuse = 0;
     public Mainrel curdisp;
@@ -58,7 +68,6 @@ public class Fightview extends Widget {
 	public Indir<Resource> lastact = null;
 	public double lastuse = 0;
 	public boolean invalid = false;
-	public GobOpeningOverlay openings;
 
         public Relation(long gobid) {
             this.gobid = gobid;
@@ -130,10 +139,10 @@ public class Fightview extends Widget {
 	protected void drawslot(GOut g, Relation item, int idx, Area area) {
 	}
 
-	public boolean mousewheel(Coord c, int amount) {
+	public boolean mousewheel(MouseWheelEvent ev) {
 	    if(!sb.vis())
 		return(false);
-	    return(super.mousewheel(c, amount));
+	    return(super.mousewheel(ev));
 	}
 
 	protected boolean unselect(int button) {
@@ -277,10 +286,10 @@ public class Fightview extends Widget {
 	if(rel != null) {
 	    add(curdisp = new Mainrel(rel));
 	}
+	Relation tmp = current;
 	current = rel;
-	if (current != null) {
-	    ui.gui.lastopponent = current.gobid;
-	}
+	if(tmp != null) {Gob.gobTagsUpdated(ui, tmp.gobid);}
+	if(rel != null) {Gob.gobTagsUpdated(ui, rel.gobid);}
 	layout();
 	updrel();
     }
@@ -313,39 +322,40 @@ public class Fightview extends Widget {
 
     public void uimsg(String msg, Object... args) {
         if(msg == "new") {
-            Relation rel = new Relation(Utils.uiv(args[0]));
+	    if(lsrel.isEmpty()) {combatStateChanged();}
+            Relation rel = new Relation(uint32((Integer)args[0]));
 	    rel.give(Utils.iv(args[1]));
 	    rel.ip = Utils.iv(args[2]);
 	    rel.oip = Utils.iv(args[3]);
             lsrel.addFirst(rel);
+	    GobCombatInfo.add(rel, ui);
 	    updrel();
 	    if(rel.gst == 0 && CFG.COMBAT_AUTO_PEACE.get()) {
 		wdgmsg("give", (int)rel.gobid, 1);
 	    }
-	    Gob target = this.ui.sess.glob.oc.getgob(rel.gobid);
-	    if (target != null)
-		target.proccessOpenings(rel);
+	    Gob.gobTagsUpdated(ui, rel.gobid);
             return;
         } else if(msg == "del") {
-            Relation rel = getrel(uint32((Integer)args[0]));
-	    Gob target = this.ui.sess.glob.oc.getgob(rel.gobid);
-	    if (target != null)
-	    	target.clearOpenings();
+            Relation rel = getrel(Utils.uiv(args[0]));
+	    Gob.gobTagsUpdated(ui, rel.gobid);
+	    GobCombatInfo.del(rel, ui);
 	    rel.remove();
             lsrel.remove(rel);
 	    if(rel == current)
 		setcur(null);
 	    updrel();
+	    if(lsrel.isEmpty()) {combatStateChanged();}
+	    if(CFG.COMBAT_RE_AGGRO.get()) {Actions.reAggroKritter(ui.gui, rel.gobid);}
             return;
         } else if(msg == "upd") {
-            Relation rel = getrel(uint32((Integer)args[0]));
+            Relation rel = getrel(Utils.uiv(args[0]));
             int was = rel.gst;
-	    rel.give((Integer)args[1]);
+	    rel.give(Utils.iv(args[1]));
 	    if(was == 2 && rel.gst == 0 && CFG.COMBAT_AUTO_PEACE.get()) {
 		wdgmsg("give", (int) rel.gobid, 1);
 	    }
-	    rel.ip = (Integer)args[2];
-	    rel.oip = (Integer)args[3];
+	    rel.ip = Utils.iv(args[2]);
+	    rel.oip = Utils.iv(args[3]);
             return;
 	} else if(msg == "used") {
 	    use((args[0] == null) ? null : ui.sess.getresv(args[0]));
@@ -377,5 +387,9 @@ public class Fightview extends Widget {
 	    return;
 	}
         super.uimsg(msg, args);
+    }
+    
+    private void combatStateChanged() {
+	ui.sess.glob.oc.gobAction(Gob::combatUpdated);
     }
 }

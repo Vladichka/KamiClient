@@ -27,6 +27,7 @@
 package haven.resutil;
 
 import haven.*;
+import me.ender.ClientUtils;
 import me.ender.timer.Timer;
 
 import java.awt.Color;
@@ -39,7 +40,7 @@ public class Curiosity extends ItemInfo.Tip implements GItem.ColorInfo {
     public final int exp, mw, enc, time;
     public transient final int lph;
     public final UI ui;
-    
+
     public Curiosity(Owner owner, int exp, int mw, int enc, int time) {
 	super(owner);
 	this.exp = exp;
@@ -55,18 +56,18 @@ public class Curiosity extends ItemInfo.Tip implements GItem.ColorInfo {
 	}
 	this.ui = ui;
     }
-    
+
     static String timefmt(int time) {
 	if(CFG.REAL_TIME_CURIO.get()) {
 	    time = (int) (time / Timer.SERVER_RATIO);
 	}
-	return Utils.formatTimeLong(time);
+	return ClientUtils.formatTimeLong(time);
     }
     
     public static int lph(int lph){
-	return CFG.REAL_TIME_CURIO.get() ? ((int) (Timer.SERVER_RATIO * lph)) : lph;
+        return CFG.REAL_TIME_CURIO.get() ? ((int) (Timer.SERVER_RATIO * lph)) : lph;
     }
-    
+
     public BufferedImage tipimg() {
 	StringBuilder buf = new StringBuilder();
 	if(exp > 0)
@@ -87,7 +88,7 @@ public class Curiosity extends ItemInfo.Tip implements GItem.ColorInfo {
 	    buf.append(String.format("Experience cost: $col[255,255,192]{%d}\n", enc));
 	return(RichText.render(buf.toString(), 0).img);
     }
-    
+
     public Color olcol() {
 	Object tip = (ui == null) ? null : ui.lasttip;
 	if(tip instanceof ItemInfo.InfoTip) {
@@ -106,12 +107,12 @@ public class Curiosity extends ItemInfo.Tip implements GItem.ColorInfo {
 	}
 	return(null);
     }
-    
+
     private String remainingLongTip() {
-	if(CFG.SHOW_CURIO_REMAINING_TT.get()) {
+        if(CFG.SHOW_CURIO_REMAINING_TT.get()) {
 	    return remainingLongTip(remaining());
 	} else {
-	    return null;
+            return null;
 	}
     }
     
@@ -125,7 +126,7 @@ public class Curiosity extends ItemInfo.Tip implements GItem.ColorInfo {
     private String remainingShortTip(int time) {
 	if(!CFG.SHOW_CURIO_REMAINING_METER.get() || time < 0) {return null;}
 	time = (int) (time / Timer.SERVER_RATIO); //short tip is always in real time
-	return Utils.formatTimeShort(time);
+	return ClientUtils.formatTimeShort(time);
     }
     
     public Pair<String, String> remainingTip() {
@@ -151,7 +152,7 @@ public class Curiosity extends ItemInfo.Tip implements GItem.ColorInfo {
     
     public static class Data implements ItemData.ITipData {
 	public final int lp, weight, xp, time;
-	
+
 	public Data(Curiosity ii, QualityList q) {
 	    QualityList.Quality single = q.single(Quality);
 	    if(single == null) {
@@ -162,7 +163,7 @@ public class Curiosity extends ItemInfo.Tip implements GItem.ColorInfo {
 	    xp = ii.enc;
 	    time = ii.time;
 	}
-	
+
 	@Override
 	public ItemInfo create(Session sess) {
 	    return new Curiosity(null, lp, weight, xp, time);

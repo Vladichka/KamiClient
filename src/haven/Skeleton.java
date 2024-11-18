@@ -34,7 +34,7 @@ public class Skeleton {
     public final Map<String, Bone> bones = new HashMap<String, Bone>();
     public final Bone[] blist; /* Topologically sorted */
     public final Pose bindpose;
-
+    
     public Skeleton(Collection<Bone> bones) {
 	Set<Bone> bset = new HashSet<Bone>(bones);
 	blist = new Bone[bones.size()];
@@ -182,7 +182,7 @@ public class Skeleton {
 	d[3] = (d0 * az) + (d1 * bz);
 	return(d);
     }
-
+    
     public Pose mkbindpose() {
 	Pose p = new Pose();
 	for(int i = 0; i < blist.length; i++) {
@@ -193,7 +193,7 @@ public class Skeleton {
 	p.gbuild();
 	return(p);
     }
-	
+    
     public class Pose implements EquipTarget {
 	public float[][] lpos, gpos;
 	public float[][] lrot, grot;
@@ -225,7 +225,7 @@ public class Skeleton {
 		qset(lrot[i], from.lrot[i]);
 	    }
 	}
-
+	
 	public void gbuild() {
 	    int nb = blist.length;
 	    for(int i = 0; i < nb; i++) {
@@ -260,54 +260,54 @@ public class Skeleton {
 	/* XXX: It seems the return type of these should be something more generic. */
 	public Supplier<Pipe.Op> bonetrans(int bone) {
 	    return(new Supplier<Pipe.Op>() {
-		    int cseq = -1;
-		    Location cur;
-
-		    public Pipe.Op get() {
-			if(cseq != seq) {
-			    Matrix4f xf = Transform.makexlate(new Matrix4f(), new Coord3f(gpos[bone][0], gpos[bone][1], gpos[bone][2]));
-			    if(grot[bone][0] < 0.999999) {
-				float ang = (float)(Math.acos(grot[bone][0]) * 2.0);
-				xf = xf.mul1(Transform.makerot(new Matrix4f(), new Coord3f(grot[bone][1], grot[bone][2], grot[bone][3]).norm(), ang));
-			    }
-			    cur = new Location(xf);
-			    cseq = seq;
+		int cseq = -1;
+		Location cur;
+		
+		public Pipe.Op get() {
+		    if(cseq != seq) {
+			Matrix4f xf = Transform.makexlate(new Matrix4f(), new Coord3f(gpos[bone][0], gpos[bone][1], gpos[bone][2]));
+			if(grot[bone][0] < 0.999999) {
+			    float ang = (float)(Math.acos(grot[bone][0]) * 2.0);
+			    xf = xf.mul1(Transform.makerot(new Matrix4f(), new Coord3f(grot[bone][1], grot[bone][2], grot[bone][3]).norm(), ang));
 			}
-			return(cur);
+			cur = new Location(xf);
+			cseq = seq;
 		    }
-		});
+		    return(cur);
+		}
+	    });
 	}
-
+	
 	public Supplier<Pipe.Op> eqpoint(String name, Message dat) {
 	    Bone bone = bones.get(name);
 	    if(bone == null)
 		return(null);
 	    return(bonetrans(bone.idx));
 	}
-
+	
 	public Supplier<Pipe.Op> bonetrans2(int bone) {
 	    return(new Supplier<Pipe.Op>() {
-		    int cseq = -1;
-		    Location cur;
-		    float[] pos = new float[3], rot = new float[4];
-
-		    public Pipe.Op get() {
-			if(cseq != seq) {
-			    rot = qqmul(rot, grot[bone], qinv(rot, bindpose.grot[bone]));
-			    pos = vvadd(pos, gpos[bone], vqrot(pos, vinv(pos, bindpose.gpos[bone]), rot));
-			    Matrix4f xf = Transform.makexlate(new Matrix4f(), new Coord3f(pos[0], pos[1], pos[2]));
-			    if(rot[0] < 0.999999) {
-				float ang = (float)(Math.acos(rot[0]) * 2.0);
-				xf = xf.mul1(Transform.makerot(new Matrix4f(), new Coord3f(rot[1], rot[2], rot[3]).norm(), ang));
-			    }
-			    cur = new Location(xf);
-			    cseq = seq;
+		int cseq = -1;
+		Location cur;
+		float[] pos = new float[3], rot = new float[4];
+		
+		public Pipe.Op get() {
+		    if(cseq != seq) {
+			rot = qqmul(rot, grot[bone], qinv(rot, bindpose.grot[bone]));
+			pos = vvadd(pos, gpos[bone], vqrot(pos, vinv(pos, bindpose.gpos[bone]), rot));
+			Matrix4f xf = Transform.makexlate(new Matrix4f(), new Coord3f(pos[0], pos[1], pos[2]));
+			if(rot[0] < 0.999999) {
+			    float ang = (float)(Math.acos(rot[0]) * 2.0);
+			    xf = xf.mul1(Transform.makerot(new Matrix4f(), new Coord3f(rot[1], rot[2], rot[3]).norm(), ang));
 			}
-			return(cur);
+			cur = new Location(xf);
+			cseq = seq;
 		    }
-		});
+		    return(cur);
+		}
+	    });
 	}
-
+	
 	public class BoneAlign implements Supplier<Pipe.Op> {
 	    private final Coord3f ref;
 	    private final int orig, tgt;
@@ -319,7 +319,7 @@ public class Skeleton {
 		this.orig = orig.idx;
 		this.tgt = tgt.idx;
 	    }
-		
+	    
 	    public Location get() {
 		if(cseq != seq) {
 		    Coord3f cur = new Coord3f(gpos[tgt][0] - gpos[orig][0], gpos[tgt][1] - gpos[orig][1], gpos[tgt][2] - gpos[orig][2]).norm();
@@ -327,13 +327,13 @@ public class Skeleton {
 		    float ang = (float)Math.acos(cur.dmul(ref));
 		    // Debug.dump(cur, ref, axis, ang);
 		    this.cur = new Location(Transform.makexlate(new Matrix4f(), new Coord3f(gpos[orig][0], gpos[orig][1], gpos[orig][2]))
-				       .mul1(Transform.makerot(new Matrix4f(), axis, -ang)));
+			.mul1(Transform.makerot(new Matrix4f(), axis, -ang)));
 		    cseq = seq;
 		}
 		return(cur);
 	    }
 	}
-
+	
 	public void boneoff(int bone, float[] offtrans) {
 	    /* It would be nice if these "new float"s get
 	     * stack-allocated. */
@@ -361,11 +361,11 @@ public class Skeleton {
 	
 	public class Debug implements RenderTree.Node, Rendered, TickList.Ticking, TickList.TickNode {
 	    private final VertexArray.Layout fmt = new VertexArray.Layout(new VertexArray.Layout.Input(Homo3D.vertex,     new VectorFormat(3, NumberFormat.FLOAT32), 0,  0, 16),
-									  new VertexArray.Layout.Input(VertexColor.color, new VectorFormat(4, NumberFormat.UNORM8),  0, 12, 16));
+		new VertexArray.Layout.Input(VertexColor.color, new VectorFormat(4, NumberFormat.UNORM8),  0, 12, 16));
 	    private final VertexArray.Buffer data;
 	    private final Model model;
 	    private final int[] bperm;
-
+	    
 	    public Debug() {
 		int[] bperm = new int[blist.length];
 		int n = 0;
@@ -382,53 +382,53 @@ public class Skeleton {
 		    model = null;
 		}
 	    }
-
+	    
 	    public void draw(Pipe state, Render g) {
 		if(model != null)
 		    g.draw(state, model);
 	    }
-
+	    
 	    public void autogtick(Render g) {
 		if(data == null)
 		    return;
 		g.update(data, (tgt, env) -> {
-			FillBuffer ret = env.fillbuf(tgt);
-			java.nio.ByteBuffer buf = ret.push();
-			for(int i = 0; i < bperm.length; i++) {
-			    int bi = bperm[i], pi = blist[bi].parent.idx;
-			    buf.putFloat(gpos[pi][0]).putFloat(gpos[pi][1]).putFloat(gpos[pi][2]);
-			    buf.put((byte)255).put((byte)0).put((byte)0).put((byte)255);
-			    buf.putFloat(gpos[bi][0]).putFloat(gpos[bi][1]).putFloat(gpos[bi][2]);
-			    buf.put((byte)0).put((byte)255).put((byte)0).put((byte)255);
-			}
-			return(ret);
-		    });
+		    FillBuffer ret = env.fillbuf(tgt);
+		    java.nio.ByteBuffer buf = ret.push();
+		    for(int i = 0; i < bperm.length; i++) {
+			int bi = bperm[i], pi = blist[bi].parent.idx;
+			buf.putFloat(gpos[pi][0]).putFloat(gpos[pi][1]).putFloat(gpos[pi][2]);
+			buf.put((byte)255).put((byte)0).put((byte)0).put((byte)255);
+			buf.putFloat(gpos[bi][0]).putFloat(gpos[bi][1]).putFloat(gpos[bi][2]);
+			buf.put((byte)0).put((byte)255).put((byte)0).put((byte)255);
+		    }
+		    return(ret);
+		});
 	    }
-
+	    
 	    public TickList.Ticking ticker() {return(this);}
-
+	    
 	    public void added(RenderTree.Slot slot) {
 		slot.ostate(Pipe.Op.compose(VertexColor.instance, States.Depthtest.none, Rendered.last));
 	    }
 	}
     }
-
+    
     public interface ModOwner extends OwnerContext {
 	public double getv();
 	public Collection<Location.Chain> getloc();
-
+	
 	public static final ModOwner nil = new ModOwner() {
-		public double getv() {return(0);}
-		public Collection<Location.Chain> getloc() {return(Collections.emptyList());}
-		public <T> T context(Class<T> cl) {throw(new NoContext(cl));}
-	    };
+	    public double getv() {return(0);}
+	    public Collection<Location.Chain> getloc() {return(Collections.emptyList());}
+	    public <T> T context(Class<T> cl) {throw(new NoContext(cl));}
+	};
     }
-
+    
     public abstract class PoseMod {
 	public final ModOwner owner;
 	public float[][] lpos, lrot;
 	protected final Collection<FxTrack.EventListener> cbl = new ArrayList<FxTrack.EventListener>(0);
-
+	
 	public PoseMod(ModOwner owner) {
 	    this.owner = owner;
 	    int nb = blist.length;
@@ -437,7 +437,7 @@ public class Skeleton {
 	    for(int i = 0; i < nb; i++)
 		lrot[i][0] = 1;
 	}
-
+	
 	public Skeleton skel() {return(Skeleton.this);}
 	
 	public void reset() {
@@ -451,7 +451,7 @@ public class Skeleton {
 	    float[] x = {ax, ay, az};
 	    qqmul(lrot[bone], lrot[bone], rotasq(new float[4], x, ang));
 	}
-
+	
 	public void apply(Pose p) {
 	    for(int i = 0; i < blist.length; i++) {
 		vvadd(p.lpos[i], p.lpos[i], lpos[i]);
@@ -462,119 +462,124 @@ public class Skeleton {
 	public boolean tick(float dt) {
 	    return(false);
 	}
-
+	
 	public void age() {
 	}
 	
 	public void listen(FxTrack.EventListener l) {
 	    cbl.add(l);
 	}
-
+	
 	public void remove(FxTrack.EventListener l) {
 	    cbl.remove(l);
 	}
-
+	
 	public void callback(FxTrack.Event ev) {
 	    for(FxTrack.EventListener l : cbl)
 		l.event(ev);
 	}
-
+	
 	public abstract boolean stat();
 	public abstract boolean done();
     }
-
+    
     public PoseMod nilmod() {
 	return(new PoseMod(ModOwner.nil) {
-		public boolean stat() {return(true);}
-		public boolean done() {return(false);}
-	    });
+	    public boolean stat() {return(true);}
+	    public boolean done() {return(false);}
+	    public String toString() {return("#<nil-mod>");}
+	});
     }
-
+    
     public static PoseMod combine(final PoseMod... mods) {
 	PoseMod first = mods[0];
 	return(first.skel().new PoseMod(first.owner) {
-		final boolean stat; {
-		    boolean s = true;
-		    for(PoseMod m : mods)
-			s = s && m.stat();
-		    stat = s;
+	    final boolean stat; {
+		boolean s = true;
+		for(PoseMod m : mods)
+		    s = s && m.stat();
+		stat = s;
+	    }
+	    
+	    public void apply(Pose p) {
+		for(PoseMod m : mods)
+		    m.apply(p);
+	    }
+	    
+	    public boolean tick(float dt) {
+		boolean ret = false;
+		for(PoseMod m : mods) {
+		    if(m.tick(dt))
+			ret = true;
 		}
-
-		public void apply(Pose p) {
-		    for(PoseMod m : mods)
-			m.apply(p);
+		return(ret);
+	    }
+	    
+	    public void age() {
+		for(PoseMod m : mods)
+		    m.age();
+	    }
+	    
+	    public boolean stat() {
+		return(stat);
+	    }
+	    
+	    public boolean done() {
+		for(PoseMod m : mods) {
+		    if(m.done())
+			return(true);
 		}
-
-		public boolean tick(float dt) {
-		    boolean ret = false;
-		    for(PoseMod m : mods) {
-			if(m.tick(dt))
-			    ret = true;
-		    }
-		    return(ret);
-		}
-
-		public void age() {
-		    for(PoseMod m : mods)
-			m.age();
-		}
-
-		public boolean stat() {
-		    return(stat);
-		}
-
-		public boolean done() {
-		    for(PoseMod m : mods) {
-			if(m.done())
-			    return(true);
-		    }
-		    return(false);
-		}
-	    });
+		return(false);
+	    }
+	    
+	    public String toString() {
+		return("#<combined " + Arrays.asList(mods) + ">");
+	    }
+	});
     }
-
+    
     @Resource.PublishedCode(name = "pose")
     public interface ModFactory {
 	public PoseMod create(Skeleton skel, ModOwner owner, Resource res, Message sdt);
-
+	
 	public static final ModFactory def = new ModFactory() {
-		public PoseMod create(Skeleton skel, ModOwner owner, Resource res, Message sdt) {
-		    int mask = Sprite.decnum(sdt);
-		    Collection<PoseMod> poses = new ArrayList<PoseMod>(16);
-		    for(ResPose p : res.layers(ResPose.class)) {
-			if((p.id < 0) || ((mask & (1 << p.id)) != 0))
-			    poses.add(p.forskel(owner, skel, p.defmode));
-		    }
-		    if(poses.size() == 0)
-			return(skel.nilmod());
-		    else if(poses.size() == 1)
-			return(Utils.el(poses));
-		    else
-			return(combine(poses.toArray(new PoseMod[0])));
+	    public PoseMod create(Skeleton skel, ModOwner owner, Resource res, Message sdt) {
+		int mask = Sprite.decnum(sdt);
+		Collection<PoseMod> poses = new ArrayList<PoseMod>(16);
+		for(ResPose p : res.layers(ResPose.class)) {
+		    if((p.id < 0) || ((mask & (1 << p.id)) != 0))
+			poses.add(p.forskel(owner, skel, p.defmode));
 		}
-	    };
+		if(poses.size() == 0)
+		    return(skel.nilmod());
+		else if(poses.size() == 1)
+		    return(Utils.el(poses));
+		else
+		    return(combine(poses.toArray(new PoseMod[0])));
+	    }
+	};
     }
-
+    
     public PoseMod mkposemod(ModOwner owner, Resource res, Message sdt) {
 	ModFactory f = res.getcode(ModFactory.class, false);
 	if(f == null)
 	    f = ModFactory.def;
 	return(f.create(this, owner, res, sdt));
     }
-
+    
     public static class ResourceSkeleton extends Skeleton {
 	public final Resource res;
-
+	
 	public ResourceSkeleton(Collection<Bone> bones, Res info) {
 	    super(bones);
 	    this.res = info.getres();
 	}
-
+	
 	public String toString() {
 	    return("Skeleton(" + res.name + ")");
 	}
     }
-
+    
     @Resource.LayerName("skel")
     public static class Res extends Resource.Layer {
 	public final transient Skeleton s;
@@ -613,7 +618,7 @@ public class Skeleton {
 		throw(new AssertionError());
 	    }
 	}
-
+	
 	public Res(Resource res, Message buf) {
 	    res.super();
 	    Map<String, Bone> bones = new HashMap<String, Bone>();
@@ -662,7 +667,7 @@ public class Skeleton {
 	    stat = done = true;
 	    aupdate(0.0f);
 	}
-
+	
 	
 	public void aupdate(float time) {
 	    if(time > len)
@@ -709,7 +714,7 @@ public class Skeleton {
 		}
 	    }
 	}
-
+	
 	private void playfx(float ot, float nt) {
 	    if(ot > nt) {
 		playfx(Math.min(ot, len), len);
@@ -727,42 +732,42 @@ public class Skeleton {
 		    callback(new FxTrack.Tick(nt));
 	    }
 	}
-
+	
 	public boolean tick(float dt) {
 	    if(speedmod)
 		dt *= owner.getv() / nspeed;
 	    float nt = time + (back ? -dt : dt);
 	    switch(mode) {
-	    case LOOP:
-		if(len == 0)
-		    nt = 0;
-		else
-		    nt %= len;
-		break;
-	    case ONCE:
-		if(nt > len) {
-		    nt = len;
-		    done = true;
-		}
-		break;
-	    case PONG:
-		if(!back && (nt > len)) {
-		    nt = len;
-		    back = true;
-		} else if(back && (nt < 0)) {
-		    nt = 0;
-		    done = true;
-		}
-		break;
-	    case PONGLOOP:
-		if(!back && (nt > len)) {
-		    nt = len;
-		    back = true;
-		} else if(back && (nt < 0)) {
-		    nt = 0;
-		    back = false;
-		}
-		break;
+		case LOOP:
+		    if(len == 0)
+			nt = 0;
+		    else
+			nt %= len;
+		    break;
+		case ONCE:
+		    if(nt > len) {
+			nt = len;
+			done = true;
+		    }
+		    break;
+		case PONG:
+		    if(!back && (nt > len)) {
+			nt = len;
+			back = true;
+		    } else if(back && (nt < 0)) {
+			nt = 0;
+			done = true;
+		    }
+		    break;
+		case PONGLOOP:
+		    if(!back && (nt > len)) {
+			nt = len;
+			back = true;
+		    } else if(back && (nt < 0)) {
+			nt = 0;
+			back = false;
+		    }
+		    break;
 	    }
 	    float ot = this.time;
 	    this.time = nt;
@@ -777,21 +782,21 @@ public class Skeleton {
 		return(false);
 	    }
 	}
-
+	
 	public void age() {
 	    switch(mode) {
-	    case PONGLOOP:
-		back = Math.random() >= 0.5;
-	    case LOOP:
-		time = (float)Math.random() * len;
-		break;
-	    case PONG:
-		back = true;
-		time = 0;
-		break;
-	    case ONCE:
-		time = len;
-		break;
+		case PONGLOOP:
+		    back = Math.random() >= 0.5;
+		case LOOP:
+		    time = (float)Math.random() * len;
+		    break;
+		case PONG:
+		    back = true;
+		    time = 0;
+		    break;
+		case ONCE:
+		    time = len;
+		    break;
 	    }
 	    aupdate(time);
 	}
@@ -804,98 +809,98 @@ public class Skeleton {
 	    return(done);
 	}
     }
-
+    
     public static class Track {
 	public final String bone;
 	public final Frame[] frames;
-	    
+	
 	public static class Frame {
 	    public final float time;
 	    public final float[] trans, rot;
-		
+	    
 	    public Frame(float time, float[] trans, float[] rot) {
 		this.time = time;
 		this.trans = trans;
 		this.rot = rot;
 	    }
 	}
-	    
+	
 	public Track(String bone, Frame[] frames) {
 	    this.bone = bone;
 	    this.frames = frames;
 	}
     }
-
+    
     public static class FxTrack {
 	public final Event[] events;
-
+	
 	public static interface EventListener {
 	    public void event(Event ev);
 	}
-
+	
 	public static abstract class Event {
 	    public final float time;
-
+	    
 	    public Event(float time) {
 		this.time = time;
 	    }
-
+	    
 	    public abstract void trigger(ModOwner owner, PoseMod mod);
 	}
-
+	
 	public FxTrack(Event[] events) {
 	    this.events = events;
 	}
-
+	
 	public static class SpawnSprite extends Event {
 	    public final Indir<Resource> res;
 	    public final byte[] sdt;
 	    public final Function<ModOwner, Pipe.Op> loc;
-
+	    
 	    public SpawnSprite(float time, Indir<Resource> res, byte[] sdt, Function<ModOwner, Pipe.Op> loc) {
 		super(time);
 		this.res = res;
 		this.sdt = (sdt == null)?new byte[0]:sdt;
 		this.loc = loc;
 	    }
-
+	    
 	    public void trigger(ModOwner owner, PoseMod mod) {
 		Glob glob = owner.context(Glob.class);
 		Collection<Location.Chain> locs = owner.getloc();
 		Loader l = glob.loader;
 		l.defer(() -> {
-			Pipe.Op ploc = (this.loc != null) ? this.loc.apply(owner) : null;
-			for(Location.Chain loc : locs) {
-			    Coord3f o = loc.fin(Matrix4f.id).mul4(Coord3f.o);
-			    Location lxf = new Location(loc.fin(Location.makexlate(new Matrix4f(), o.inv())));
-			    l.defer(() -> {
-				    Gob n = glob.oc.new FixedPlace(o.invy(), 0) {
-					    protected void obstate(Pipe buf) {
-						buf.prep(lxf);
-						if(ploc != null)
-						    buf.prep(ploc);
-					    }
-					};
-				    n.addol(new Gob.Overlay(n, -1, res, new MessageBuf(sdt)), false);
-				    glob.oc.add(n);
-				}, null);
-			}
-		    }, null);
+		    Pipe.Op ploc = (this.loc != null) ? this.loc.apply(owner) : null;
+		    for(Location.Chain loc : locs) {
+			Coord3f o = loc.fin(Matrix4f.id).mul4(Coord3f.o);
+			Location lxf = new Location(loc.fin(Location.makexlate(new Matrix4f(), o.inv())));
+			l.defer(() -> {
+			    Gob n = glob.oc.new FixedPlace(o.invy(), 0) {
+				protected void obstate(Pipe buf) {
+				    buf.prep(lxf);
+				    if(ploc != null)
+					buf.prep(ploc);
+				}
+			    };
+			    n.addol(new Gob.Overlay(n, -1, res, new MessageBuf(sdt)), false);
+			    glob.oc.add(n);
+			}, null);
+		    }
+		}, null);
 	    }
 	}
-
+	
 	public static class FxOverlay extends Gob.Overlay implements FxTrack.EventListener {
 	    public final String fxid;
 	    private final PoseMod mod;
 	    private boolean ticked = true;
-
+	    
 	    public FxOverlay(Gob gob, PoseMod mod, String id, Indir<Resource> res, Message sdt) {
 		super(gob, -1, res, sdt);
 		this.fxid = id;
 		this.mod = mod;
 		mod.listen(this);
 	    }
-
+	    
 	    public boolean tick(double dt) {
 		if(super.tick(dt))
 		    return(true);
@@ -903,30 +908,30 @@ public class Skeleton {
 		ticked = false;
 		return(rv);
 	    }
-
+	    
 	    protected void removed() {
 		super.removed();
 		mod.remove(this);
 	    }
-
+	    
 	    public void event(FxTrack.Event ev) {
 		if(ev instanceof FxTrack.Tick)
 		    ticked = true;
 	    }
 	}
-
+	
 	public static class MkOverlay extends Event {
 	    public final String id;
 	    public final Indir<Resource> res;
 	    public final byte[] sdt;
-
+	    
 	    public MkOverlay(float time, String id, Indir<Resource> res, byte[] sdt) {
 		super(time);
 		this.id = id.intern();
 		this.res = res;
 		this.sdt = sdt;
 	    }
-
+	    
 	    public void trigger(ModOwner owner, PoseMod mod) {
 		Gob gob = owner.fcontext(Gob.class, false);
 		if(gob != null) {
@@ -935,15 +940,15 @@ public class Skeleton {
 		}
 	    }
 	}
-
+	
 	public static class RmOverlay extends Event {
 	    public final String id;
-
+	    
 	    public RmOverlay(float time, String id) {
 		super(time);
 		this.id = id.intern();
 	    }
-
+	    
 	    public void trigger(ModOwner owner, PoseMod mod) {
 		Gob gob = owner.fcontext(Gob.class, false);
 		if(gob != null) {
@@ -958,27 +963,27 @@ public class Skeleton {
 		}
 	    }
 	}
-
+	
 	public static class Trigger extends Event {
 	    public final String id;
-
+	    
 	    public Trigger(float time, String id) {
 		super(time);
 		this.id = id.intern();
 	    }
-
+	    
 	    public void trigger(ModOwner owner, PoseMod mod) {}
 	}
-
+	
 	public static class Tick extends Event {
 	    public Tick(float time) {
 		super(time);
 	    }
-
+	    
 	    public void trigger(ModOwner owner, PoseMod mod) {}
 	}
     }
-
+    
     @Resource.LayerName("skan")
     public static class ResPose extends Resource.Layer implements Resource.IDLayer<Integer> {
 	public final int id;
@@ -1016,7 +1021,7 @@ public class Skeleton {
 	    }
 	    return(frames);
 	}
-
+	
 	private FxTrack parsefx(int fmt, Message buf) {
 	    FxTrack.Event[] events = new FxTrack.Event[buf.uint16()];
 	    for(int i = 0; i < events.length; i++) {
@@ -1030,61 +1035,61 @@ public class Skeleton {
 		    exhaust = true;
 		}
 		switch(t) {
-		case 0: case 2: {
-		    String resnm = sub.string();
-		    int resver = sub.uint16();
-		    byte[] sdt = sub.bytes(sub.uint8());
-		    int fl = (t == 2) ? sub.uint8() : 0;
-		    Indir<Resource> res = getres().pool.load(resnm, resver);
-		    Function<ModOwner, Pipe.Op> ploc = null;
-		    if((fl & 1) != 0) {
-			String eqnm = sub.string();
-			Indir<Resource> src = ((fl & 2) == 0) ? getres().indir() : res;
-			ploc = new Function<ModOwner, Pipe.Op>() {
+		    case 0: case 2: {
+			String resnm = sub.string();
+			int resver = sub.uint16();
+			byte[] sdt = sub.bytes(sub.uint8());
+			int fl = (t == 2) ? sub.uint8() : 0;
+			Indir<Resource> res = getres().pool.load(resnm, resver);
+			Function<ModOwner, Pipe.Op> ploc = null;
+			if((fl & 1) != 0) {
+			    String eqnm = sub.string();
+			    Indir<Resource> src = ((fl & 2) == 0) ? getres().indir() : res;
+			    ploc = new Function<ModOwner, Pipe.Op>() {
 				BoneOffset eqp = null;
-
+				
 				public Pipe.Op apply(ModOwner owner) {
 				    if(eqp == null)
 					eqp = src.get().flayer(BoneOffset.class, eqnm);
 				    return(eqp.from(owner.context(EquipTarget.class)).get());
 				}
 			    };
+			}
+			events[i] = new FxTrack.SpawnSprite(tm, res, sdt, ploc);
+			break;
 		    }
-		    events[i] = new FxTrack.SpawnSprite(tm, res, sdt, ploc);
-		    break;
-		}
-		case 1: {
-		    String id = sub.string();
-		    events[i] = new FxTrack.Trigger(tm, id);
-		    break;
-		}
-		case 3: {
-		    int fl = sub.uint8();
-		    String id = sub.string();
-		    String resnm = sub.string();
-		    int resver = sub.uint16();
-		    byte[] sdt = sub.bytes(sub.uint8());
-		    Indir<Resource> res = getres().pool.load(resnm, resver);
-		    events[i] = new FxTrack.MkOverlay(tm, id, res, sdt);
-		    break;
-		}
-		case 4: {
-		    String id = sub.string();
-		    events[i] = new FxTrack.RmOverlay(tm, id);
-		    break;
-		}
-		default:
-		    if(exhaust)
-			Warning.warn("unknown animation control event: %d", t);
-		    else
-			throw(new Resource.LoadException("Illegal control event: " + t, getres()));
+		    case 1: {
+			String id = sub.string();
+			events[i] = new FxTrack.Trigger(tm, id);
+			break;
+		    }
+		    case 3: {
+			int fl = sub.uint8();
+			String id = sub.string();
+			String resnm = sub.string();
+			int resver = sub.uint16();
+			byte[] sdt = sub.bytes(sub.uint8());
+			Indir<Resource> res = getres().pool.load(resnm, resver);
+			events[i] = new FxTrack.MkOverlay(tm, id, res, sdt);
+			break;
+		    }
+		    case 4: {
+			String id = sub.string();
+			events[i] = new FxTrack.RmOverlay(tm, id);
+			break;
+		    }
+		    default:
+			if(exhaust)
+			    Warning.warn("unknown animation control event: %d", t);
+			else
+			    throw(new Resource.LoadException("Illegal control event: " + t, getres()));
 		}
 		if(exhaust)
 		    sub.skip();
 	    }
 	    return(new FxTrack(events));
 	}
-
+	
 	public ResPose(Resource res, Message buf) {
 	    res.super();
 	    this.id = buf.int16();
@@ -1126,7 +1131,7 @@ public class Skeleton {
 	    this.tracks = tracks.toArray(new Track[0]);
 	    this.effects = fx.toArray(new FxTrack[0]);
 	}
-
+	
 	private Track[] iaIaCthulhuFhtagn(Skeleton skel) {
 	    Track[] remap = new Track[skel.blist.length];
 	    for(Track t : tracks) {
@@ -1137,7 +1142,7 @@ public class Skeleton {
 	    }
 	    return(remap);
 	}
-
+	
 	public class ResMod extends TrackMod {
 	    public ResMod(ModOwner owner, Skeleton skel, WrapMode mode) {
 		skel.super(owner, iaIaCthulhuFhtagn(skel), ResPose.this.effects, ResPose.this.len, mode);
@@ -1146,32 +1151,32 @@ public class Skeleton {
 		    this.nspeed = ResPose.this.nspeed;
 		}
 	    }
-
+	    
 	    public ResMod(ModOwner owner, Skeleton skel) {
 		this(owner, skel, defmode);
 	    }
-
+	    
 	    public String toString() {
 		return(String.format("#<pose %d in %s>", id, getres().name));
 	    }
 	}
-
+	
 	public TrackMod forskel(ModOwner owner, Skeleton skel, WrapMode mode) {
 	    return(new ResMod(owner, skel, mode));
 	}
-
+	
 	public Integer layerid() {
 	    return(id);
 	}
-
+	
 	public void init() {}
     }
-
+    
     @Resource.LayerName("boneoff")
     public static class BoneOffset extends Resource.Layer implements Resource.IDLayer<String> {
 	public final String nm;
 	public final transient Function<EquipTarget, Supplier<Pipe.Op>>[] prog;
-
+	
 	@SuppressWarnings("unchecked")
 	private static final BiFunction<Message, BoneOffset, Function<EquipTarget, Supplier<? extends Pipe.Op>>>[] opcodes = new BiFunction[256];
 	static {
@@ -1213,22 +1218,22 @@ public class Skeleton {
 		String orignm = buf.string();
 		String tgtnm = buf.string();
 		return(equ -> {
-			Pose pose = (Pose)equ;
-			Bone orig = pose.skel().bones.get(orignm);
-			Bone tgt = pose.skel().bones.get(tgtnm);
-			return(pose.new BoneAlign(ref, orig, tgt));
-		    });
+		    Pose pose = (Pose)equ;
+		    Bone orig = pose.skel().bones.get(orignm);
+		    Bone tgt = pose.skel().bones.get(tgtnm);
+		    return(pose.new BoneAlign(ref, orig, tgt));
+		});
 	    };
 	    opcodes[19] = (buf, bo) -> {
 		Coord3f ref = Utils.oct2uvec(buf.snorm16(), buf.snorm16());
 		String orignm = buf.string();
 		String tgtnm = buf.string();
 		return(equ -> {
-			Pose pose = (Pose)equ;
-			Bone orig = pose.skel().bones.get(orignm);
-			Bone tgt = pose.skel().bones.get(tgtnm);
-			return(pose.new BoneAlign(ref, orig, tgt));
-		    });
+		    Pose pose = (Pose)equ;
+		    Bone orig = pose.skel().bones.get(orignm);
+		    Bone tgt = pose.skel().bones.get(tgtnm);
+		    return(pose.new BoneAlign(ref, orig, tgt));
+		});
 	    };
 	    opcodes[4] = (buf, bo) -> {
 		return(equ -> () -> Location.nullrot);
@@ -1239,7 +1244,7 @@ public class Skeleton {
 		return(post -> () -> loc);
 	    };
 	}
-
+	
 	@SuppressWarnings("unchecked")
 	public BoneOffset(Resource res, Message buf) {
 	    res.super();
@@ -1249,14 +1254,14 @@ public class Skeleton {
 		cbuf.add(opcodes[buf.uint8()].apply(buf, this));
 	    this.prog = cbuf.toArray(new Function[0]);
 	}
-
+	
 	public String layerid() {
 	    return(nm);
 	}
-
+	
 	public void init() {
 	}
-
+	
 	@SuppressWarnings("unchecked")
 	public Supplier<Pipe.Op> from(EquipTarget equ) {
 	    if(prog.length == 1)
@@ -1265,13 +1270,13 @@ public class Skeleton {
 	    for(int i = 0; i < prog.length; i++)
 		ls[i] = prog[i].apply(equ);
 	    return(() -> {
-		    Pipe.Op[] buf = new Pipe.Op[ls.length];
-		    for(int i = 0; i < ls.length; i++)
-			buf[i] = ls[i].get();
-		    return(Pipe.Op.compose(buf));
-		});
+		Pipe.Op[] buf = new Pipe.Op[ls.length];
+		for(int i = 0; i < ls.length; i++)
+		    buf[i] = ls[i].get();
+		return(Pipe.Op.compose(buf));
+	    });
 	}
-
+	
 	@Deprecated
 	public Supplier<Pipe.Op> forpose(Pose pose) {
 	    return(from(pose));

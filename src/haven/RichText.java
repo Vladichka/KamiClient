@@ -807,6 +807,12 @@ public class RichText extends Text {
     }
     
     public static String color(String text, Color c) {
+	if(text == null) {return null;}
 	return String.format("$col[%d,%d,%d]{%s}", c.getRed(), c.getGreen(), c.getBlue(), text);
+    }
+    
+    public static String bgcolor(String text, Color c) {
+	if(text == null) {return null;}
+	return String.format("$bg[%d,%d,%d]{%s}", c.getRed(), c.getGreen(), c.getBlue(), text);
     }
 }

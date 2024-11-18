@@ -35,33 +35,33 @@ public class Composer {
         this.vpad = 0;
         this.y = 0;
     }
-    
+
     public Composer hmrgn(int value) {
         hmrgn = value;
         return this;
     }
-    
+
     public Composer vmrgn(int value) {
         vmrgn = value;
         return this;
     }
-    
+
     public Composer hpad(int value) {
         hpad = value;
         return this;
     }
     
     public int hpad() {return hpad;}
-    
+
     public Composer vpad(int value) {
         vpad = value;
         return this;
     }
-    
+
     public Composer pad(Coord value) {
         return hpad(value.x).vpad(value.y);
     }
-    
+
     public int y() {
         return y;
     }
@@ -70,29 +70,29 @@ public class Composer {
         this.y = v;
         return this;
     }
-    
+
     public void add(int height) {
         y += height + vmrgn;
     }
-    
+
     public <T extends Widget> T add(T child) {
         wdg.add(child, new Coord(hpad, vpad + y));
         y += child.sz.y + vmrgn;
-        return(child);
+	return(child);
     }
-    
+
     public <T extends Widget> T add(T child, int x) {
         wdg.add(child, new Coord(hpad + x, vpad + y));
         y += child.sz.y + vmrgn;
-        return(child);
+	return(child);
     }
-    
+
     public <T extends Widget> T adda(T child, int x, double ax) {
         wdg.adda(child, hpad + x, vpad + y, ax, 0);
         y += child.sz.y + vmrgn;
-        return(child);
+	return(child);
     }
-    
+
     public void addr(Widget ... children) {
         int maxh = 0;
         for (Widget child : children) {
@@ -119,7 +119,7 @@ public class Composer {
         }
         y += maxh + vmrgn;
     }
-    
+
     public void addrf(int firstw, Widget ... children) {
         int maxh = 0;
         for (Widget child : children) {
@@ -136,31 +136,31 @@ public class Composer {
         }
         y += maxh + vmrgn;
     }
-    
+
     public void addar(int totalw, Widget ... children) {
-        if(children.length == 1) {
-            adda(children[0], totalw / 2, 0.5);
-            return;
-        }
+	if(children.length == 1) {
+	    adda(children[0], totalw / 2, 0.5);
+	    return;
+	}
         int maxh = 0, wsum = 0;
         int maxw = 0;
         for (Widget child : children) {
-            wsum += child.sz.x;
+	    wsum += child.sz.x;
             maxw = Math.max(maxw, child.sz.x);
             maxh = Math.max(maxh, child.sz.y);
         }
         int x = hpad;
-        int tpad = totalw - wsum, npad = children.length - 1, perror = 0;
+	int tpad = totalw - wsum, npad = children.length - 1, perror = 0;
         for (Widget child : children) {
             wdg.add(child, new Coord(x, vpad + y + (maxh - child.sz.y) / 2));
-            x += child.sz.x;
-            perror += tpad;
-            x += perror / npad;
-            perror %= npad;
+	    x += child.sz.x;
+	    perror += tpad;
+	    x += perror / npad;
+	    perror %= npad;
         }
         y += maxh + vmrgn;
     }
-    
+
     private final Widget wdg;
     private int hmrgn;
     private int vmrgn;

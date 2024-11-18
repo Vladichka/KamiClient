@@ -156,12 +156,8 @@ public interface GLPanel extends UIPanel, UI.Context {
 	private Disposable freetooltex = null;
 	private void drawtooltip(UI ui, GOut g) {
 	    Object tooltip;
-	    try {
-		synchronized(ui) {
-		    tooltip = ui.root.tooltip(ui.mc, ui.root);
-		}
-	    } catch(Loading e) {
-		tooltip = "...";
+	    synchronized(ui) {
+		tooltip = ui.tooltip(ui.mc);
 	    }
 	    Indir<Tex> tt = null;
 	    if(Utils.eq(tooltip, prevtooltip)) {
@@ -227,11 +223,12 @@ public interface GLPanel extends UIPanel, UI.Context {
 	private Resource lastcursor = null;
 	private Coord curshotspot = Coord.z;
 	private boolean forceHW = false;
- 
+	
 	private void updateForceHWCursor(CFG<Boolean> cfg) {
 	    forceHW = cfg.get();
 	    lastcursor = null;
 	}
+	
 	private void drawcursor(UI ui, GOut g) {
 	    Resource curs;
 	    synchronized(ui) {

@@ -442,28 +442,7 @@ public class MapFile {
 	public double getfz(Coord c) {
 	    return(zmap[c.x + (c.y * cmaps.x)]);
 	}
-
-	private BufferedImage tiletex(int t, BufferedImage[] texes, boolean[] cached) {
-	    if(!cached[t]) {
-		Resource r = null;
-		try {
-		    r = tilesets[t].res.get();
-		} catch(Loading l) {
-		    throw(l);
-		} catch(Exception e) {
-		    warn(e, "could not load tileset resource %s(v%d): %s", tilesets[t].res.name, tilesets[t].res.ver, e);
-		}
-		if(r != null) {
-		    Resource.Image ir = r.layer(Resource.imgc);
-		    if(ir != null) {
-			texes[t] = ir.img;
-		    }
-		}
-		cached[t] = true;
-	    }
-	    return(texes[t]);
-	}
- 
+	
 	public int getColor(int index)
 	{
 	    int result = 0;
@@ -481,94 +460,6 @@ public class MapFile {
 	    catch (Exception x)
 	    {}
 	    return result;
-	}
-
-	public BufferedImage render(Coord off) {
-	    BufferedImage[] texes = new BufferedImage[tilesets.length];
-	    int[] dColor = new int[tilesets.length];
-	    Arrays.fill(dColor, -1);
-	    boolean[] cached = new boolean[tilesets.length];
-	    WritableRaster buf = PUtils.imgraster(cmaps);
-	    Coord c = new Coord();
-	    for(c.y = 0; c.y < cmaps.y; c.y++) {
-		for(c.x = 0; c.x < cmaps.x; c.x++) {
-		    int t = gettile(c);
-		    BufferedImage tex = tiletex(t, texes, cached);
-		    int rgb = 0;
-		    if (CFG.PVP_MAP.get())
-		    {
-			rgb = getColor(t);
-			if(tex != null && rgb == 0)
-			    rgb = MapSource.getDominantColor(tex, dColor, t);
-		    }
-		    else
-		    {
-			if(tex != null)
-			    rgb = tex.getRGB(Utils.floormod(c.x + off.x, tex.getWidth()),
-				Utils.floormod(c.y + off.y, tex.getHeight()));
-		    }
-		    buf.setSample(c.x, c.y, 0, (rgb & 0x00ff0000) >>> 16);
-		    buf.setSample(c.x, c.y, 1, (rgb & 0x0000ff00) >>>  8);
-		    buf.setSample(c.x, c.y, 2, (rgb & 0x000000ff) >>>  0);
-		    buf.setSample(c.x, c.y, 3, (rgb & 0xff000000) >>> 24);
-		}
-	    }
-	    if (!CFG.PVP_MAP.get())
-	    {
-		for(c.y = 1; c.y < cmaps.y - 1; c.y++) {
-		    for(c.x = 1; c.x < cmaps.x - 1; c.x++) {
-			int p = tilesets[gettile(c)].prio;
-			if((tilesets[gettile(c.add(-1, 0))].prio > p) ||
-			   (tilesets[gettile(c.add( 1, 0))].prio > p) ||
-			   (tilesets[gettile(c.add(0, -1))].prio > p) ||
-			   (tilesets[gettile(c.add(0,  1))].prio > p))
-			{
-			    buf.setSample(c.x, c.y, 0, 0);
-			    buf.setSample(c.x, c.y, 1, 0);
-			    buf.setSample(c.x, c.y, 2, 0);
-			    buf.setSample(c.x, c.y, 3, 255);
-			}
-		    }
-		}
-	    }
-	    return(PUtils.rasterimg(buf));
-	}
-
-	private static Color olcol(MCache.OverlayInfo olid) {
-	    /* XXX? */
-	    Material mat = olid.mat();
-	    BufPipe st = new BufPipe();
-	    mat.states.apply(st);
-	    if(st.get(BaseColor.slot) != null) {
-		FColor bc = st.get(BaseColor.slot).color;
-		return(new Color(Math.round(bc.r * 255), Math.round(bc.g * 255),
-				 Math.round(bc.b * 255), 255));
-	    }
-	    return(null);
-	}
-
-	public BufferedImage olrender(Coord off, String tag) {
-	    WritableRaster buf = PUtils.imgraster(cmaps);
-	    for(Overlay ol : ols) {
-		MCache.ResOverlay olid = ol.olid.get().flayer(MCache.ResOverlay.class);
-		if(!olid.tags().contains(tag))
-		    continue;
-		Color col = olcol(olid);
-		if(col == null)
-		    continue;
-		Coord c = new Coord();
-		for(c.y = 0; c.y < cmaps.y; c.y++) {
-		    for(c.x = 0; c.x < cmaps.x; c.x++) {
-			if(ol.get(c)) {
-			    buf.setSample(c.x, c.y, 0, ((col.getRed()   * col.getAlpha()) + (buf.getSample(c.x, c.y, 1) * (255 - col.getAlpha()))) / 255);
-			    buf.setSample(c.x, c.y, 1, ((col.getGreen() * col.getAlpha()) + (buf.getSample(c.x, c.y, 1) * (255 - col.getAlpha()))) / 255);
-			    buf.setSample(c.x, c.y, 2, ((col.getBlue()  * col.getAlpha()) + (buf.getSample(c.x, c.y, 2) * (255 - col.getAlpha()))) / 255);
-			    buf.setSample(c.x, c.y, 3, Math.max(buf.getSample(c.x, c.y, 3), col.getAlpha()));
-			}
-		    }
-		}
-	    }
-	    return(PUtils.rasterimg(buf));
 	}
 	
 	public static int GetByte(double val, double percent)
@@ -619,7 +510,114 @@ public class MapFile {
 	    }
 	    return(PUtils.rasterimg(buf));
 	}
-	
+
+	private BufferedImage tiletex(int t, BufferedImage[] texes, boolean[] cached) {
+	    if(!cached[t]) {
+		Resource r = null;
+		try {
+		    r = tilesets[t].res.get();
+		} catch(Loading l) {
+		    throw(l);
+		} catch(Exception e) {
+		    warn(e, "could not load tileset resource %s(v%d): %s", tilesets[t].res.name, tilesets[t].res.ver, e);
+		}
+		if(r != null) {
+		    Resource.Image ir = r.layer(Resource.imgc);
+		    if(ir != null) {
+			texes[t] = ir.img;
+		    }
+		}
+		cached[t] = true;
+	    }
+	    return(texes[t]);
+	}
+
+	public BufferedImage render(Coord off) {
+	    BufferedImage[] texes = new BufferedImage[tilesets.length];
+	    int[] dColor = new int[tilesets.length];
+	    Arrays.fill(dColor, -1);
+	    boolean[] cached = new boolean[tilesets.length];
+	    WritableRaster buf = PUtils.imgraster(cmaps);
+	    Coord c = new Coord();
+	    for(c.y = 0; c.y < cmaps.y; c.y++) {
+		for(c.x = 0; c.x < cmaps.x; c.x++) {
+		    int t = gettile(c);
+		    BufferedImage tex = tiletex(t, texes, cached);
+		    int rgb = 0;
+		    if (CFG.PVP_MAP.get())
+		    {
+			rgb = getColor(t);
+			if(tex != null && rgb == 0)
+			    rgb = MapSource.getDominantColor(tex, dColor, t);
+		    }
+		    else
+		    {
+			if(tex != null)
+			    rgb = tex.getRGB(Utils.floormod(c.x + off.x, tex.getWidth()),
+				Utils.floormod(c.y + off.y, tex.getHeight()));
+		    }
+		    buf.setSample(c.x, c.y, 0, (rgb & 0x00ff0000) >>> 16);
+		    buf.setSample(c.x, c.y, 1, (rgb & 0x0000ff00) >>>  8);
+		    buf.setSample(c.x, c.y, 2, (rgb & 0x000000ff) >>>  0);
+		    buf.setSample(c.x, c.y, 3, (rgb & 0xff000000) >>> 24);
+		}
+	    }
+	    if (!CFG.PVP_MAP.get() && !CFG.REMOVE_BIOME_BORDER_FROM_MINIMAP.get())
+		for(c.y = 1; c.y < cmaps.y - 1; c.y++) {
+		    for(c.x = 1; c.x < cmaps.x - 1; c.x++) {
+			int p = tilesets[gettile(c)].prio;
+			if((tilesets[gettile(c.add(-1, 0))].prio > p) ||
+			   (tilesets[gettile(c.add( 1, 0))].prio > p) ||
+			   (tilesets[gettile(c.add(0, -1))].prio > p) ||
+			   (tilesets[gettile(c.add(0,  1))].prio > p))
+			{
+			    buf.setSample(c.x, c.y, 0, 0);
+			    buf.setSample(c.x, c.y, 1, 0);
+			    buf.setSample(c.x, c.y, 2, 0);
+			    buf.setSample(c.x, c.y, 3, 255);
+			}
+		    }
+		}
+	    return(PUtils.rasterimg(buf));
+	}
+
+	private static Color olcol(MCache.OverlayInfo olid) {
+	    /* XXX? */
+	    Material mat = olid.mat();
+	    BufPipe st = new BufPipe();
+	    mat.states.apply(st);
+	    if(st.get(BaseColor.slot) != null) {
+		FColor bc = st.get(BaseColor.slot).color;
+		return(new Color(Math.round(bc.r * 255), Math.round(bc.g * 255),
+				 Math.round(bc.b * 255), 255));
+	    }
+	    return(null);
+	}
+
+	public BufferedImage olrender(Coord off, String tag) {
+	    WritableRaster buf = PUtils.imgraster(cmaps);
+	    for(Overlay ol : ols) {
+		MCache.ResOverlay olid = ol.olid.get().flayer(MCache.ResOverlay.class);
+		if(!olid.tags().contains(tag))
+		    continue;
+		Color col = olcol(olid);
+		if(col == null)
+		    continue;
+		Coord c = new Coord();
+		for(c.y = 0; c.y < cmaps.y; c.y++) {
+		    for(c.x = 0; c.x < cmaps.x; c.x++) {
+			if(ol.get(c)) {
+			    buf.setSample(c.x, c.y, 0, ((col.getRed()   * col.getAlpha()) + (buf.getSample(c.x, c.y, 1) * (255 - col.getAlpha()))) / 255);
+			    buf.setSample(c.x, c.y, 1, ((col.getGreen() * col.getAlpha()) + (buf.getSample(c.x, c.y, 1) * (255 - col.getAlpha()))) / 255);
+			    buf.setSample(c.x, c.y, 2, ((col.getBlue()  * col.getAlpha()) + (buf.getSample(c.x, c.y, 2) * (255 - col.getAlpha()))) / 255);
+			    buf.setSample(c.x, c.y, 3, Math.max(buf.getSample(c.x, c.y, 3), col.getAlpha()));
+			}
+		    }
+		}
+	    }
+	    return(PUtils.rasterimg(buf));
+	}
+
 	public static void savetiles(Message fp, TileInfo[] tilesets, int[] tiles) {
 	    fp.adduint16(tilesets.length);
 	    for(int i = 0; i < tilesets.length; i++) {
@@ -2000,7 +1998,7 @@ public class MapFile {
 	    }
 	    return(null);
 	}
- 
+    
 	Marker prevcmark(CustomMarker mark) {
 	    for (Marker pm : MapFile.this.markers) {
 		if(pm instanceof CustomMarker) {

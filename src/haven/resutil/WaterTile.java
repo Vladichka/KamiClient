@@ -27,7 +27,6 @@
 package haven.resutil;
 
 import java.util.*;
-import java.awt.image.BufferedImage;
 import java.awt.Color;
 import haven.*;
 import haven.render.*;
@@ -38,10 +37,10 @@ import haven.Surface.MeshVertex;
 import haven.render.TextureCube.SamplerCube;
 import static haven.render.sl.Cons.*;
 import static haven.Coord.upcw;
+import static haven.resutil.WaterTile.BottomFog.*;
 
 public class WaterTile extends Tiler {
     public final int depth;
-    private static final Pipe.Op bcol = new Light.PhongLight(true, new Color(128, 128, 128), new Color(255, 255, 255), new Color(0, 0, 0), new Color(0, 0, 0), 0);
     public final Tiler.MCons bottom;
 
     public static class FlowData {
@@ -201,19 +200,19 @@ public class WaterTile extends Tiler {
     public static class BottomData implements MapMesh.ConsHooks {
 	public final float[] depth;
 	public final Scan ds;
-	
+
 	public BottomData(MapMesh m) {
 	    ds = new Scan(Coord.z, m.sz.add(1, 1));
 	    depth = new float[ds.l];
 	}
-	
+
 	public boolean clean() {
 	    return(true);
 	}
-	
+
 	public static final MapMesh.DataID<BottomData> id = MapMesh.makeid(BottomData.class);
     }
-    
+
     public static class Bottom implements MapMesh.ConsHooks {
 	final MapMesh m;
 	final boolean[] s;
@@ -266,8 +265,8 @@ public class WaterTile extends Tiler {
 			    sd[ss.o(x, y)] = ed[ss.o(x, y)];
 			} else {
 			    sd[ss.o(x, y)] = ((ed[ss.o(x, y)] * 4) +
-				ed[ss.o(x - 1, y)] + ed[ss.o(x + 1, y)] +
-				ed[ss.o(x, y - 1)] + ed[ss.o(x, y + 1)]) / 8;
+					      ed[ss.o(x - 1, y)] + ed[ss.o(x + 1, y)] +
+					      ed[ss.o(x, y - 1)] + ed[ss.o(x, y + 1)]) / 8;
 			}
 		    }
 		}
@@ -284,39 +283,39 @@ public class WaterTile extends Tiler {
 		    split[ts.o(x, y)] = Math.abs(surf[vs.o(x, y)].z - surf[vs.o(x + 1, y + 1)].z) > Math.abs(surf[vs.o(x + 1, y)].z - surf[vs.o(x, y + 1)].z);
 		}
 	    }
-	    
+
 	    for(int y = prs.ds.ul.y; y < prs.ds.br.y; y++) {
 		for(int x = prs.ds.ul.x; x < prs.ds.br.x; x++)
 		    prs.depth[prs.ds.o(x, y)] = ed[ss.o(x, y)];
 	    }
 	}
-	
+
 	public static class BottomVertex extends Vertex {
 	    public final float d;
-	    
+
 	    public BottomVertex(Surface surf, Coord3f c, float d) {
 		surf.super(c);
 		this.d = d;
 	    }
-	    
+
 	    public void modify(MeshBuf buf, MeshBuf.Vertex v) {
 		buf.layer(depthlayer).set(v, d);
 	    }
 	}
-	
+
 	public float d(int x, int y) {
 	    return(ed[ss.o(x, y)]);
 	}
-	
+
 	public Vertex[] fortilea(Coord c) {
 	    return(new Vertex[] {
-		surf[vs.o(c.x, c.y)],
-		surf[vs.o(c.x, c.y + 1)],
-		surf[vs.o(c.x + 1, c.y + 1)],
-		surf[vs.o(c.x + 1, c.y)],
-	    });
+		    surf[vs.o(c.x, c.y)],
+		    surf[vs.o(c.x, c.y + 1)],
+		    surf[vs.o(c.x + 1, c.y + 1)],
+		    surf[vs.o(c.x + 1, c.y)],
+		});
 	}
-	
+
 	public void calcnrm() {
 	    MapMesh.MapSurface ms = m.data(MapMesh.gnd);
 	    Surface.Normals n = ms.data(Surface.nrm);
@@ -328,28 +327,28 @@ public class WaterTile extends Tiler {
 		}
 	    }
 	}
-	
+
 	public static final MapMesh.DataID<Bottom> id = MapMesh.makeid(Bottom.class);
     }
-    
+
     public void model(MapMesh m, Random rnd, Coord lc, Coord gc) {
 	super.model(m, rnd, lc, gc);
 	Bottom b = m.data(Bottom.id);
 	MapMesh.MapSurface s = m.data(MapMesh.gnd);
 	if(b.split[s.ts.o(lc)]) {
 	    s.new Face(b.surf[b.vs.o(lc.x, lc.y)],
-		b.surf[b.vs.o(lc.x, lc.y + 1)],
-		b.surf[b.vs.o(lc.x + 1, lc.y + 1)]);
+		       b.surf[b.vs.o(lc.x, lc.y + 1)],
+		       b.surf[b.vs.o(lc.x + 1, lc.y + 1)]);
 	    s.new Face(b.surf[b.vs.o(lc.x, lc.y)],
-		b.surf[b.vs.o(lc.x + 1, lc.y + 1)],
-		b.surf[b.vs.o(lc.x + 1, lc.y)]);
+		       b.surf[b.vs.o(lc.x + 1, lc.y + 1)],
+		       b.surf[b.vs.o(lc.x + 1, lc.y)]);
 	} else {
 	    s.new Face(b.surf[b.vs.o(lc.x, lc.y)],
-		b.surf[b.vs.o(lc.x, lc.y + 1)],
-		b.surf[b.vs.o(lc.x + 1, lc.y)]);
+		       b.surf[b.vs.o(lc.x, lc.y + 1)],
+		       b.surf[b.vs.o(lc.x + 1, lc.y)]);
 	    s.new Face(b.surf[b.vs.o(lc.x, lc.y + 1)],
-		b.surf[b.vs.o(lc.x + 1, lc.y + 1)],
-		b.surf[b.vs.o(lc.x + 1, lc.y)]);
+		       b.surf[b.vs.o(lc.x + 1, lc.y + 1)],
+		       b.surf[b.vs.o(lc.x + 1, lc.y)]);
 	}
     }
 
@@ -367,17 +366,17 @@ public class WaterTile extends Tiler {
 
 	private BaseSurface() {
 	}
-	
+
 	private ShaderMacro shader = new ShaderMacro() {
-	    final AutoVarying skyc = new AutoVarying(Type.VEC3) {
-		protected Expression root(VertexContext vctx) {
-		    return(mul(icam.ref(), reflect(Homo3D.vertedir(vctx).depref(), Homo3D.get(vctx.prog).eyen.depref())));
-		}
-	    };
-	    public void modify(final ProgramContext prog) {
-		Homo3D.fragedir(prog.fctx);
-		final ValBlock.Value nmod = prog.fctx.uniform.new Value(Type.VEC3) {
-		    public Expression root() {
+		final AutoVarying skyc = new AutoVarying(Type.VEC3) {
+			protected Expression root(VertexContext vctx) {
+			    return(mul(icam.ref(), reflect(Homo3D.vertedir(vctx).depref(), Homo3D.get(vctx.prog).eyen.depref())));
+			}
+		    };
+		public void modify(final ProgramContext prog) {
+		    Homo3D.fragedir(prog.fctx);
+		    final ValBlock.Value nmod = prog.fctx.uniform.new Value(Type.VEC3) {
+			    public Expression root() {
 				/*
 				return(mul(sub(mix(pick(texture2D(snrm.ref(),
 								  add(mul(pick(Homo3D.fragmapv.ref(), "st"), vec2(l(0.01), l(0.012))),
@@ -390,24 +389,24 @@ public class WaterTile extends Tiler {
 						   abs(sub(Cons.mod(FrameInfo.time(), l(2.0)), l(1.0)))),
 					       l(0.5)), vec3(l(1.0 / 16), l(1.0 / 16), l(1.0))));
 				*/
-			return(mul(sub(mix(add(pick(texture2D(snrm.ref(),
-					    add(mul(pick(Homo3D.fragmapv.ref(), "st"), vec2(l(0.01), l(0.012))),
-						mul(FrameInfo.time(), vec2(l(0.025), l(0.035))))),
-					"rgb"),
-				    pick(texture2D(snrm.ref(),
-					    add(mul(pick(Homo3D.fragmapv.ref(), "st"), vec2(l(0.019), l(0.018))),
-						mul(FrameInfo.time(), vec2(l(-0.035), l(-0.025))))),
-					"rgb")),
-				add(pick(texture2D(snrm.ref(),
-					    add(mul(pick(Homo3D.fragmapv.ref(), "st"), vec2(l(0.01), l(0.012))),
-						add(mul(FrameInfo.time(), vec2(l(0.025), l(0.035))), vec2(l(0.5), l(0.5))))),
-					"rgb"),
-				    pick(texture2D(snrm.ref(),
-					    add(mul(pick(Homo3D.fragmapv.ref(), "st"), vec2(l(0.019), l(0.018))),
-						add(mul(FrameInfo.time(), vec2(l(-0.035), l(-0.025))), vec2(l(0.5), l(0.5))))),
-					"rgb")),
-				abs(sub(Cons.mod(FrameInfo.time(), l(2.0)), l(1.0)))),
-			    l(0.5 * 2)), vec3(l(1.0 / 16), l(1.0 / 16), l(1.0))));
+				return(mul(sub(mix(add(pick(texture2D(snrm.ref(),
+								      add(mul(pick(Homo3D.fragmapv.ref(), "st"), vec2(l(0.01), l(0.012))),
+									  mul(FrameInfo.time(), vec2(l(0.025), l(0.035))))),
+							    "rgb"),
+						       pick(texture2D(snrm.ref(),
+								      add(mul(pick(Homo3D.fragmapv.ref(), "st"), vec2(l(0.019), l(0.018))),
+									  mul(FrameInfo.time(), vec2(l(-0.035), l(-0.025))))),
+							    "rgb")),
+						   add(pick(texture2D(snrm.ref(),
+								      add(mul(pick(Homo3D.fragmapv.ref(), "st"), vec2(l(0.01), l(0.012))),
+									  add(mul(FrameInfo.time(), vec2(l(0.025), l(0.035))), vec2(l(0.5), l(0.5))))),
+							    "rgb"),
+						       pick(texture2D(snrm.ref(),
+								      add(mul(pick(Homo3D.fragmapv.ref(), "st"), vec2(l(0.019), l(0.018))),
+									  add(mul(FrameInfo.time(), vec2(l(-0.035), l(-0.025))), vec2(l(0.5), l(0.5))))),
+							    "rgb")),
+						   abs(sub(Cons.mod(FrameInfo.time(), l(2.0)), l(1.0)))),
+					       l(0.5 * 2)), vec3(l(1.0 / 16), l(1.0 / 16), l(1.0))));
 				/*
 				return(mul(sub(add(pick(texture2D(snrm.ref(),
 								  add(mul(pick(Homo3D.fragmapv.ref(), "st"), vec2(l(0.01), l(0.012))),
@@ -444,7 +443,7 @@ public class WaterTile extends Tiler {
 	    };
 
 	public ShaderMacro shader() {return(shader);}
-	
+
 	public void apply(Pipe buf) {
 	    buf.put(surfslot, this);
 	    baseextra.apply(buf);
@@ -539,14 +538,16 @@ public class WaterTile extends Tiler {
     public static final Pipe.Op foammat = Pipe.Op.compose(new FoamSurface(), new Rendered.Order.Default(6001));
 
     public static final MeshBuf.LayerID<MeshBuf.Vec1Layer> depthlayer = new MeshBuf.V1LayerID(BottomFog.depth);
-    
+
     public static class BottomFog extends State.StandAlone {
 	public static final double maxdepth = 8; /* XXX: These should be parameterized. */
 	public static final Color fogcolor = new Color(0, 16, 48);
+	public static final Color deepfogcolor = new Color(0, 8, 32);
 	/* XXXRENDER
 	public static final Expression mfogcolor = mul(col3(fogcolor), pick(fref(idx(ProgramContext.gl_LightSource.ref(), MapView.amblight.ref()), "diffuse"), "rgb"));
 	*/
 	public static final Expression mfogcolor = col3(fogcolor);
+	public final Expression cfogcolor;
 	public static Function rgbmix = new Function.Def(Type.VEC4) {{
 	    Expression a = param(PDir.IN, Type.VEC4).ref();
 	    Expression b = param(PDir.IN, Type.VEC3).ref();
@@ -555,113 +556,110 @@ public class WaterTile extends Tiler {
 	}};
 	public static final Attribute depth = new Attribute(Type.FLOAT);
 	public static final AutoVarying fragd = new AutoVarying(Type.FLOAT) {
-	    protected Expression root(VertexContext vctx) {
-		return(depth.ref());
-	    }
-	};
-	
+		protected Expression root(VertexContext vctx) {
+		    return(depth.ref());
+		}
+	    };
+
 	private final ShaderMacro shader;
-	
+    
 	private BottomFog() {
+	    this(mfogcolor);
+	}
+    
+	private BottomFog(Expression fogcolor) {
 	    super(Slot.Type.DRAW);
+	    this.cfogcolor = fogcolor;
 	    shader = prog -> {
-		FragColor.fragcol(prog.fctx).mod(in -> rgbmix.call(in, mfogcolor, min(div(fragd.ref(), l(maxdepth)), l(1.0))), 1000);
+		FragColor.fragcol(prog.fctx).mod(in -> rgbmix.call(in, fogcolor, min(div(fragd.ref(), l(maxdepth)), l(1.0))), 1000);
 	    };
 	}
-	private BottomFog(final Color newfogcolor) {
-	    super(Slot.Type.DRAW);
-	    Expression nfogcolor = col3(newfogcolor);
-	    shader = prog -> FragColor.fragcol(prog.fctx).mod(in -> rgbmix.call(in, nfogcolor, min(div(fragd.ref(), l(maxdepth)), l(1.0))), 1000);
-	}
-	
+
 	public ShaderMacro shader() {return(shader);}
     }
     public static final BottomFog waterfog = new BottomFog();
-    public static final BottomFog deepwaterfog = new BottomFog(new Color(0,0,0));
+    public static final BottomFog deepfog = new BottomFog(col3(deepfogcolor));
     private static final Pipe.Op botmat = Pipe.Op.compose(waterfog, new States.DepthBias(4, 4));
-    private static final Pipe.Op botmatDeep = Pipe.Op.compose(deepwaterfog, new States.DepthBias(4, 4));
-    
+    private static final Pipe.Op deepmat = Pipe.Op.compose(deepfog, new States.DepthBias(4, 4));
+
     public static class ObFog extends State implements InstanceBatch.AttribState {
 	public static final Slot<ObFog> slot = new Slot<>(State.Slot.Type.DRAW, ObFog.class)
 	    .instanced(new Instancable<ObFog>() {
-		final Instancer<ObFog> nil = Instancer.dummy();
-		public Instancer<ObFog> instid(ObFog st) {
-		    return((st == null) ? nil : instancer);
-		}
-	    });
+		    final Instancer<ObFog> nil = Instancer.dummy();
+		    public Instancer<ObFog> instid(ObFog st) {
+			return((st == null) ? nil : instancer);
+		    }
+		});
 	public final float basez;
-	
+
 	public ObFog(float basez) {
 	    this.basez = basez;
 	}
-	
+
 	public boolean equals(ObFog that) {return(this.basez == that.basez);}
 	public boolean equals(Object x) {return((x instanceof ObFog) && equals((ObFog)x));}
 	public int hashCode() {return(Float.floatToIntBits(basez));}
-	
+
 	private static final InstancedUniform cbasez = new InstancedUniform.Float1("basez", p -> p.get(slot).basez, slot);
 	private static final AutoVarying fragd = new AutoVarying(Type.FLOAT) {
-	    protected Expression root(VertexContext vctx) {
-		return(sub(cbasez.ref(), pick(Homo3D.get(vctx.prog).mapv.depref(), "z")));
-	    }
-	};
+		protected Expression root(VertexContext vctx) {
+		    return(sub(cbasez.ref(), pick(Homo3D.get(vctx.prog).mapv.depref(), "z")));
+		}
+	    };
 	private static final ShaderMacro shader = prog -> {
 	    FragColor.fragcol(prog.fctx).mod(in -> BottomFog.rgbmix.call(in, BottomFog.mfogcolor, clamp(div(fragd.ref(), l(BottomFog.maxdepth)), l(0.0), l(1.0))), 1000);
 	};
 	public ShaderMacro shader() {return(shader);}
-	
+
 	public void apply(Pipe p) {p.put(slot, this);}
-	
+
 	private static final Instancer<ObFog> instancer = new Instancer<ObFog>() {
-	    final ObFog instanced = new ObFog(0) {
-		final ShaderMacro shader = ShaderMacro.compose(mkinstanced, ObFog.shader);
-		public ShaderMacro shader() {return(shader);}
+		final ObFog instanced = new ObFog(0) {
+		    final ShaderMacro shader = ShaderMacro.compose(mkinstanced, ObFog.shader);
+		    public ShaderMacro shader() {return(shader);}
+		};
+
+		public ObFog inststate(ObFog uinst, InstanceBatch bat) {
+		    return(instanced);
+		}
 	    };
-	    
-	    public ObFog inststate(ObFog uinst, InstanceBatch bat) {
-		return(instanced);
-	    }
-	};
 	public InstancedAttribute[] attribs() {
 	    return(new InstancedAttribute[] {cbasez.attrib});
 	}
     }
-    
+
     @ResName("water")
     public static class Fac implements Factory {
 	public Tiler create(int id, Tileset set) {
 	    int a = 0;
-	    int depth = (Integer)set.ta[a++];
+	    int depth = Utils.iv(set.ta[a++]);
 	    Tiler.MCons bottom = new GroundTile(id, set);
 	    while(a < set.ta.length) {
 		Object[] desc = (Object[])set.ta[a++];
 		String p = (String)desc[0];
 		if(p.equals("bottom") /* Backwards compatibility */ || p.equals("gnd") || p.equals("trn")) {
-		    Resource bres = set.getres().pool.load((String)desc[1], (Integer)desc[2]).get();
+		    Resource bres = set.getres().pool.load((String)desc[1], Utils.iv(desc[2])).get();
 		    Tileset ts = bres.flayer(Tileset.class);
 		    Tiler b = ts.tfac().create(id, ts);
 		    bottom = (Tiler.MCons)b;
 		}
 	    }
-	    boolean useDeepFog = false;
-	    //System.out.println(set.getres().name);
-	    if (set.getres().name.equals("gfx/tiles/odeeper")) {
-		useDeepFog = true;
-	    }
-	    return(new WaterTile(id, bottom, depth, useDeepFog));
+	    return(new WaterTile(id, set.getres().name, bottom, depth));
 	}
     }
-    private boolean UseDeepFog = false;
-    public WaterTile(int id, Tiler.MCons bottom, int depth, boolean useDeepFog) {
+    
+    private final boolean isDeep;
+    
+    public WaterTile(int id, String name, Tiler.MCons bottom, int depth) {
 	super(id);
 	this.bottom = bottom;
 	this.depth = depth;
-	UseDeepFog = useDeepFog;
+	this.isDeep = name.equals("gfx/tiles/odeeper") ;
     }
-    
+
     public void lay(MapMesh m, Random rnd, Coord lc, Coord gc) {
 	MapMesh.MapSurface ms = m.data(MapMesh.gnd);
-	MPart d = MPart.splitquad(lc, gc, ms.fortilea(lc), ms.split[ms.ts.o(lc)]);
+	MPart d = MPart.splitquad(lc, gc, ms.fortilea(lc), ms.split[ms.bs.o(lc)]);
 
 	{
 	    MeshBuf mesh = MapMesh.Model.get(m, surfmat);
@@ -671,6 +669,7 @@ public class WaterTile extends Tiler {
 	    for(int i = 0; i < d.f.length; i += 3)
 		mesh.new Face(mv[d.f[i]], mv[d.f[i + 1]], mv[d.f[i + 2]]);
 	}
+	
 	if (CFG.ENHANCE_WATERFALL.get()) {
 	    foam:
 	    {
@@ -699,16 +698,12 @@ public class WaterTile extends Tiler {
 		    mesh.new Face(mv[d.f[i]], mv[d.f[i + 1]], mv[d.f[i + 2]]);
 	    }
 	}
-
 	Bottom b = m.data(Bottom.id);
-	MPart bd = MPart.splitquad(lc, gc, b.fortilea(lc), ms.split[ms.ts.o(lc)]);
-	if (UseDeepFog)
-	    bd.mat = botmatDeep;
-	else
-	    bd.mat = botmat;
+	MPart bd = MPart.splitquad(lc, gc, b.fortilea(lc), ms.split[ms.bs.o(lc)]);
+	bd.mat = botmat();
 	bottom.faces(m, bd);
     }
-    
+
     public void trans(MapMesh m, Random rnd, Tiler gt, Coord lc, Coord gc, int z, int bmask, int cmask) {
 	if(m.map.gettile(gc) <= id)
 	    return;
@@ -716,11 +711,8 @@ public class WaterTile extends Tiler {
 	    if(bottom instanceof CTrans) {
 		MapMesh.MapSurface ms = m.data(MapMesh.gnd);
 		Bottom b = m.data(Bottom.id);
-		MPart d = MPart.splitquad(lc, gc, b.fortilea(lc), ms.split[ms.ts.o(lc)]);
-		if (UseDeepFog)
-		    d.mat = botmatDeep;
-		else
-		    d.mat = botmat;
+		MPart d = MPart.splitquad(lc, gc, b.fortilea(lc), ms.split[ms.bs.o(lc)]);
+		d.mat = botmat();
 		((CTrans)bottom).tcons(z, bmask, cmask).faces(m, d);
 	    }
 	} else {
@@ -729,28 +721,34 @@ public class WaterTile extends Tiler {
 	}
     }
     
+    private Pipe.Op botmat() {
+	return CFG.COLORIZE_DEEP_WATER.get() && isDeep
+	    ? deepmat
+	    : botmat;
+    }
+
     public static class BottomSurface extends MapZSurface {
 	public final BottomData b;
-	
+
 	public BottomSurface(MapMesh m) {
 	    super(m);
 	    this.b = m.data(BottomData.id);
 	}
-	
+
 	public double getz(Coord tc) {
 	    return(super.getz(tc) - b.depth[b.ds.o(tc.sub(m.ul))]);
 	}
     }
-    
+
     public MCache.ZSurface getsurf(MapMesh m, MCache.SurfaceID id) {
 	if(id.hasparent(MCache.SurfaceID.trn))
 	    return(new BottomSurface(m));
 	return(super.getsurf(m, id));
     }
-    
+
     public static final Pipe.Op clickstate = Pipe.Op.compose(MapMesh.clickpost, States.maskdepth);
     public Pipe.Op clickstate() {return(clickstate);}
-    
+
     public Pipe.Op drawstate(Glob glob, Coord3f c) {
 	float mz = glob.map.getcz(c.x, c.y);
 	return(new ObFog(mz));

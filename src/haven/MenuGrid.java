@@ -29,10 +29,12 @@ package haven;
 import haven.ItemInfo.AttrCache;
 import haven.Resource.AButton;
 import haven.render.Pipe;
+import haven.rx.BuffToggles;
 import me.ender.CustomPagina;
 import me.ender.CustomPaginaAction;
 import me.ender.GobInfoOpts;
 import me.ender.GobInfoOpts.InfoPart;
+import me.ender.minimap.Minesweeper;
 
 import javax.swing.*;
 import java.awt.*;
@@ -63,14 +65,14 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
     private double fstart;
     private Map<Character, PagButton> hotmap = new HashMap<>();
     public Pagina lastCraft = null;
-    
+
     @RName("scm")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
 	    return(new MenuGrid());
 	}
     }
-    
+
     public static class Pagina {
 	public final MenuGrid scm;
 	public final Object id;
@@ -78,7 +80,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	public byte[] sdt = null;
 	public int anew, tnew;
 	public Object[] rawinfo = {};
-	
+
 	public Pagina(MenuGrid scm, Object id, Indir<Resource> res) {
 	    this.scm = scm;
 	    this.id = id;
@@ -109,15 +111,15 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	public Resource res() {
 	    return(res.get());
 	}
-	
+
 	public Message data() {
 	    return((sdt == null) ? Message.nil : new MessageBuf(sdt));
 	}
-	
+
 	private void invalidate() {
 	    button = null;
 	}
-	
+
 	private PagButton button = null;
 	public PagButton button() {
 	    if(button == null) {
@@ -133,46 +135,46 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	
 	public void button(PagButton btn) {button = btn;}
 	
-	
+
 	public Pagina parent() {
 	    return(button().parent());
 	}
     }
-    
+
     public static class Interaction {
 	public final int btn, modflags;
 	public final Coord2d mc;
 	public final ClickData click;
-	
+
 	public Interaction(int btn, int modflags, Coord2d mc, ClickData click) {
 	    this.btn = btn;
 	    this.modflags = modflags;
 	    this.mc = mc;
 	    this.click = click;
 	}
-	
+
 	public Interaction(int btn, int modflags) {
 	    this(btn, modflags, null, null);
 	}
-	
+
 	public Interaction() {
 	    this(1, 0);
 	}
     }
-    
+
     public static class PagButton implements ItemInfo.Owner, GSprite.Owner, RandomSource {
 	public final Pagina pag;
 	public final Resource res;
 	public final KeyBinding bind;
 	private GSprite spr;
 	private AButton act;
-	
+
 	public PagButton(Pagina pag) {
 	    this.pag = pag;
 	    this.res = pag.res();
 	    this.bind = binding();
 	}
-	
+
 	public AButton act() {
 	    if(act == null)
 		act = res.flayer(Resource.action);
@@ -184,14 +186,14 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		act = res.layer(Resource.action);
 	    return(act);
 	}
-	
+
 	private Pagina parent;
 	public Pagina parent() {
 	    if(parent == null)
 		parent = pag.scm.paginafor(act().parent);
 	    return(parent);
 	}
-	
+
 	public GSprite spr() {
 	    if(spr == null)
 		spr = GSprite.create(this, res, Message.nil);
@@ -234,43 +236,43 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	    if(spr != null)
 		spr.tick(dt);
 	}
-	
+
 	public BufferedImage img() {
 	    GSprite spr = spr();
 	    if(spr instanceof GSprite.ImageSprite)
 		return(((GSprite.ImageSprite)spr).image());
 	    return(null);
 	}
-	
+
 	public final AttrCache<Pipe.Op> rstate = new AttrCache<>(this::info, info -> {
-	    ArrayList<GItem.RStateInfo> ols = new ArrayList<>();
-	    for(ItemInfo inf : info) {
-		if(inf instanceof GItem.RStateInfo)
-		    ols.add((GItem.RStateInfo)inf);
-	    }
-	    if(ols.size() == 0)
-		return(() -> null);
-	    if(ols.size() == 1) {
-		Pipe.Op op = ols.get(0).rstate();
-		return(() -> op);
-	    }
-	    Pipe.Op[] ops = new Pipe.Op[ols.size()];
-	    for(int i = 0; i < ops.length; i++)
-		ops[i] = ols.get(0).rstate();
-	    Pipe.Op cmp = Pipe.Op.compose(ops);
-	    return(() -> cmp);
+		ArrayList<GItem.RStateInfo> ols = new ArrayList<>();
+		for(ItemInfo inf : info) {
+		    if(inf instanceof GItem.RStateInfo)
+			ols.add((GItem.RStateInfo)inf);
+		}
+		if(ols.size() == 0)
+		    return(() -> null);
+		if(ols.size() == 1) {
+		    Pipe.Op op = ols.get(0).rstate();
+		    return(() -> op);
+		}
+		Pipe.Op[] ops = new Pipe.Op[ols.size()];
+		for(int i = 0; i < ops.length; i++)
+		    ops[i] = ols.get(0).rstate();
+		Pipe.Op cmp = Pipe.Op.compose(ops);
+		return(() -> cmp);
 	});
 	public final AttrCache<GItem.InfoOverlay<?>[]> ols = new AttrCache<>(this::info, info -> {
-	    ArrayList<GItem.InfoOverlay<?>> buf = new ArrayList<>();
-	    for(ItemInfo inf : info) {
-		if(inf instanceof GItem.OverlayInfo)
-		    buf.add(GItem.InfoOverlay.create((GItem.OverlayInfo<?>)inf));
-	    }
-	    GItem.InfoOverlay<?>[] ret = buf.toArray(new GItem.InfoOverlay<?>[0]);
-	    return(() -> ret);
+		ArrayList<GItem.InfoOverlay<?>> buf = new ArrayList<>();
+		for(ItemInfo inf : info) {
+		    if(inf instanceof GItem.OverlayInfo)
+			buf.add(GItem.InfoOverlay.create((GItem.OverlayInfo<?>)inf));
+		}
+		GItem.InfoOverlay<?>[] ret = buf.toArray(new GItem.InfoOverlay<?>[0]);
+		return(() -> ret);
 	});
 	public final AttrCache<Double> meter = new AttrCache<>(this::info, AttrCache.map1(GItem.MeterInfo.class, minf -> minf::meter));
-	
+
 	public void drawmain(GOut g, GSprite spr) {
 	    spr.draw(g);
 	}
@@ -292,13 +294,13 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		g.chcolor();
 	    }
 	}
-	
+
 	public String sortkey() {
 	    if((act().ad.length == 0) && (pag.id instanceof Indir))
 		return("\0" + originalName());
 	    return(originalName());
 	}
-	
+
 	private char bindchr(KeyMatch key) {
 	    if(key.modmatch != 0)
 		return(0);
@@ -307,7 +309,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		vkey = key.keyname.charAt(0);
 	    return(vkey);
 	}
-	
+
 	public static final Text.Foundry keyfnd = new Text.Foundry(Text.sans.deriveFont(Font.BOLD), 10);
 	private Tex keyrend = null;
 	private boolean haskeyrend = false;
@@ -322,7 +324,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	    }
 	    return(keyrend);
 	}
-	
+
 	private List<ItemInfo> info = null;
 	public List<ItemInfo> info() {
 	    if(info == null) {
@@ -342,7 +344,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	public <T> T context(Class<T> cl) {return(ctxr.context(cl, this));}
 	public Random mkrandoom() {return(new Random());}
 	public Resource getres() {return(res);}
-	
+
 	public BufferedImage rendertt(boolean withpg) {
 	    String tt = name();
 	    KeyMatch key = bind.key();
@@ -354,6 +356,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		tt = tt.substring(0, pos) + "$b{$col[255,128,0]{" + tt.charAt(pos) + "}}" + tt.substring(pos + 1);
 	    else if(key != KeyMatch.nil)
 		tt += " [$b{$col[255,128,0]{" + key.name() + "}}]";
+
 	    BufferedImage ret = ttfnd.render(tt, UI.scale(300)).img;
 	    if(withpg) {
 		List<ItemInfo> info = info();
@@ -363,56 +366,56 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	    }
 	    return(ret);
 	}
-	
+
 	public static class FactMaker extends Resource.PublishedCode.Instancer.Chain<Factory> {
 	    public FactMaker() {
 		super(Factory.class);
 		add(new Direct<>(Factory.class));
 		add(new StaticCall<>(Factory.class, "mkpagina", PagButton.class, new Class<?>[] {Pagina.class},
-		    (make) -> (pagina) -> make.apply(new Object[] {pagina})));
+				     (make) -> (pagina) -> make.apply(new Object[] {pagina})));
 		add(new Construct<>(Factory.class, PagButton.class, new Class<?>[] {Pagina.class},
-		    (cons) -> (pagina) -> cons.apply(new Object[] {pagina})));
+				    (cons) -> (pagina) -> cons.apply(new Object[] {pagina})));
 	    }
 	}
-	
+
 	@Resource.PublishedCode(name = "pagina", instancer = FactMaker.class)
 	public interface Factory {
 	    public PagButton make(Pagina info);
 	}
     }
-    
+
     public final PagButton next = new PagButton(new Pagina(this, null, Resource.local().loadwait("gfx/hud/sc-next").indir())) {
-	{pag.button = this;}
-	
-	public void use(Interaction iact) {
-	    int step = (gsz.x * gsz.y) - 2;
-	    if((curoff + step) >= curbtns.size())
-		curoff = 0;
-	    else
-		curoff += step;
-	    updlayout();
-	}
-	
-	public String name() {return("More...");}
-	
-	public KeyBinding binding() {return(kb_next);}
-    };
-    
+	    {pag.button = this;}
+
+	    public void use(Interaction iact) {
+		int step = (gsz.x * gsz.y) - 2;
+		if((curoff + step) >= curbtns.size())
+		    curoff = 0;
+		else
+		    curoff += step;
+		updlayout();
+	    }
+
+	    public String name() {return("More...");}
+
+	    public KeyBinding binding() {return(kb_next);}
+	};
+
     public final PagButton bk = new PagButton(new Pagina(this, null, Resource.local().loadwait("gfx/hud/sc-back").indir())) {
-	{pag.button = this;}
-	
-	public void use(Interaction iact) {
-	    Pagina dst = pag.scm.cur.parent();
-	    pag.scm.change(dst);
-	    curoff = 0;
-	    selectCraft(dst);
-	}
-	
-	public String name() {return("Back");}
-	
-	public KeyBinding binding() {return(kb_back);}
-    };
-    
+	    {pag.button = this;}
+
+	    public void use(Interaction iact) {
+		Pagina dst = pag.scm.cur.parent();
+		pag.scm.change(dst);
+		curoff = 0;
+		selectCraft(dst);
+	    }
+
+	    public String name() {return("Back");}
+
+	    public KeyBinding binding() {return(kb_back);}
+	};
+
     public Pagina paginafor(Indir<Resource> res) {
 	if(res == null)
 	    return(null);
@@ -423,7 +426,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	    return(p);
 	}
     }
-    
+
     public Pagina paginafor(Object id, Indir<Resource> res) {
 	synchronized(pmap) {
 	    Pagina p = pmap.get(id);
@@ -438,11 +441,11 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
     }
     
     public boolean consb(Pagina p, Collection<PagButton> buf) {
-	List<Pagina> pags = buf.stream().map(btn -> btn.pag).collect(Collectors.toList());
-	boolean result = cons(p, pags);
-	buf.clear();
-	for(Pagina pag : pags) { buf.add(pag.button());	}
-	return result;
+        List<Pagina> pags = buf.stream().map(btn -> btn.pag).collect(Collectors.toList());
+        boolean result = cons(p, pags);
+        buf.clear();
+        for(Pagina pag : pags) { buf.add(pag.button());	}
+        return result;
     }
     
     public boolean cons(Pagina p, Collection<Pagina> buf) {
@@ -492,7 +495,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	super(bgsz.mul(gsz).add(1, 1));
 	initCustomPaginae();
     }
-    
+
     private void updlayout() {
 	synchronized(paginae) {
 	    List<PagButton> cur = new ArrayList<>();
@@ -546,7 +549,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	}
 	return(ret);
     }
-    
+
     public void draw(GOut g) {
 	double now = Utils.rtime();
 	for(int y = 0; y < gsz.y; y++) {
@@ -591,13 +594,13 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	if(dragging != null) {
 	    GSprite ds = dragging.button().spr();
 	    ui.drawafter(new UI.AfterDraw() {
-		public void draw(GOut g) {
-		    ds.draw(g.reclip(ui.mc.sub(ds.sz().div(2)), ds.sz()));
-		}
-	    });
+		    public void draw(GOut g) {
+			ds.draw(g.reclip(ui.mc.sub(ds.sz().div(2)), ds.sz()));
+		    }
+		});
 	}
     }
-    
+
     private PagButton curttp = null;
     private boolean curttl = false;
     private Tex curtt = null;
@@ -610,12 +613,8 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		hoverstart = now;
 	    boolean ttl = (now - hoverstart) > 0.5;
 	    if((pag != curttp) || (ttl != curttl)) {
-		try {
-		    BufferedImage ti = pag.rendertt(ttl);
-		    curtt = (ti == null) ? null : new TexI(ti);
-		} catch(Loading l) {
-		    return("...");
-		}
+		BufferedImage ti = pag.rendertt(ttl);
+		curtt = (ti == null) ? null : new TexI(ti);
 		curttp = pag;
 		curttl = ttl;
 	    }
@@ -625,7 +624,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	    return(null);
 	}
     }
-    
+
     private PagButton bhit(Coord c) {
 	Coord bc = c.div(bgsz);
 	if((bc.x >= 0) && (bc.y >= 0) && (bc.x < gsz.x) && (bc.y < gsz.y))
@@ -633,24 +632,24 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	else
 	    return(null);
     }
-    
-    public boolean mousedown(Coord c, int button) {
-	PagButton h = bhit(c);
-	if((button == 1) && (h != null)) {
+
+    public boolean mousedown(MouseDownEvent ev) {
+	PagButton h = bhit(ev.c);
+	if((ev.b == 1) && (h != null)) {
 	    pressed = h;
 	    grab = ui.grabmouse(this);
 	}
 	return(true);
     }
-    
-    public void mousemove(Coord c) {
+
+    public void mousemove(MouseMoveEvent ev) {
 	if((dragging == null) && (pressed != null)) {
-	    PagButton h = bhit(c);
+	    PagButton h = bhit(ev.c);
 	    if(h != pressed)
 		dragging = pressed.pag;
 	}
     }
-    
+
     public void change(Pagina dst) {
 	this.cur = dst;
 	curoff = 0;
@@ -662,7 +661,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
     public void use(Pagina p, boolean reset) {
 	if(p != null) { use(p.button(), new Interaction(), reset); }
     }
-    
+
     public void use(PagButton r, Interaction iact, boolean reset) {
 	Collection<PagButton> sub = new ArrayList<>();
 	consb(r.pag, sub);
@@ -676,11 +675,11 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		change(null);
 	}
     }
-    
+
     public void senduse(String... ad) {
 	wdgmsg("act", (Object[]) ad);
     }
-    
+
     public void tick(double dt) {
 	if(recons)
 	    updlayout();
@@ -691,17 +690,17 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	    }
 	}
     }
-    
-    public boolean mouseup(Coord c, int button) {
-	PagButton h = bhit(c);
-	if((button == 1) && (grab != null)) {
+
+    public boolean mouseup(MouseUpEvent ev) {
+	PagButton h = bhit(ev.c);
+	if((ev.b == 1) && (grab != null)) {
 	    if(dragging != null) {
-		ui.dropthing(ui.root, ui.mc, dragging);
+		DropTarget.dropthing(ui.root, ui.mc, dragging);
 		pressed = null;
 		dragging = null;
 	    } else if(pressed != null) {
 		if(pressed == h)
-		    use(h, new Interaction(), false);
+		    use(h, new Interaction(1, ui.modflags()), false);
 		pressed = null;
 	    }
 	    grab.remove();
@@ -709,7 +708,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	}
 	return(true);
     }
-    
+
     public void uimsg(String msg, Object... args) {
 	if(msg == "goto") {
 	    if(args[0] == null)
@@ -757,17 +756,17 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		    }
 		}
 		updlayout();
-		pagseq++;
+	    	pagseq++;
 	    }
 	} else {
 	    super.uimsg(msg, args);
 	}
     }
-    
+
     public static final KeyBinding kb_root = KeyBinding.get("scm-root", KeyMatch.forcode(KeyEvent.VK_ESCAPE, 0));
     public static final KeyBinding kb_back = KeyBinding.get("scm-back", KeyMatch.forcode(KeyEvent.VK_BACK_SPACE, 0));
     public static final KeyBinding kb_next = KeyBinding.get("scm-next", KeyMatch.forchar('N', KeyMatch.S | KeyMatch.C | KeyMatch.M, KeyMatch.S));
-    public boolean globtype(char k, KeyEvent ev) {
+    public boolean globtype(GlobKeyEvent ev) {
 	if(kb_root.key().match(ev) && (this.cur != null)) {
 	    change(null);
 	    return(true);
@@ -790,14 +789,14 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	    }
 	}
 	if(pag != null) {
-	    use(pag, new Interaction(), (KeyMatch.mods(ev) & KeyMatch.S) == 0);
+	    use(pag, new Interaction(), (ev.mods & KeyMatch.S) == 0);
 	    if(this.cur != null)
 		showkeys = true;
 	    return(true);
 	}
-	return(false);
+	return(super.globtype(ev));
     }
-    
+
     private void selectCraft(Pagina r) {
 	if(r == null){
 	    return;
@@ -806,15 +805,15 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	    ui.gui.craftwnd.select(r, true);
 	}
     }
-    
+
     public boolean isCrafting(Pagina p) {
 	return (p != null) && (Pagina.resname(p).startsWith("paginae/craft/") || isCrafting(p.res()) || isCrafting(getParent(p)));
     }
-    
+
     public boolean isCrafting(Resource res){
 	return res.name.contains("paginae/act/craft");
     }
-    
+
     public Pagina getParent(Pagina p){
 	if(p == null){
 	    return null;
@@ -830,7 +829,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	    return null;
 	}
     }
-    
+
     public boolean isChildOf(Pagina item, Pagina parent) {
 	Pagina p;
 	while((p = getParent(item)) != null){
@@ -839,7 +838,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	}
 	return false;
     }
-    
+
     public KeyBinding getbinding(Coord cc) {
 	PagButton h = bhit(cc);
 	return((h == null) ? null : h.bind);
@@ -848,7 +847,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
     @Override
     public void bound() {
 	super.bound();
-	ui.menuObservable.notifyObservers();
+	BuffToggles.menuBound(this);
     }
     
     public Pagina findPagina(Indir<Resource> res) {
@@ -890,6 +889,9 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	makeLocal("paginae/add/craftlist", Action.OPEN_QUICK_CRAFT);
 	makeLocal("paginae/add/autobot", Action.BOT_PICK_ALL_HERBS);
 	makeLocal("paginae/add/hide_trees", Action.TOGGLE_HIDE_TREES, CFG.HIDE_TREES::get);
+	makeLocal("paginae/add/minesweeper", Minesweeper::paginaAction, CFG.SHOW_MINESWEEPER_OVERLAY::get);
+	makeLocal("paginae/add/toggles/flat_terrain", CFG.FLAT_TERRAIN);
+	makeLocal("paginae/add/toggles/flavor", CFG.DISPLAY_FLAVOR);
 	makeLocal("paginae/add/refill_drinks", Action.ACT_REFILL_DRINKS);
 	makeLocal("paginae/add/quest_help", Action.OPEN_QUEST_HELP);
 	makeLocal("paginae/add/inspect", Action.TOGGLE_INSPECT);
@@ -897,15 +899,19 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	makeLocal("paginae/add/fsmelter9", Action.FUEL_SMELTER_9);
 	makeLocal("paginae/add/fsmelter12", Action.FUEL_SMELTER_12);
 	makeLocal("paginae/add/foven4", Action.FUEL_OVEN_4);
-	//TODO: To be added later...
-	//makeLocal("paginae/add/info/plant-growth", Action.TOGGLE_GOB_INFO_PLANTS, () -> GobInfoOpts.enabled(InfoPart.PLANT_GROWTH));
-	//makeLocal("paginae/add/info/tree-growth", Action.TOGGLE_GOB_INFO_TREES, () -> GobInfoOpts.enabled(InfoPart.TREE_GROWTH));
-	//makeLocal("paginae/add/info/health", Action.TOGGLE_GOB_INFO_HEALTH, () -> GobInfoOpts.enabled(InfoPart.HEALTH));
-	//makeLocal("paginae/add/info/barrel", Action.TOGGLE_GOB_INFO_BARREL, () -> GobInfoOpts.enabled(InfoPart.BARREL));
-	//makeLocal("paginae/add/info/sign", Action.TOGGLE_GOB_INFO_SIGN, () -> GobInfoOpts.enabled(InfoPart.DISPLAY_SIGN));
-	//makeLocal("paginae/add/info/cheese", Action.TOGGLE_GOB_INFO_CHEESE, () -> GobInfoOpts.enabled(InfoPart.CHEESE_RACK));
-	//makeLocal("paginae/add/info/quality", Action.TOGGLE_GOB_INFO_QUALITY, () -> GobInfoOpts.enabled(InfoPart.QUALITY));
-	//makeLocal("paginae/add/info/timer", Action.TOGGLE_GOB_INFO_TIMER, () -> GobInfoOpts.enabled(InfoPart.TIMER));
+	makeLocal("paginae/add/auto/aggro_one", Action.AGGRO_ONE_PVE);
+	makeLocal("paginae/add/auto/aggro_one_pvp", Action.AGGRO_ONE_PVP);
+	makeLocal("paginae/add/auto/aggro_all", Action.AGGRO_ALL);
+	makeLocal("paginae/add/auto/mount_horse", Action.BOT_MOUNT_HORSE);
+	makeLocal("paginae/add/info/plant-growth", Action.TOGGLE_GOB_INFO_PLANTS, () -> GobInfoOpts.enabled(InfoPart.PLANT_GROWTH));
+	makeLocal("paginae/add/info/tree-growth", Action.TOGGLE_GOB_INFO_TREE_GROWTH, () -> GobInfoOpts.enabled(InfoPart.TREE_GROWTH));
+	makeLocal("paginae/add/info/tree-content", Action.TOGGLE_GOB_INFO_TREE_CONTENT, () -> GobInfoOpts.enabled(InfoPart.TREE_CONTENTS));
+	makeLocal("paginae/add/info/health", Action.TOGGLE_GOB_INFO_HEALTH, () -> GobInfoOpts.enabled(InfoPart.HEALTH));
+	makeLocal("paginae/add/info/barrel", Action.TOGGLE_GOB_INFO_BARREL, () -> GobInfoOpts.enabled(InfoPart.BARREL));
+	makeLocal("paginae/add/info/sign", Action.TOGGLE_GOB_INFO_SIGN, () -> GobInfoOpts.enabled(InfoPart.DISPLAY_SIGN));
+	makeLocal("paginae/add/info/cheese", Action.TOGGLE_GOB_INFO_CHEESE, () -> GobInfoOpts.enabled(InfoPart.CHEESE_RACK));
+	makeLocal("paginae/add/info/quality", Action.TOGGLE_GOB_INFO_QUALITY, () -> GobInfoOpts.enabled(InfoPart.QUALITY));
+	makeLocal("paginae/add/info/timer", Action.TOGGLE_GOB_INFO_TIMER, () -> GobInfoOpts.enabled(InfoPart.TIMER));
     }
     
     private void makeLocal(String path, CustomPaginaAction action, Supplier<Boolean> toggleState) {
@@ -918,9 +924,19 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
     private void makeLocal(String path, Action action) {
 	makeLocal(path, action, null);
     }
+
+    private void makeLocal(String path, CFG<Boolean> cfg) {
+	makeLocal(path, (ctx, iact) -> {
+	    cfg.set(!cfg.get());
+	    return true;
+	}, cfg::get);
+    }
     
     private void makeLocal(String path, Action action, Supplier<Boolean> toggleState) {
-	makeLocal(path, ctx -> action.run(ctx.context(UI.class).gui), toggleState);
+	makeLocal(path, (ctx, iact) -> {
+	    action.run(ctx.context(UI.class).gui);
+	    return true;
+	}, toggleState);
     }
     
 }

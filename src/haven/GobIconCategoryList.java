@@ -53,19 +53,19 @@ public class GobIconCategoryList extends Listbox<GobIconCategoryList.GobCategory
 	} catch (Loading ignored) {}
     }
     
-    public boolean mousedown(Coord c, int button) {
-	int idx = idxat(c);
+    public boolean mousedown(MouseDownEvent ev) {
+	int idx = idxat(ev.c);
 	if((idx >= 0) && (idx < listitems())) {
 	    GobCategory cat = listitem(idx);
 	    if(cat != GobCategory.ALL) {
-		Coord ic = c.sub(idxc(idx));
+		Coord ic = ev.c.sub(idxc(idx));
 		if(ic.isect(showc, CheckBox.sbox.sz())) {
 		    cat.toggle();
 		    return true;
 		}
 	    }
 	}
-	return (super.mousedown(c, button));
+	return (super.mousedown(ev));
     }
     
     enum GobCategory {
@@ -265,7 +265,7 @@ public class GobIconCategoryList extends Listbox<GobIconCategoryList.GobCategory
 	
 	@Override
 	public void draw(GOut g, Coord cc) {
-	
+	    
 	}
 	
 	@Override

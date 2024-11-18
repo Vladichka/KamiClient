@@ -315,8 +315,8 @@ public class DynresWindow extends WindowX {
 		});
 	}
 
-	public boolean mousedown(Coord c, int btn) {
-	    if(btn == 2) {
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(ev.b == 2) {
 		create(() -> {
 			try {
 			    return(getpaste(java.awt.Toolkit.getDefaultToolkit().getSystemSelection()));
@@ -326,7 +326,7 @@ public class DynresWindow extends WindowX {
 		    });
 		return(true);
 	    }
-	    return(super.mousedown(c, btn));
+	    return(super.mousedown(ev));
 	}
 
 	private void copypal() {
@@ -340,7 +340,7 @@ public class DynresWindow extends WindowX {
 	    }
 	}
 
-	public boolean mousehover(Coord c, boolean hovering) {
+	public boolean mousehover(MouseHoverEvent ev, boolean hovering) {
 	    boolean menuhover = (menu != null) && (menu.parent != null) && menu.rootarea().contains(ui.mc);
 	    if((hovering || menuhover) && (menu == null)) {
 		menu = SListMenu.of(UI.scale(250, 200), null,
@@ -352,7 +352,7 @@ public class DynresWindow extends WindowX {
 		menu.reqdestroy();
 		menu = null;
 	    }
-	    return(hovering);
+	    return(true);
 	}
 
 	public boolean drophover(Coord c, boolean hovering, Object thing) {
@@ -400,19 +400,16 @@ public class DynresWindow extends WindowX {
 	}
     }
 
-    public boolean keydown(KeyEvent ev) {
-	if(super.keydown(ev))
-	    return(true);
+    public boolean keydown(KeyDownEvent ev) {
 	if(adder != null) {
-	    int mod = UI.modflags(ev);
-	    if((ev.getKeyChar() == 22) ||
-	       ((ev.getKeyCode() == KeyEvent.VK_INSERT) && (mod == KeyMatch.S)))
+	    if(((ev.c == 'v') && (ev.mods == KeyMatch.C)) ||
+	       ((ev.code == KeyEvent.VK_INSERT) && (ev.mods == KeyMatch.S)))
 		{
 		    adder.paste();
 		    return(true);
 		}
 	}
-	return(false);
+	return(super.keydown(ev));
     }
 
     public class Image extends Widget implements Transferable, ClipboardOwner {
@@ -499,13 +496,13 @@ public class DynresWindow extends WindowX {
 	public void lostOwnership(Clipboard c, Transferable t) {
 	}
 
-	public boolean mousehover(Coord c, boolean hovering) {
+	public boolean mousehover(MouseHoverEvent ev, boolean hovering) {
 	    boolean menuhover = (menu != null) && (menu.parent != null) && menu.rootarea().contains(ui.mc);
 	    if((hovering || menuhover) && (menu == null)) {
 		menu = SListMenu.of(UI.scale(250, 200), null,
 				    Arrays.asList(SListMenu.Action.of("Paint Sketch", () -> craft(false)),
 						  SListMenu.Action.of("Paint Masterpiece", () -> craft(true)),
-						  SListMenu.Action.of("Preview", this::preview),
+					          SListMenu.Action.of("Preview", this::preview),
 						  SListMenu.Action.of("Copy to clipboard", this::copy),
 						  SListMenu.Action.of("Remove", this::delete)))
 		    .addat(this, pos("cbl"));
@@ -513,7 +510,7 @@ public class DynresWindow extends WindowX {
 		menu.reqdestroy();
 		menu = null;
 	    }
-	    return(hovering);
+	    return(true);
 	}
 
 	public void setinfo(int fields, float outline) {
@@ -755,38 +752,39 @@ public class DynresWindow extends WindowX {
 	    public Random mkrandoom() {return(new Random());}
 	    @SuppressWarnings("deprecation") public Resource getres() {throw(new UnsupportedOperationException());}
 
-	    public boolean mousewheel(Coord c, int amount) {
-		tfield += amount * 10;
+	    public boolean mousewheel(MouseWheelEvent ev) {
+		tfield += ev.a * 10;
 		return(true);
 	    }
 
 	    private Coord dragstart;
 	    private UI.Grab grab;
 	    private float dragelev, dragangl;
-	    public boolean mousedown(Coord c, int btn) {
-		if((btn == 1) && (grab == null)) {
-		    dragstart = c;
+	    public boolean mousedown(MouseDownEvent ev) {
+		if((ev.b == 1) && (grab == null)) {
+		    dragstart = ev.c;
 		    dragelev = telev;
 		    dragangl = tangl;
 		    grab = ui.grabmouse(this);
 		    return(true);
 		}
-		return(super.mousedown(c, btn));
+		return(super.mousedown(ev));
 	    }
 
-	    public boolean mouseup(Coord c, int btn) {
-		if((btn == 1) && (grab != null)) {
+	    public boolean mouseup(MouseUpEvent ev) {
+		if((ev.b == 1) && (grab != null)) {
 		    grab.remove();
 		    grab = null;
+		    return(true);
 		}
-		return(super.mouseup(c, btn));
+		return(super.mouseup(ev));
 	    }
 
-	    public void mousemove(Coord c) {
-		super.mousemove(c);
+	    public void mousemove(MouseMoveEvent ev) {
+		super.mousemove(ev);
 		if(grab != null) {
-		    tangl = dragangl + ((float)c.x - dragstart.x) * 0.01f;
-		    telev = dragelev + ((float)c.y - dragstart.y) * 0.01f;
+		    tangl = dragangl + ((float)ev.c.x - dragstart.x) * 0.01f;
+		    telev = dragelev + ((float)ev.c.y - dragstart.y) * 0.01f;
 		}
 	    }
 	}
@@ -799,6 +797,21 @@ public class DynresWindow extends WindowX {
 	private Button uploadbtn;
 	private Upload upload;
 	private Progress prog;
+
+	public PreviewWindow(BufferedImage img, List<Preview.Spec> previews, boolean disableUpload) {
+	    super(Coord.z, "Preview", true);
+	    this.img = img;
+	    this.tex = new TexL.Fixed(img);
+	    tex.mipmap(Mipmapper.dav);
+	    tex.img.magfilter(LINEAR).minfilter(LINEAR).mipfilter(LINEAR);
+	    Widget prev = display = add(new Display(tex.sz().max(128, 128)), 0, 0);
+	    if(previews != null)
+		prev = add(new Preview(display.sz.x, previews, tex), prev.pos("bl").adds(0, 10));
+	    if (!disableUpload)
+	    	uploadbtn = add(new Button(UI.scale(100), "Upload", false, this::upload), prev.pos("bl").adds(0, 10));
+	    pack();
+	    //display.move(Coord.of((csz().x - display.sz.x) / 2, display.c.y));
+	}
 	
 	public void wdgmsg(Widget sender, String msg, Object... args) {
 	    if((sender == this) && (msg == "close")) {
@@ -807,21 +820,6 @@ public class DynresWindow extends WindowX {
 	    } else {
 		super.wdgmsg(sender, msg, args);
 	    }
-	}
-	
-	public PreviewWindow(BufferedImage img, List<Preview.Spec> previews, boolean disableUpload) {
-	    super(Coord.z, "Preview", true);
-	    this.img = img;
-	    this.tex = new TexL.Fixed(img);
-	    tex.mipmap(Mipmapper.dav);
-	    tex.img.magfilter(LINEAR).minfilter(LINEAR).mipfilter(LINEAR);
-	    Widget prev = display = add(new Display(tex.sz().max(128, 128)), 0, 49);
-	    if(previews != null)
-		prev = add(new Preview(display.sz.x, previews, tex), prev.pos("ur").adds(10, -49));
-	    if (!disableUpload)
-	    	uploadbtn = add(new Button(UI.scale(100), "Upload", false, this::upload), prev.pos("bl").adds(0, 10));
-	    pack();
-	    //display.move(Coord.of((csz().x - display.sz.x) / 2, display.c.y));
 	}
 
 	public class Display extends Widget {

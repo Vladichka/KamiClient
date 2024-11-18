@@ -67,7 +67,7 @@ public class Composite extends Drawable implements EquipTarget {
 	slot.add(comp);
 	super.added(slot);
     }
-    
+
     public static List<PoseMod> loadposes(Collection<ResData> rl, Skeleton.ModOwner owner, Skeleton skel, boolean old) {
 	List<PoseMod> mods = new ArrayList<PoseMod>(rl.size());
 	for(ResData dat : rl) {
@@ -78,11 +78,11 @@ public class Composite extends Drawable implements EquipTarget {
 	}
 	return(mods);
     }
-    
+
     private List<PoseMod> loadposes(Collection<ResData> rl, Skeleton skel, boolean old) {
 	return(loadposes(rl, gob, skel, old));
     }
-    
+
     private List<PoseMod> loadposes(Collection<ResData> rl, Skeleton skel, WrapMode mode) {
 	List<PoseMod> mods = new ArrayList<PoseMod>(rl.size());
 	for(ResData dat : rl) {
@@ -91,7 +91,7 @@ public class Composite extends Drawable implements EquipTarget {
 	}
 	return(mods);
     }
-    
+
     private void updequ() {
 	retainequ = false;
 	if(nmod != null) {
@@ -109,7 +109,7 @@ public class Composite extends Drawable implements EquipTarget {
 	    }
 	}
     }
-    
+
     public void ctick(double dt) {
 	if(nposes != null) {
 	    try {
@@ -117,7 +117,6 @@ public class Composite extends Drawable implements EquipTarget {
 		np.set(nposesold?0:ipollen);
 		this.poses = nposes.stream().map(pose -> pose.res.get().name).collect(Collectors.toList());
 		gob.poseUpdated();
-		gob.updPose(new HashSet<>(poses));
 		nposes = null;
 		updequ();
 	    } catch(Loading e) {}
@@ -125,11 +124,11 @@ public class Composite extends Drawable implements EquipTarget {
 	    try {
 		final Composited.Poses cp = comp.poses;
 		Composited.Poses np = comp.new Poses(loadposes(tposes, comp.skel, tpmode)) {
-		    protected void done() {
-			cp.set(ipollen);
-			updequ();
-		    }
-		};
+			protected void done() {
+			    cp.set(ipollen);
+			    updequ();
+			}
+		    };
 		np.limit = tptime;
 		np.set(ipollen);
 		tposes = null;
@@ -141,22 +140,18 @@ public class Composite extends Drawable implements EquipTarget {
 	processResId();
 	comp.tick(dt);
     }
-    
+
     public void gtick(Render g) {
 	comp.gtick(g);
     }
-    
+
     public Resource getres() {
 	return(baseres);
     }
-    
+
     @Override
     public Indir<Resource> getires() {
 	return base;
-    }
-    
-    public Pose getpose() {
-	return(comp.pose);
     }
     
     public Supplier<Pipe.Op> eqpoint(String nm, Message dat) {
@@ -178,20 +173,20 @@ public class Composite extends Drawable implements EquipTarget {
 	this.tpmode = mode;
 	this.tptime = time;
     }
-    
+
     public void chmod(List<MD> mod) {
 	nmod = mod;
 	changed(mod);
     }
-    
+
     public void chequ(List<ED> equ) {
 	nequ = equ;
     }
-    
+
     public Object staticp() {
 	return(null);
     }
-    
+
     @OCache.DeltaType(OCache.OD_COMPOSE)
     public static class $composite implements OCache.Delta {
 	public void apply(Gob g, OCache.AttrDelta msg) {
@@ -204,7 +199,7 @@ public class Composite extends Drawable implements EquipTarget {
 	    }
 	}
     }
-    
+
     @OCache.DeltaType(OCache.OD_CMPPOSE)
     public static class $cmppose implements OCache.Delta {
 	public void apply(Gob g, OCache.AttrDelta msg) {
@@ -246,8 +241,7 @@ public class Composite extends Drawable implements EquipTarget {
 	    float cttime = ttime;
 	    Composite cmp = (Composite)g.getattr(Drawable.class);
 	    if(cmp == null)
-		return;
-		//throw(new RuntimeException(String.format("cmppose on non-composed object: %s %s %s %s", poses, tposes, interp, ttime)));
+		throw(new RuntimeException(String.format("cmppose on non-composed object: %s %s %s %s", poses, tposes, interp, ttime)));
 	    if(cmp.pseq != pseq) {
 		cmp.pseq = pseq;
 		if(poses != null)
@@ -257,7 +251,7 @@ public class Composite extends Drawable implements EquipTarget {
 	    }
 	}
     }
-    
+
     @OCache.DeltaType(OCache.OD_CMPMOD)
     public static class $cmpmod implements OCache.Delta {
 	public void apply(Gob g, OCache.AttrDelta msg) {
@@ -290,7 +284,7 @@ public class Composite extends Drawable implements EquipTarget {
 	    cmp.chmod(mod);
 	}
     }
-    
+
     @OCache.DeltaType(OCache.OD_CMPEQU)
     public static class $cmpequ implements OCache.Delta {
 	public void apply(Gob g, OCache.AttrDelta msg) {
@@ -366,8 +360,8 @@ public class Composite extends Drawable implements EquipTarget {
 	}
     }
     private void changed(List<MD> mods) {
-	nmod2 = mods;
-	changed = true;
+        nmod2 = mods;
+        changed = true;
     }
     
     private void processResId() {

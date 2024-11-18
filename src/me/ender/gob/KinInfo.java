@@ -1,16 +1,17 @@
 package me.ender.gob;
 
 import haven.*;
-import me.ender.Reflect;
+import haven.res.ui.obj.buddy.Buddy;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class KinInfo {
+    private static final Map<Long, KinInfo> cache = new HashMap<>(); 
     
-    public static final String BUDDY_NAME = "haven.res.ui.obj.buddy.Buddy";
     public static final String VILLAGE_MATE_NAME = "haven.res.ui.obj.buddy_v.Vilmate";
     
-    private static Class<? extends GAttrib> BUDDY, VILLAGER;
+    private static Class<? extends GAttrib> VILLAGER;
     
     public final int group;
     public final String name;
@@ -34,35 +35,41 @@ public class KinInfo {
     }
     
     public static KinInfo from(Gob gob, Map<Class<? extends GAttrib>, GAttrib> attrs) {
-	GAttrib buddy = null, villager = null;
-	if(BUDDY == null || VILLAGER == null) {
+	Buddy buddy = null;
+	GAttrib villager = null;
+	if(VILLAGER == null) {
 	    for (Map.Entry<Class<? extends GAttrib>, GAttrib> entry : attrs.entrySet()) {
-		if(BUDDY == null && BUDDY_NAME.equals(entry.getKey().getName())) {
-		    BUDDY = entry.getKey();
-		    buddy = entry.getValue();
+		Class<? extends GAttrib> key = entry.getKey();
+		GAttrib value = entry.getValue();
+		if(value instanceof Buddy) {
+		    buddy = (Buddy) value;
 		}
-		if(VILLAGER == null && VILLAGE_MATE_NAME.equals(entry.getKey().getName())) {
-		    VILLAGER = entry.getKey();
-		    villager = entry.getValue();
+		if(VILLAGER == null && VILLAGE_MATE_NAME.equals(key.getName())) {
+		    VILLAGER = key;
+		    villager = value;
 		}
 	    }
 	}
-	if(buddy == null && BUDDY != null) {
-	    buddy = gob.getattr(BUDDY);
+	if(buddy == null) {
+	    buddy = gob.getattr(Buddy.class);
 	}
 	if(villager == null && VILLAGER != null) {
 	    villager = gob.getattr(VILLAGER);
 	}
 	if(buddy != null || villager != null) {
-	    return from(gob, buddy, villager);
+	    KinInfo info = from(gob, buddy, villager);
+	    cache.put(gob.id, info);
+	    return info;
 	}
 	return null;
     }
     
-    private static KinInfo from(Gob gob, GAttrib buddy, GAttrib villager) {
-	int id = buddy != null
-	    ? Reflect.getFieldValueInt(buddy, "id")
-	    : -1;
+    public static KinInfo cached(long gobId) {
+	return cache.get(gobId);
+    }
+    
+    private static KinInfo from(Gob gob, Buddy buddy, GAttrib villager) {
+	int id = buddy != null ? buddy.id : -1;
 	return new KinInfo(gob, id, villager != null);
     }
     
@@ -76,13 +83,7 @@ public class KinInfo {
     }
     
     public static boolean isKinInfo(Class<? extends GAttrib> cls) {
-	String name = cls.getName();
-	if(BUDDY_NAME.equals(name)) {
-	    return true;
-	}
-	if(VILLAGE_MATE_NAME.equals(name)) {
-	    return true;
-	}
-	return false;
+	if(Buddy.class == cls) {return true;}
+	return VILLAGE_MATE_NAME.equals(cls.getName());
     }
 }

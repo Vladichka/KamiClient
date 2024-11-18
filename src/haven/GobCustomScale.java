@@ -2,6 +2,7 @@ package haven;
 
 import haven.render.Location;
 import haven.render.Pipe;
+import me.ender.ResName;
 
 public class GobCustomScale implements Gob.SetupMod {
     
@@ -14,10 +15,15 @@ public class GobCustomScale implements Gob.SetupMod {
 	    op = null;
 	    return;
 	}
-	if(res.equals("gfx/terobjs/cupboard")) {
-	    update(CFG.CUPBOARD_HEIGHT.get());
+	
+	if(res.equals(ResName.CUPBOARD)) {
+	    update(CFG.DISPLAY_SCALE_CUPBOARDS.get());
 	} else if(Utils.WALLS_TO_RESIZE.contains(res)) {
-	    update(CFG.PALISADE_HEIGHT.get());
+	    update(CFG.DISPLAY_SCALE_WALLS.get());
+	} else if(res.startsWith("gfx/terobjs/trees/")) {
+	    update2(CFG.DISPLAY_SCALE_TREES.get());
+	} else if(res.startsWith("gfx/terobjs/bushes/")) {
+	    update2(CFG.DISPLAY_SCALE_BUSHES.get());
 	}
     }
     
@@ -37,6 +43,26 @@ public class GobCustomScale implements Gob.SetupMod {
 	return new Location(new Matrix4f(
 	    1, 0, 0, 0,
 	    0, 1, 0, 0,
+	    0, 0, scale, 0,
+	    0, 0, 0, 1));
+    }
+    
+    private void update2(int percent) {
+	if(percent != scale) {
+	    scale = percent;
+	    op = makeScale2(percent);
+	}
+    }
+    
+    private Pipe.Op makeScale2(int percent) {
+	if(percent == 100) {
+	    return null;
+	}
+	
+	float scale = percent / 100f;
+	return new Location(new Matrix4f(
+	    scale, 0, 0, 0,
+	    0, scale, 0, 0,
 	    0, 0, scale, 0,
 	    0, 0, 0, 1));
     }

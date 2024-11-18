@@ -1,6 +1,6 @@
 #ABUTTON LAYER
 #String pr
-paginae/act/add
+paginae/add/toggles
 #uint16 pver
 2
 #String name
@@ -8,6 +8,6 @@ Object Info
 #String preq
 
 #uint16 hk
-0
+105
 #uint16 ad length
 0

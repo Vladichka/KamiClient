@@ -62,51 +62,60 @@ public class Glob {
 	map = new MCache(sess);
 	party = new Party(this);
     }
-
+    
     public static interface Weather {
 	public Pipe.Op state();
 	public void update(Object... args);
 	public boolean tick(double dt);
-
+	
 	public static class FactMaker extends Resource.PublishedCode.Instancer.Chain<Factory> {
 	    public FactMaker() {super(Factory.class);}
 	    {
 		add(new Direct<>(Factory.class));
 		add(new StaticCall<>(Factory.class, "mkweather", Weather.class, new Class<?>[] {Object[].class},
-				     (make) -> (args) -> make.apply(new Object[]{args})));
+		    (make) -> (args) -> make.apply(new Object[]{args})));
 		add(new Construct<>(Factory.class, Weather.class, new Class<?>[] {Object[].class},
-				    (cons) -> (args) -> cons.apply(new Object[]{args})));
+		    (cons) -> (args) -> cons.apply(new Object[]{args})));
 	    }
 	}
-
+	
 	@Resource.PublishedCode(name = "wtr", instancer = FactMaker.class)
 	public static interface Factory {
 	    public Weather weather(Object... args);
 	}
     }
-
+    
     public static class CAttr {
+	public final Glob glob;
 	public static final Text.Foundry fnd = new Text.Foundry(Text.sans, 12);
 	public final String nm;
 	public int base, comp;
+	public ItemInfo.Raw info;
 	private Text.Line compLine = null;
 	
-	public CAttr(String nm, int base, int comp) {
+	public CAttr(Glob glob, String nm, int base, int comp, ItemInfo.Raw info) {
+	    this.glob = glob;
 	    this.nm = nm.intern();
 	    this.base = base;
 	    this.comp = comp;
+	    this.info = info;
 	    compLine = null;
 	}
 	
-	public void update(int base, int comp) {
+	public void update(int base, int comp, ItemInfo.Raw info) {
 	    if((base == this.base) && (comp == this.comp))
 		return;
 	    this.base = base;
 	    this.comp = comp;
+	    this.info = info;
 	    compLine = null;
 	    Makewindow.invalidate(nm);
 	}
-
+	
+	public Indir<Resource> res() {
+	    return(Resource.local().load("gfx/hud/chr/" + nm));
+	}
+	
 	public Text.Line compline() {
 	    if(compLine == null) {
 		Color c = Color.WHITE;
@@ -125,11 +134,11 @@ public class Glob {
 	int or = o.getRed(), og = o.getGreen(), ob = o.getBlue(), oa = o.getAlpha();
 	int tr = t.getRed(), tg = t.getGreen(), tb = t.getBlue(), ta = t.getAlpha();
 	return(new Color(or + (int)((tr - or) * a),
-			 og + (int)((tg - og) * a),
-			 ob + (int)((tb - ob) * a),
-			 oa + (int)((ta - oa) * a)));
+	    og + (int)((tg - og) * a),
+	    ob + (int)((tb - ob) * a),
+	    oa + (int)((ta - oa) * a)));
     }
-
+    
     private void ticklight(double dt) {
 	if(lchange >= 0) {
 	    lchange += dt;
@@ -148,9 +157,10 @@ public class Glob {
 		lightang = olightang + a * Utils.cangle(tlightang - olightang);
 		lightelev = olightelev + a * Utils.cangle(tlightelev - olightelev);
 	    }
+	    brighten();
 	}
     }
-
+    
     public void brighten(){
 	synchronized(brightsync) {
 	    float bright = CFG.CAMERA_BRIGHT.get();
@@ -165,7 +175,7 @@ public class Glob {
 	    }
 	}
     }
-
+    
     private double lastctick = 0;
     public void ctick() {
 	double now = Utils.rtime();
@@ -174,7 +184,7 @@ public class Glob {
 	    dt = 0;
 	else
 	    dt = Math.max(now - lastctick, 0.0);
-
+	
 	synchronized(this) {
 	    ticklight(dt);
 	    for(Object o : wmap.values()) {
@@ -182,20 +192,20 @@ public class Glob {
 		    ((Weather)o).tick(dt);
 	    }
 	}
-
+	
 	tickgtime(now, dt);
 	oc.ctick(dt);
 	map.ctick(dt);
 	Timer.tick(dt);
-
+	
 	lastctick = now;
     }
-
+    
     public void gtick(Render g) {
 	oc.gtick(g);
 	map.gtick(g);
     }
-
+    
     private static final double itimefac = 3.0;
     private double stimefac = itimefac, ctimefac = itimefac;
     private void tickgtime(double now, double dt) {
@@ -207,11 +217,12 @@ public class Glob {
 	    ctimefac -= Math.min((gtime - sgtime) * 0.001, 0.02) * dt;
 	ctimefac += Math.signum(stimefac - ctimefac) *0.002 * dt;
     }
-
+    
     private void updgtime(double sgtime, boolean inc) {
 	double now = Utils.rtime();
 	double delta = now - epoch;
 	epoch = now;
+	Timer.server((long) (1000 * sgtime));
 	if((this.sgtime == 0) || !inc || (Math.abs(sgtime - this.sgtime) > 500)) {
 	    this.gtime = this.sgtime = sgtime;
 	    return;
@@ -222,18 +233,17 @@ public class Glob {
 	    stimefac = (stimefac * (1 - f)) + (utimefac * f);
 	}
 	this.sgtime = sgtime;
-	Timer.server((long) (1000 * sgtime));
     }
-
+    
     public String gtimestats() {
 	double sgtime = this.sgtime + ((Utils.rtime() - epoch) * stimefac);
 	return(String.format("%.2f %.2f %.2f %.2f %.2f %.2f %.2f", gtime, this.sgtime, epoch, sgtime, sgtime - gtime, ctimefac, stimefac));
     }
-
+    
     public double globtime() {
 	return(gtime);
     }
-
+    
     public void blob(Message msg) {
 	boolean inc = msg.uint8() != 0;
 	while(!msg.eom()) {
@@ -320,7 +330,7 @@ public class Glob {
 	    }
 	}
     }
-
+    
     public Collection<Weather> weather() {
 	synchronized(this) {
 	    ArrayList<Weather> ret = new ArrayList<>(wmap.size());
@@ -341,7 +351,7 @@ public class Glob {
 	    return(ret);
 	}
     }
-
+    
     /* XXX: This is actually quite ugly and there should be a better
      * way, but until I can think of such a way, have this as a known
      * entry-point to be forwards-compatible with compiled
@@ -349,50 +359,50 @@ public class Glob {
     public static DirLight amblight(Pipe st) {
 	return(((MapView)((PView.WidgetContext)st.get(RenderContext.slot)).widget()).amblight);
     }
-
+    
     public CAttr getcattr(String nm) {
 	synchronized(cattr) {
 	    CAttr a = cattr.get(nm);
 	    if(a == null) {
-		a = new CAttr(nm, 0, 0);
+		a = new CAttr(this, nm, 0, 0, ItemInfo.Raw.nil);
 		cattr.put(nm, a);
 	    }
 	    return(a);
 	}
     }
-
-    public void cattr(String nm, int base, int comp) {
+    
+    public void cattr(String nm, int base, int comp, ItemInfo.Raw info) {
 	synchronized(cattr) {
 	    CAttr a = cattr.get(nm);
 	    if(a == null) {
-		a = new CAttr(nm, base, comp);
+		a = new CAttr(this, nm, base, comp, info);
 		cattr.put(nm, a);
 	    } else {
-		a.update(base, comp);
+		a.update(base, comp, info);
 	    }
 	    attrseq++;
 	}
     }
-
+    
     public static class FrameInfo extends State {
 	public static final Slot<FrameInfo> slot = new Slot<>(Slot.Type.SYS, FrameInfo.class);
 	public static final Uniform u_globtime = new Uniform(Type.FLOAT, "globtime", p -> {
-		FrameInfo inf = p.get(slot);
-		return((inf == null) ? 0.0f : (float)(inf.globtime % 10000.0));
-	    }, slot);
+	    FrameInfo inf = p.get(slot);
+	    return((inf == null) ? 0.0f : (float)(inf.globtime % 10000.0));
+	}, slot);
 	public final double globtime;
-
+	
 	public FrameInfo(Glob glob) {
 	    this.globtime = glob.globtime();
 	}
-
+	
 	public ShaderMacro shader() {return(null);}
 	public void apply(Pipe p) {p.put(slot, this);}
-
+	
 	public static Expression globtime() {
 	    return(u_globtime.ref());
 	}
-
+	
 	public String toString() {return(String.format("#<globinfo @%fs>", globtime));}
     }
 }

@@ -9,7 +9,7 @@ public enum GobTag {
     TREE, BUSH, LOG, STUMP, HERB,
     ANIMAL, AGGRESSIVE, CRITTER,
     
-    MIDGES,
+    MIDGES, RABBIT, SPEED,
     
     DOMESTIC, YOUNG, ADULT,
     CATTLE, COW, BULL, CALF,
@@ -21,18 +21,38 @@ public enum GobTag {
     GEM, ARROW,
     VEHICLE, PUSHED, //vehicle that is pushed (wheelbarrow, plow)
     
-    CONTAINER, PROGRESSING, GATE,
+    CONTAINER, PROGRESSING, GATE, SMELTER,
     
-    HAS_WATER,
+    HAS_WATER, DRINKING,
     
-    PLAYER, ME, FRIEND, FOE,
-    KO, DEAD, EMPTY, READY, FULL,
+    PLAYER, ME, FRIEND, FOE, PARTY, LEADER, IN_COMBAT, COMBAT_TARGET, AGGRO_TARGET,
+    KO, DEAD, EMPTY, READY, FULL, IS_COLD,
     
     MENU, PICKUP, HIDDEN;
     
     private static final String[] AGGRO = {
-        "/bear", "/boar", "/troll", "/wolverine", "/badger", "/adder", "/wolf", "/walrus", "/lynx", "/rat/caverat", "/moose",
-        "/mammoth", "/goat/wildgoat", "/spermwhale", "/orca"
+	"/adder",
+	"/badger",
+	//"/bat", //bats are handled separately to account for wearing cape
+	"/bear",
+	"/boar",
+	"/boreworm",
+	"/caveangler",
+	"/cavelouse",
+	"/caverat",
+	"/eagleowl",
+	"/goat/wildgoat",
+	"/goldeneagle",
+	"/greenooze",
+	"/lynx",
+	"/mammoth",
+	"/moose",
+	"/orca",
+	"/spermwhale",
+	"/troll",
+	"/walrus",
+	"/wolf",
+	"/wolverine",
     };
     
     private static final String[] BIG_PARTS = {
@@ -42,20 +62,112 @@ public enum GobTag {
         "/fox", "/swan", "/bat", "/beaver", "/reddeer"
     };
     
+    //behave like herbs - r-click and select Pick from menu
     private static final String[] LIKE_HERB = {
         "/precioussnowflake"
     };
     
+    //behave like critters - can be picked up by r-clicking 
     private static final String[] LIKE_CRITTER = {
+        "/terobjs/items/hoppedcow",
+        "/terobjs/items/mandrakespirited",
         "/terobjs/items/grub"
     };
     
+    //these can be picked up by r-clicking
     private static final String[] CRITTERS = {
-        "/rat/rat", "/swan", "/squirrel", "/silkmoth", "/frog", "/rockdove", "/quail", "/toad", "/grasshopper",
-        "/ladybug", "/forestsnail", "/dragonfly", "/forestlizard", "/waterstrider", "/firefly", "/sandflea",
-        "/rabbit", "/crab", "/cavemoth", "/hedgehog", "/stagbeetle", "jellyfish", "/mallard", "/chicken", "/irrbloss",
-        "/cavecentipede", "/bogturtle", "/moonmoth", "/monarchbutterfly", "/items/grub", "/springbumblebee", "/bayshrimp",
-        "/mole" , "/lobster",
+	"/bayshrimp",
+	"/bogturtle",
+	"/brimstonebutterfly",
+        "/bullfinch",
+	"/cavecentipede",
+	"/cavemoth",
+	"/chicken",
+	"/crab",
+	"/dragonfly",
+	"/earthworm",
+	"/firefly",
+	"/forestlizard",
+	"/forestsnail",
+	"/frog",
+	"/grasshopper",
+	"/hedgehog",
+	"/irrbloss",
+	"/items/grub",
+        "/items/hoppedcow",
+        "/items/mandrakespirited",
+	"/jellyfish",
+        "/kritter/tick/tick",
+	"/ladybug",
+	"/lobster",
+        "/magpie",
+	"/mallard",
+	"/mole",
+	"/monarchbutterfly",
+	"/moonmoth",
+        "/opiumdragon",
+        "/ptarmigan",
+	"/quail",
+	"/rabbit",
+	"/rat/rat",
+	"/rockdove",
+	"/sandflea",
+        "/seagull",
+	"/silkmoth",
+	"/springbumblebee",
+	"/squirrel",
+	"/stagbeetle",
+        "/stalagoomba",
+	"/toad",
+	"/waterstrider",
+	"/whirlingsnowflake",
+        "/woodgrouse-f",
+        "/woodworm",
+    };
+    
+    //List of animals that player can aggro
+    private static final String[] CAN_AGGRO = {
+        "gfx/kritter/adder/",
+        "gfx/kritter/ants/", //all ant types
+        "gfx/kritter/aurochs/",
+        "gfx/kritter/badger/",
+        "gfx/kritter/bat/", //all bat types
+        "gfx/kritter/bear/",
+        "gfx/kritter/beaver/", //all beaver types
+        "gfx/kritter/bees/", //all bee types
+        "gfx/kritter/boar/",
+        "gfx/kritter/boreworm/",
+        "gfx/kritter/caveangler/",
+        "gfx/kritter/cavelouse/",
+        "gfx/kritter/chasmconch/",
+        "gfx/kritter/eagleowl/",
+        "gfx/kritter/fox/",
+        "gfx/kritter/goat/wildgoat",
+        "gfx/kritter/goldeneagle",
+        "gfx/kritter/greyseal",
+        "gfx/kritter/horse/", //all horse types
+        "gfx/kritter/lynx/",
+        "gfx/kritter/mammoth/",
+        "gfx/kritter/moose/",
+        "gfx/kritter/mouflon/",
+        "gfx/kritter/nidbane/",
+        "gfx/kritter/ooze/",
+        "gfx/kritter/orca/",
+        "gfx/kritter/otter/",
+        "gfx/kritter/pelican/",
+        "gfx/kritter/rat/caverat",
+        "gfx/kritter/reddeer/",
+        "gfx/kritter/reindeer/",
+        "gfx/kritter/roedeer/",
+        "gfx/kritter/spermwhale/",
+        "gfx/kritter/stoat/",
+        "gfx/kritter/swan/",
+        "gfx/kritter/troll/",
+        "gfx/kritter/walrus/",
+        "gfx/kritter/wolf/",
+        "gfx/kritter/wolverine/",
+        "gfx/kritter/woodgrouse/woodgrouse-m",
+        "gfx/kritter/wildbees/beeswarm",
     };
     
     private static final String[] VEHICLES = {"/wheelbarrow", "/plow", "/cart", "/dugout", "/rowboat", "/vehicle/snekkja", "/vehicle/knarr", "/vehicle/wagon", "/vehicle/coracle", "/horse/mare", "/horse/stallion", "/vehicle/spark"};
@@ -66,7 +178,9 @@ public enum GobTag {
     public static Set<GobTag> tags(Gob gob) {
         Set<GobTag> tags = new HashSet<>();
         GameUI gui = gob.context(GameUI.class);
+        Glob glob = gob.context(Glob.class);
         Equipory equipory = gui != null ? gui.equipory : null;
+        Fightview fight = gui != null ? gui.fv : null;
         
         String name = gob.resid();
         int sdt = gob.sdt();
@@ -85,9 +199,9 @@ public enum GobTag {
                     gob.tagsUpdated();
                 }
             }
-            
+    
             if(name.startsWith("gfx/terobjs/trees")) {
-                if(name.endsWith("log") || name.endsWith("oldtrunk")) {
+                if(name.endsWith("log") || name.endsWith("oldtrunk") || name.contains("/driftwood")) {
                     tags.add(LOG);
                 } else if(name.contains("stump")) {
                     tags.add(STUMP);
@@ -105,10 +219,13 @@ public enum GobTag {
                     if(me) {
                         tags.add(ME);
                     } else {
-                        tags.add(KinInfo.isFoe(gob) ? FOE : FRIEND);
+			tags.add(KinInfo.isFoe(gob) ? FOE : FRIEND);
                     }
                 }
             } else if(name.startsWith("gfx/kritter/") || ofType(name, LIKE_CRITTER)) {
+                if(name.contains("/rabbit")) {
+                    tags.add(RABBIT);
+                }
                 if(name.endsWith("/midgeswarm")) {
                     tags.add(MIDGES);
                 } else if(ofType(name, CRITTERS)) {
@@ -130,7 +247,7 @@ public enum GobTag {
                     System.out.println(name);
                 }
                 if(name.contains("/bat")) {
-                    if(equipory == null || !equipory.has("/batcape")) {
+                    if(equipory == null || !equipory.hasBatCape()) {
                         tags.add(AGGRESSIVE);
                     }
                 }
@@ -147,10 +264,21 @@ public enum GobTag {
                 tags.add(CONTAINER);
                 tags.add(PROGRESSING);
                 //sdt bits: 0 - water, 1 - tannin, 2 - hide, 3 - leather
-                boolean empty = sdt < 4; //has no hide nor leather
-                boolean done = sdt >= 8; //has leather
+                boolean empty = (sdt & 0b1100) == 0; //has no hide nor leather
+                boolean done = (sdt & 0b1000) != 0; //has leather
                 if(empty) { tags.add(EMPTY); }
                 if(done) { tags.add(READY); }
+            } else if(name.endsWith("/primsmelter")) {
+                tags.add(PROGRESSING);
+                tags.add(SMELTER);
+                //sdt bits: 0 - lit, 1 - ore, 2 - bars, 3 - partial heat or pumping, 4 - full heat
+                boolean lit = (sdt & 0b0001) != 0;
+                boolean ore = (sdt & 0b0000_0010) != 0;
+                boolean bars = (sdt & 0b0000_0100) != 0;
+                //boolean cold = (sdt & 0b0001_1000) == 0;
+                boolean hot = (sdt & 0b0001_0000) != 0;
+                if(bars) {tags.add(READY);}
+                if(lit && !hot && ore) {tags.add(IS_COLD);}
             } else if(name.endsWith("/beehive")) {
                 tags.add(PROGRESSING);
                 //sdt bits: 0 - honey, 1 - bees?, 2 - wax
@@ -168,8 +296,11 @@ public enum GobTag {
             if(name.equals("gfx/terobjs/items/arrow")) {
                 tags.add(ARROW);
             }
+            if(name.equals("gfx/terobjs/boostspeed")) {
+                tags.add(SPEED);
+            }
             
-            if("Water".equals(gob.contents())) {
+            if(ItemData.WATER.equalsIgnoreCase(gob.contents())) {
                 tags.add(HAS_WATER);
             }
             
@@ -181,6 +312,33 @@ public enum GobTag {
                 tags.add(MENU);
             }
             
+            Party.Member member = glob.party.memb.get(gob.id);
+            if(member != null) {
+                tags.add(PARTY);
+            }
+            
+            Party.Member leader = glob.party.leader;
+            if(leader != null && leader.gobid == gob.id) {
+                tags.add(LEADER);
+            }
+            
+            if(fight != null) {
+                for (Fightview.Relation relation : fight.lsrel) {
+                    if(relation.gobid == gob.id) {
+                        tags.add(IN_COMBAT);
+                        break;
+                    }
+                }
+                Fightview.Relation current = fight.current;
+                if(current != null && current.gobid == gob.id) {
+                    tags.add(COMBAT_TARGET);
+                }
+            }
+            
+            if((anyOf(tags, PLAYER) || ofType(name, CAN_AGGRO)) && !anyOf(tags, ME, PARTY, IN_COMBAT, KO, DEAD)) {
+                tags.add(AGGRO_TARGET);
+            }
+    
             ContainerInfo.get(name).ifPresent(container -> {
                 tags.add(CONTAINER);
                 if(container.isFull(sdt)) {
@@ -189,7 +347,7 @@ public enum GobTag {
                     tags.add(EMPTY);
                 }
             });
-            
+    
             Drawable d = gob.drawable;
             if(d != null) {
                 if(d.hasPose("/knock")) {
@@ -198,9 +356,12 @@ public enum GobTag {
                 if(d.hasPose("/dead") || d.hasPose("/waterdead")) {
                     tags.add(DEAD);
                 }
+                if(d.hasPose("drinkan")) {
+                    tags.add(DRINKING);
+                }
             }
         }
-        
+    
         return tags;
     }
     

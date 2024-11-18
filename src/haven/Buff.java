@@ -34,11 +34,15 @@ import java.util.List;
 import haven.ItemInfo.AttrCache;
 
 public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed {
+    public static final String OPEN_GREEN = "paginae/atk/offbalance";
+    public static final String OPEN_YELLOW = "paginae/atk/reeling";
+    public static final String OPEN_BLUE = "paginae/atk/dizzy";
+    public static final String OPEN_RED = "paginae/atk/cornered";
     private static final Map<String, Color> OPENINGS = new HashMap<String, Color>(4) {{
-	put("paginae/atk/offbalance", new Color(81, 165, 56));
-	put("paginae/atk/reeling", new Color(210, 210, 64));
-	put("paginae/atk/dizzy", new Color(39, 82, 191));
-	put("paginae/atk/cornered", new Color(192, 28, 28));
+	put(OPEN_GREEN, new Color(81, 165, 56));
+	put(OPEN_YELLOW, new Color(210, 210, 64));
+	put(OPEN_BLUE, new Color(39, 82, 191));
+	put(OPEN_RED, new Color(192, 28, 28));
 //	put("paginae/atk/guard", new Color(64, 64, 64));
     }};
     
@@ -212,18 +216,14 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	double now = Utils.rtime();
 	if(prev != this)
 	    hoverstart = now;
-	try {
-	    if(now - hoverstart < 1.0) {
-		if(shorttip == null)
-		    shorttip = new TexI(shorttip());
-		return(shorttip);
-	    } else {
-		if(longtip == null)
-		    longtip = new TexI(longtip());
-		return(longtip);
-	    }
-	} catch(Loading e) {
-	    return("...");
+	if(now - hoverstart < 1.0) {
+	    if(shorttip == null)
+		shorttip = new TexI(shorttip());
+	    return(shorttip);
+	} else {
+	    if(longtip == null)
+		longtip = new TexI(longtip());
+	    return(longtip);
 	}
     }
 
@@ -271,22 +271,18 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	    super.uimsg(msg, args);
 	}
     }
-
-    public boolean mousedown(Coord c, int btn) {
-	wdgmsg("cl", c.sub(imgoff), btn, ui.modflags());
-	return(true);
-    }
-    public int ameter() {return nmeter;}
     
-    public boolean isOpening() {
-	try
-	{
-	    Resource res = this.res.get();
-	    Color clr = OPENINGS.get(res.name);
-	    return (clr != null);
-	}
-	catch (Exception ex) {
-	    return false;
-	}
+    public int getNMeter() {return nmeter;}
+    
+    public int ameter() {
+	if(ameter >= 0) {return ameter;}
+	Double v = ameteri.get();
+	if(v == null) {return -1;}
+	return (int) Math.floor(v * 100);
+    }
+
+    public boolean mousedown(MouseDownEvent ev) {
+	wdgmsg("cl", ev.c.sub(imgoff), ev.b, ui.modflags());
+	return(true);
     }
 }

@@ -1,6 +1,7 @@
 package haven;
 
 import haven.rx.BuffToggles;
+import me.ender.ui.CFGBox;
 
 public class LoginTogglesCfgWnd extends WindowX {
     private static Window instance;
@@ -26,7 +27,7 @@ public class LoginTogglesCfgWnd extends WindowX {
 
 	int y = 0;
 	for (BuffToggles.Toggle toggle : BuffToggles.toggles) {
-	    add(new OptWnd.CFGBox(toggle.name, toggle.startup) {
+	    add(new CFGBox(toggle.name, toggle.startup) {
 		@Override
 		protected boolean i10n() {
 		    return false;

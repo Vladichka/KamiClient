@@ -86,7 +86,7 @@ public class ActAudio extends State {
 	public void clear() {
 	    synchronized(this) {
 		if(this.clips == null)
-		    return;
+		    return; // KamiClient NPE check
 		Collection<CS> clips = this.clips;
 		this.clips = null;
 		for(Iterator<CS> i = clips.iterator(); i.hasNext();) {

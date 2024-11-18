@@ -81,8 +81,8 @@ public abstract class Listbox<T> extends ListWidget<T> {
 	super.draw(g);
     }
     
-    public boolean mousewheel(Coord c, int amount) {
-	sb.ch(amount);
+    public boolean mousewheel(MouseWheelEvent ev) {
+	sb.ch(ev.a);
 	return(true);
     }
     
@@ -124,39 +124,40 @@ public abstract class Listbox<T> extends ListWidget<T> {
 	return tip != null ? tip : super.tooltip(c, prev);
     }
     
-    public boolean mousedown(Coord c, int button) {
-	if(super.mousedown(c, button))
+    public boolean mousedown(MouseDownEvent ev) {
+	if(ev.propagate(this))
 	    return(true);
-	int idx = idxat(c);
+	int idx = idxat(ev.c);
 	T item = (idx >= listitems()) ? null : listitem(idx);
-	if((item == null) && (button == 1))
+	if((item == null) && (ev.b == 1))
 	    change(null);
 	else if(item != null) {
 	    if(item instanceof Widget) {
 		Widget wdg = (Widget) item;
 		if(wdg.visible) {
-		    Coord cc = xlate(wdg.c.addy(c.y / itemh * itemh), true);
-		    if(c.isect(cc, wdg.sz) && wdg.mousedown(c.add(cc.inv()), button)) {
+		    Coord cc = xlate(wdg.c.addy(ev.c.y / itemh * itemh), true);
+		    if(ev.c.isect(cc, wdg.sz) && wdg.mousedown(new MouseDownEvent(ev, ev.c.add(cc.inv())))) {
 			return(true);
 		    }
 		}
 	    }
-	    itemclick(item, c.sub(idxc(idx)), button);
+	    itemclick(item, ev.c.sub(idxc(idx)), ev.b);
 	    return true;
 	}
 	return(false);
     }
     
     @Override
-    public void mousemove(Coord c) {
-	super.mousemove(c);
-	if(c.isect(Coord.z, sz)){
-	    over = itemat(c);
+    public void mousemove(MouseMoveEvent ev) {
+	super.mousemove(ev);
+	if(ev.c.isect(Coord.z, sz)){
+	    over = itemat(ev.c);
 	} else{
 	    over = null;
 	}
     }
     
+    @Override
     public boolean mouseclick(Coord c, int button, int count) {
 	if(super.mouseclick(c, button, count))
 	    return(true);

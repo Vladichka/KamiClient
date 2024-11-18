@@ -35,6 +35,8 @@ import java.util.stream.IntStream;
 
 import haven.resutil.FoodInfo;
 import haven.resutil.Curiosity;
+import me.ender.ui.DrinkMeter;
+
 import static haven.PUtils.*;
 
 public class CharWnd extends WindowX {
@@ -189,6 +191,65 @@ public class CharWnd extends WindowX {
 	}
     }
     
+    public abstract static class AttrWdg extends Widget implements ItemInfo.Owner {
+	public final String nm;
+	public final Glob.CAttr attr;
+	
+	public AttrWdg(Coord sz, Glob glob, String attr) {
+	    super(sz);
+	    this.nm = attr;
+	    this.attr = glob.getcattr(attr);
+	}
+	
+	private static final OwnerContext.ClassResolver<AttrWdg> ctxr = new OwnerContext.ClassResolver<AttrWdg>()
+	    .add(AttrWdg.class, wdg -> wdg)
+	    .add(CharWnd.class, wdg -> wdg.getparent(CharWnd.class))
+	    .add(Glob.CAttr.class, wdg -> wdg.attr)
+	    .add(Glob.class, wdg -> wdg.attr.glob)
+	    .add(Session.class, wdg -> wdg.ui.sess);
+	public <T> T context(Class<T> cl) {return(ctxr.context(cl, this));}
+	
+	private ItemInfo.Raw rinfo = null;
+	private List<ItemInfo> binfo = null;
+	public List<ItemInfo> info() {
+	    if(attr.info != this.rinfo) {
+		this.binfo = null;
+		this.rinfo = attr.info;
+	    }
+	    if(this.binfo == null) {
+		List<ItemInfo> binfo = ItemInfo.buildinfo(this, this.rinfo);
+		Resource.Pagina pag = attr.res().get().layer(Resource.pagina);
+		if(pag != null)
+		    binfo.add(new ItemInfo.Pagina(this, pag.text));
+		if(!binfo.isEmpty())
+		    binfo.add(new ItemInfo.Name(this, attr.res().get().flayer(Resource.tooltip).t));
+		this.binfo = binfo;
+	    }
+	    return(this.binfo);
+	}
+	
+	private List<ItemInfo> tipinfo;
+	private Tex tipimg = null;
+	public Object tooltip(Coord c, Widget prev) {
+	    List<ItemInfo> info = info();
+	    if((tipimg != null) && (info != tipinfo)) {
+		tipimg.dispose();
+		tipimg = null;
+	    }
+	    if(tipimg == null) {
+		try {
+		    if(info.isEmpty())
+			return(null);
+		    tipimg = new TexI(ItemInfo.longtip(info));
+		    tipinfo = info;
+		} catch(Loading l) {
+		    return("...");
+		}
+	    }
+	    return(tipimg);
+	}
+    }
+    
     @RName("chr")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
@@ -256,6 +317,10 @@ public class CharWnd extends WindowX {
 	if((place == "tab") || /* XXX: Remove me! */ Utils.eq(args[0], Coord.of(47, 47))) {
 	    if(child instanceof BAttrWnd) {
 		battr = battrtab.add((BAttrWnd)child, Coord.z);
+		//TODO: find better place
+		if(CFG.HUNGER_METER.get()) {HungerMeter.add(ui);}
+		if(CFG.FEP_METER.get()) {FEPMeter.add(ui);}
+		if(CFG.DRINKS_METER.get()) {DrinkMeter.add(ui);}
 	    } else if(child instanceof SAttrWnd) {
 		sattr = sattrtab.add((SAttrWnd)child, Coord.z);
 	    } else if(child instanceof SkillWnd) {
@@ -292,7 +357,10 @@ public class CharWnd extends WindowX {
 		String attr = (String)args[a++];
 		int base = Utils.iv(args[a++]);
 		int comp = Utils.iv(args[a++]);
-		ui.sess.glob.cattr(attr, base, comp);
+		ItemInfo.Raw info = ItemInfo.Raw.nil;
+		if((a < args.length) && (args[a] instanceof Object[]))
+		    info = new ItemInfo.Raw((Object[])args[a++]);
+		ui.sess.glob.cattr(attr, base, comp, info);
 	    }
 	} else if(nm == "exp") {
 	    exp = Utils.iv(args[0]);

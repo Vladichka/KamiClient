@@ -30,7 +30,6 @@ import java.util.*;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
-import java.awt.event.KeyEvent;
 import static haven.CharWnd.attrf;
 import static haven.Window.wbox;
 import static haven.Inventory.invsq;
@@ -47,11 +46,11 @@ public class FightWnd extends Widget {
     private final ImageInfoBox info;
     private final Label count;
     private final Map<Indir<Resource>, Object[]> actrawinfo = new HashMap<>();
-
+    
     public static interface IconInfo {
 	public void draw(BufferedImage img, Graphics g);
     }
-
+    
     private static final OwnerContext.ClassResolver<FightWnd> actxr = new OwnerContext.ClassResolver<FightWnd>()
 	.add(FightWnd.class, wdg -> wdg)
 	.add(Glob.class, wdg -> wdg.ui.sess.glob)
@@ -62,9 +61,9 @@ public class FightWnd extends Widget {
 	private final int id;
 	public int a, u;
 	private String name;
-
+	
 	public Action(Indir<Resource> res, int id, int a, int u) {this.res = res; this.id = id; this.a = a; this.u = u;}
-
+	
 	public String rendertext() {
 	    StringBuilder buf = new StringBuilder();
 	    Resource res = this.res.get();
@@ -75,20 +74,20 @@ public class FightWnd extends Widget {
 		buf.append(pag.text);
 	    return(buf.toString());
 	}
-
+	
 	private void a(int a) {
 	    this.a = a;
 	}
-
+	
 	private void u(int u) {
 	    if(this.u != u) {
 		this.u = u;
 		recount();
 	    }
 	}
-
+	
 	public Resource resource() {return(res.get());}
-
+	
 	private List<ItemInfo> info = null;
 	public List<ItemInfo> info() {
 	    if(info == null) {
@@ -101,7 +100,7 @@ public class FightWnd extends Widget {
 	    return(info);
 	}
 	public <T> T context(Class<T> cl) {return(actxr.context(cl, FightWnd.this));}
-
+	
 	public BufferedImage rendericon() {
 	    BufferedImage ret = res.get().flayer(Resource.imgc).scaled();
 	    Graphics g = null;
@@ -119,16 +118,16 @@ public class FightWnd extends Widget {
 		g.dispose();
 	    return(ret);
 	}
-
+	
 	private Tex icon = null;
 	public Tex icon() {
 	    if(icon == null)
 		icon = new TexI(rendericon());
 	    return(icon);
 	}
-
+	
 	public BufferedImage renderinfo(int width) {
-	    ItemInfo.Layout l = new ItemInfo.Layout();
+	    ItemInfo.Layout l = new ItemInfo.Layout(this);
 	    l.width = width;
 	    List<ItemInfo> info = info();
 	    l.cmp.add(rendericon(), Coord.z);
@@ -146,7 +145,7 @@ public class FightWnd extends Widget {
 	    return(l.render());
 	}
     }
-
+    
     private void recount() {
 	int u = 0;
 	for(Action act : acts)
@@ -154,25 +153,25 @@ public class FightWnd extends Widget {
 	count.settext(String.format("Used: %d/%d", u, maxact));
 	count.setcolor((u > maxact)?Color.RED:Color.WHITE);
     }
-
+    
     public static class ImageInfoBox extends Widget {
 	private Tex img;
 	private Indir<Tex> loading;
 	private final Scrollbar sb;
-
+	
 	public ImageInfoBox(Coord sz) {
 	    super(sz);
 	    sb = adda(new Scrollbar(sz.y, 0, 1), sz.x, 0, 1, 0);
 	}
-
+	
 	public void drawbg(GOut g) {
 	    g.chcolor(0, 0, 0, 128);
 	    g.frect(Coord.z, sz);
 	    g.chcolor();
 	}
-
+	
 	public Coord marg() {return(new Coord(10, 10));}
-
+	
 	public void tick(double dt) {
 	    if(loading != null) {
 		try {
@@ -183,14 +182,14 @@ public class FightWnd extends Widget {
 	    }
 	    super.tick(dt);
 	}
-
+	
 	public void draw(GOut g) {
 	    drawbg(g);
 	    if(img != null)
 		g.image(img, marg().sub(0, sb.val));
 	    super.draw(g);
 	}
-
+	
 	public void set(Tex img) {
 	    this.img = img;
 	    if(img != null) {
@@ -203,12 +202,12 @@ public class FightWnd extends Widget {
 	public void set(Indir<Tex> loading) {
 	    this.loading = loading;
 	}
-
-	public boolean mousewheel(Coord c, int amount) {
-	    sb.ch(amount * 20);
+	
+	public boolean mousewheel(MouseWheelEvent ev) {
+	    sb.ch(ev.a * 20);
 	    return(true);
 	}
-
+	
 	public void resize(Coord sz) {
 	    super.resize(sz);
 	    sb.c = new Coord(sz.x - sb.sz.x, 0);
@@ -216,29 +215,29 @@ public class FightWnd extends Widget {
 	    set(img);
 	}
     }
-
+    
     public class Actions extends SListBox<Action, Widget> {
 	private boolean loading = false;
 	private Action drag = null;
 	private UI.Grab grab;
-
+	
 	public Actions(Coord sz) {
 	    super(sz, attrf.height() + UI.scale(2));
 	}
-
+	
 	protected List<Action> items() {return(acts);}
-
+	
 	protected Widget makeitem(Action act, int idx, Coord sz) {
 	    return(new Item(sz, act));
 	}
-
+	
 	public class Item extends Widget implements DTarget {
 	    public final Action item;
 	    private final Label use;
 	    private int u = -1, a = -1;
 	    private UI.Grab grab;
 	    private Coord dp;
-
+	    
 	    public Item(Coord sz, Action act) {
 		super(sz);
 		this.item = act;
@@ -248,50 +247,50 @@ public class FightWnd extends Widget {
 		prev = use = adda(new Label("0/0", attrf), prev.c.x - UI.scale(5), sz.y / 2, 1.0, 0.5);
 		add(IconText.of(Coord.of(prev.c.x - UI.scale(2), sz.y), act::rendericon, () -> act.res.get().flayer(Resource.tooltip).t), Coord.z);
 	    }
-
+	    
 	    public void tick(double dt) {
 		if((item.u != this.u) || (item.a != this.a))
 		    use.settext(String.format("%d/%d", this.u = item.u, this.a = item.a));
 		super.tick(dt);
 	    }
-
-	    public boolean mousewheel(Coord c, int am) {
+	    
+	    public boolean mousewheel(MouseWheelEvent ev) {
 		if(ui.modshift) {
-		    setu(item.u - am);
+		    setu(item.u - ev.a);
 		    return(true);
 		}
-		return(super.mousewheel(c, am));
+		return(super.mousewheel(ev));
 	    }
-
-	    public boolean mousedown(Coord c, int button) {
-		if(super.mousedown(c, button))
+	    
+	    public boolean mousedown(MouseDownEvent ev) {
+		if(ev.propagate(this) || super.mousedown(ev))
 		    return(true);
-		if(button == 1) {
+		if(ev.b == 1) {
 		    change(item);
 		    grab = ui.grabmouse(this);
-		    dp = c;
+		    dp = ev.c;
 		}
 		return(true);
 	    }
-
-	    public void mousemove(Coord c) {
-		super.mousemove(c);
-		if((grab != null) && (c.dist(dp) > 5)) {
+	    
+	    public void mousemove(MouseMoveEvent ev) {
+		super.mousemove(ev);
+		if((grab != null) && (ev.c.dist(dp) > 5)) {
 		    grab.remove();
 		    grab = null;
 		    drag(item);
 		}
 	    }
-
-	    public boolean mouseup(Coord c, int button) {
-		if((grab != null) && (button == 1)) {
+	    
+	    public boolean mouseup(MouseUpEvent ev) {
+		if((grab != null) && (ev.b == 1)) {
 		    grab.remove();
 		    grab = null;
 		    return(true);
 		}
-		return(super.mouseup(c, button));
+		return(super.mouseup(ev));
 	    }
-
+	    
 	    public boolean setu(int u) {
 		u = Utils.clip(u, 0, item.a);
 		int s;
@@ -316,17 +315,17 @@ public class FightWnd extends Widget {
 		item.u(u);
 		return(true);
 	    }
-
+	    
 	    public boolean drop(Coord cc, Coord ul) {
 		return(false);
 	    }
-
+	    
 	    public boolean iteminteract(Coord cc, Coord ul) {
 		FightWnd.this.wdgmsg("itemact", item.id, ui.modflags());
 		return(true);
 	    }
 	}
-
+	
 	public void change(Action act) {
 	    if(act != null)
 		info.set(() -> new TexI(act.renderinfo(info.sz.x - UI.scale(20))));
@@ -334,7 +333,7 @@ public class FightWnd extends Widget {
 		info.set((Tex)null);
 	    super.change(act);
 	}
-
+	
 	public void tick(double dt) {
 	    if(loading) {
 		loading = false;
@@ -350,7 +349,7 @@ public class FightWnd extends Widget {
 	    }
 	    super.tick(dt);
 	}
-
+	
 	public void draw(GOut g) {
 	    if(drag != null) {
 		try {
@@ -361,27 +360,27 @@ public class FightWnd extends Widget {
 	    }
 	    super.draw(g);
 	}
-
+	
 	public void drag(Action act) {
 	    if(grab == null)
 		grab = ui.grabmouse(this);
 	    drag = act;
 	}
-
-	public boolean mouseup(Coord c, int button) {
-	    if((grab != null) && (button == 1)) {
+	
+	public boolean mouseup(MouseUpEvent ev) {
+	    if((grab != null) && (ev.b == 1)) {
 		grab.remove();
 		grab = null;
 		if(drag != null) {
-		    ui.dropthing(ui.root, c.add(rootpos()), drag);
+		    DropTarget.dropthing(ui.root, ev.c.add(rootpos()), drag);
 		    drag = null;
 		}
 		return(true);
 	    }
-	    return(super.mouseup(c, button));
+	    return(super.mouseup(ev));
 	}
     }
-
+    
     public int findorder(Action a) {
 	for(int i = 0; i < order.length; i++) {
 	    if(order[i] == a)
@@ -389,7 +388,7 @@ public class FightWnd extends Widget {
 	}
 	return(-1);
     }
-
+    
     public static final String[] keys = {"1", "2", "3", "4", "5", "\u21e71", "\u21e72", "\u21e73", "\u21e74", "\u21e75"};
     public class BView extends Widget implements DropTarget {
 	private UI.Grab grab;
@@ -398,15 +397,15 @@ public class FightWnd extends Widget {
 	private final Coord[] animoff = new Coord[order.length];
 	private final double[] animpr = new double[order.length];
 	private boolean anim = false;
-
+	
 	private BView() {
 	    super(new Coord(((invsq.sz().x + UI.scale(2)) * (order.length - 1)) + (UI.scale(10) * ((order.length - 1) / 5)), 0).add(invsq.sz()));
 	}
-
+	
 	private Coord itemc(int i) {
 	    return(new Coord(((invsq.sz().x + UI.scale(2)) * i) + (UI.scale(10) * (i / 5)), 0));
 	}
-
+	
 	private int citem(Coord c) {
 	    for(int i = 0; i < order.length; i++) {
 		if(c.isect(itemc(i), invsq.sz()))
@@ -414,7 +413,7 @@ public class FightWnd extends Widget {
 	    }
 	    return(-1);
 	}
-
+	
 	final Tex[] keys = new Tex[10];
 	{
 	    for(int i = 0; i < 10; i++)
@@ -451,10 +450,10 @@ public class FightWnd extends Widget {
 		g.chcolor();
 	    }
 	}
-
-	public boolean mousedown(Coord c, int button) {
-	    if(button == 1) {
-		int s = citem(c);
+	
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(ev.b == 1) {
+		int s = citem(ev.c);
 		if(s >= 0) {
 		    Action act = order[s];
 		    actlist.change(act);
@@ -462,12 +461,12 @@ public class FightWnd extends Widget {
 		    if(act != null) {
 			grab = ui.grabmouse(this);
 			drag = act;
-			dp = c;
+			dp = ev.c;
 		    }
 		    return(true);
 		}
-	    } else if(button == 3) {
-		int s = citem(c);
+	    } else if(ev.b == 3) {
+		int s = citem(ev.c);
 		if(s >= 0) {
 		    if(order[s] != null)
 			order[s].u(0);
@@ -475,13 +474,13 @@ public class FightWnd extends Widget {
 		    return(true);
 		}
 	    }
-	    return(super.mousedown(c, button));
+	    return(super.mousedown(ev));
 	}
-
-	public void mousemove(Coord c) {
-	    super.mousemove(c);
+	
+	public void mousemove(MouseMoveEvent ev) {
+	    super.mousemove(ev);
 	    if(dp != null) {
-		if(c.dist(dp) > 5) {
+		if(ev.c.dist(dp) > 5) {
 		    grab.remove();
 		    actlist.drag(drag);
 		    grab = null;
@@ -490,23 +489,24 @@ public class FightWnd extends Widget {
 		}
 	    }
 	}
-
-	public boolean mouseup(Coord c, int button) {
+	
+	public boolean mouseup(MouseUpEvent ev) {
 	    if(grab != null) {
 		grab.remove();
 		grab = null;
 		drag = null;
 		dp = null;
+		return(true);
 	    }
-	    return(super.mouseup(c, button));
+	    return(super.mouseup(ev));
 	}
-
+	
 	private void animate(int s, Coord off) {
 	    animoff[s] = off;
 	    animpr[s] = 0.0;
 	    anim = true;
 	}
-
+	
 	public boolean dropthing(Coord c, Object thing) {
 	    if(thing instanceof Action) {
 		Action act = (Action)thing;
@@ -532,7 +532,7 @@ public class FightWnd extends Widget {
 	    }
 	    return(false);
 	}
-
+	
 	public void tick(double dt) {
 	    if(anim) {
 		boolean na = false;
@@ -548,30 +548,30 @@ public class FightWnd extends Widget {
 	    }
 	}
     }
-
+    
     public class Savelist extends SListBox<Integer, Widget> {
 	private final List<Integer> items = Utils.range(nsave);
-
+	
 	public Savelist(Coord sz) {
 	    super(sz, attrf.height() + UI.scale(2));
 	    sel = Integer.valueOf(0);
 	}
-
+	
 	protected List<Integer> items() {return(items);}
 	protected Widget makeitem(Integer n, int idx, Coord sz) {return(new Item(sz, n));}
-
+	
 	public class Item extends Widget implements ReadLine.Owner {
 	    public final int n;
 	    private Text.Line redit = null;
 	    private ReadLine ed;
 	    private double focusstart;
-
+	    
 	    public Item(Coord sz, int n) {
 		super(sz);
 		this.n = n;
 		setcanfocus(true);
 	    }
-
+	    
 	    public void draw(GOut g) {
 		if(ed != null) {
 		    if(redit == null)
@@ -590,16 +590,16 @@ public class FightWnd extends Widget {
 		if(n == usesave)
 		    g.aimage(CheckBox.smark, Coord.of(itemh / 2), 0.5, 0.5);
 	    }
-
+	    
 	    private Coord lc = null;
 	    private double lt = 0;
-	    public boolean mousedown(Coord c, int button) {
-		if(super.mousedown(c, button))
+	    public boolean mousedown(MouseDownEvent ev) {
+		if(ev.propagate(this))
 		    return(true);
-		if(button == 1) {
+		if(ev.b == 1) {
 		    double now = Utils.rtime();
 		    Savelist.this.change(n);
-		    if(((now - lt) < 0.5) && (c.dist(lc) < 10) && (saves[n] != unused)) {
+		    if(((now - lt) < 0.5) && (ev.c.dist(lc) < 10) && (saves[n] != unused)) {
 			if(n == usesave) {
 			    ed = ReadLine.make(this, saves[n].text);
 			    redit = null;
@@ -611,54 +611,54 @@ public class FightWnd extends Widget {
 			}
 		    } else {
 			lt = now;
-			lc = c;
+			lc = ev.c;
 		    }
 		    return(true);
 		}
-		return(false);
+		return(super.mousedown(ev));
 	    }
-
+	    
 	    public void done(ReadLine buf) {
 		saves[n] = attrf.render(buf.line());
 		ed = null;
 	    }
-
+	    
 	    public void changed(ReadLine buf) {
 		redit = null;
 	    }
-
+	    
 	    public void tick(double dt) {
 		super.tick(dt);
 		if((ed != null) && (sel != n)) {
 		    ed = null;
 		}
 	    }
-
-	    public boolean keydown(KeyEvent ev) {
+	    
+	    public boolean keydown(KeyDownEvent ev) {
 		if(ed != null) {
 		    if(key_esc.match(ev)) {
 			ed = null;
 			return(true);
 		    } else {
-			return(ed.key(ev));
+			return(ed.key(ev.awt));
 		    }
 		}
 		return(super.keydown(ev));
 	    }
 	}
     }
-
+    
     @RName("fmg")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
-	    return(new FightWndEx((Integer)args[0], (Integer)args[1], (Integer)args[2]));
+	    return(new FightWndEx(Utils.iv(args[0]), Utils.iv(args[1]), Utils.iv(args[2])));
 	}
     }
-
+    
     public void load(int n) {
 	wdgmsg("load", n);
     }
-
+    
     public void save(int n) {
 	List<Object> args = new LinkedList<Object>();
 	args.add(n);
@@ -674,11 +674,11 @@ public class FightWnd extends Widget {
 	}
 	wdgmsg("save", args.toArray(new Object[0]));
     }
-
+    
     public void use(int n) {
 	wdgmsg("use", n);
     }
-
+    
     private Text unused = new Text.Foundry(attrf.font.deriveFont(java.awt.Font.ITALIC)).aa(true).render("Unused save");
     public FightWnd(int nsave, int nact, int max) {
 	super(Coord.z);
@@ -688,44 +688,44 @@ public class FightWnd extends Widget {
 	this.saves = new Text[nsave];
 	for(int i = 0; i < nsave; i++)
 	    saves[i] = unused;
-
+	
 	Widget p;
 	info = add(new ImageInfoBox(UI.scale(new Coord(223, 177))), UI.scale(new Coord(5, 35)).add(wbox.btloff()));
 	Frame.around(this, Collections.singletonList(info));
-
+	
 	add(CharWnd.settip(new Img(CharWnd.catf.render("Martial Arts & Combat Schools").tex()), "gfx/hud/chr/tips/combat"), 0, 0);
 	actlist = add(new Actions(UI.scale(250, 160)), UI.scale(new Coord(245, 35)).add(wbox.btloff()));
 	Frame.around(this, Collections.singletonList(actlist));
-
+	
 	p = add(new BView(), UI.scale(new Coord(5, 223)));
 	count = add(new Label(""), p.c.add(p.sz.x + UI.scale(10), 0));
-
+	
 	int y = 260;
 	savelist = add(new Savelist(UI.scale(370, 60)), UI.scale(new Coord(5, y)).add(wbox.btloff()));
 	Frame.around(this, Collections.singletonList(savelist));
 	add(new Button(UI.scale(110), "Load", false) {
-		public void click() {
-		    if(savelist.sel == null || savelist.sel < 0) {
-			getparent(GameUI.class).error("No load entry selected.");
-		    } else {
-			load(savelist.sel);
-			use(savelist.sel);
-		    }
+	    public void click() {
+		if(savelist.sel == null || savelist.sel < 0) {
+		    getparent(GameUI.class).error("No load entry selected.");
+		} else {
+		    load(savelist.sel);
+		    use(savelist.sel);
 		}
-	    }, UI.scale(395), UI.scale(y));
+	    }
+	}, UI.scale(395), UI.scale(y));
 	add(new Button(UI.scale(110), "Save", false) {
-		public void click() {
-		    if(savelist.sel == null || savelist.sel < 0) {
-			getparent(GameUI.class).error("No save entry selected.");
-		    } else {
-			save(savelist.sel);
-			use(savelist.sel);
-		    }
+	    public void click() {
+		if(savelist.sel == null || savelist.sel < 0) {
+		    getparent(GameUI.class).error("No save entry selected.");
+		} else {
+		    save(savelist.sel);
+		    use(savelist.sel);
 		}
-	    }, UI.scale(395), UI.scale(y + 27));
+	    }
+	}, UI.scale(395), UI.scale(y + 27));
 	pack();
     }
-
+    
     public Action findact(int resid) {
 	for(Action act : acts) {
 	    if(act.id == resid)
@@ -733,7 +733,7 @@ public class FightWnd extends Widget {
 	}
 	return(null);
     }
-
+    
     public void uimsg(String nm, Object... args) {
 	if(nm == "avail") {
 	    List<Action> acts = new ArrayList<Action>();

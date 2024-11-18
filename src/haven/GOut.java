@@ -34,6 +34,7 @@ import java.util.function.*;
 import haven.render.*;
 import haven.render.DataBuffer;
 import haven.render.sl.FragData;
+import me.ender.ClientUtils;
 
 public class GOut {
     public static final VertexArray.Layout vf_pos = new VertexArray.Layout(new VertexArray.Layout.Input(Ortho2D.pos, new VectorFormat(2, NumberFormat.FLOAT32), 0, 0, 8));
@@ -263,7 +264,7 @@ public class GOut {
     }
     
     public void clippedLine(Coord c1, Coord c2, double w) {
-	Pair<Coord, Coord> clipped = Utils.clipLine(c1, c2, Coord.z, sz());
+	Pair<Coord, Coord> clipped = ClientUtils.clipLine(c1, c2, Coord.z, sz());
 	if(clipped != null) {
 	    line(clipped.a, clipped.b, w);
 	}

@@ -42,11 +42,11 @@ public abstract class Dropbox<T> extends ListWidget<T> {
     }
     
     @Override
-    public boolean mousewheel(Coord c, int amount) {
-	if(!super.mousewheel(c, amount)) {
+    public boolean mousewheel(MouseWheelEvent ev) {
+	if(!super.mousewheel(ev)) {
 	    int count = listitems();
 	    if(count > 0) {
-		int n = find(sel) + ((int) Math.signum(amount));
+		int n = find(sel) + ((int) Math.signum(ev.a));
 		while (n < 0) {n += count;}
 		change(listitem(n % count));
 		return true;
@@ -86,12 +86,12 @@ public abstract class Dropbox<T> extends ListWidget<T> {
 	    return Dropbox.this.itemtip(item);
 	}
 	
-	public boolean mousedown(Coord c, int btn) {
-	    if(!c.isect(Coord.z, sz)) {
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(!ev.c.isect(Coord.z, sz)) {
 		reqdestroy();
 		return(true);
 	    }
-	    return(super.mousedown(c, btn));
+	    return(super.mousedown(ev));
 	}
 	
 	public void destroy() {
@@ -122,10 +122,10 @@ public abstract class Dropbox<T> extends ListWidget<T> {
 	super.draw(g);
     }
     
-    public boolean mousedown(Coord c, int btn) {
-	if(super.mousedown(c, btn))
+    public boolean mousedown(MouseDownEvent ev) {
+	if(ev.propagate(this))
 	    return(true);
-	if((dl == null) && (btn == 1)) {
+	if((dl == null) && (ev.b == 1)) {
 	    dl = new Droplist();
 	    dl.bgcolor = bgcolor;
 	    return(true);

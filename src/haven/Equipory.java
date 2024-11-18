@@ -26,6 +26,8 @@
 
 package haven;
 
+import me.ender.ui.CFGBox;
+
 import java.util.*;
 import static haven.Inventory.invsq;
 
@@ -78,8 +80,10 @@ public class Equipory extends Widget implements DTarget {
 	BOOTS(15),     //15: Shoes
 	STORE_HAT(16), //16: Hat from store
 	EYES(17),      //17: Eyes
-	MOUTH(18);     //18: Mouth
- 
+	MOUTH(18),     //18: Mouth
+	POUCH_LEFT(19),//19: Left Hand Pouch
+	POUCH_RIGHT(20);//20: Right Hand Pouch
+    
 	public final int idx;
 	SLOTS(int idx) {
 	    this.idx = idx;
@@ -136,7 +140,7 @@ public class Equipory extends Widget implements DTarget {
     public Equipory(long gobid) {
 	super(isz);
 	ava = add(new Avaview(bg.sz(), gobid, "equcam") {
-		public boolean mousedown(Coord c, int button) {
+		public boolean mousedown(MouseDownEvent ev) {
 		    return(false);
 		}
 
@@ -154,7 +158,7 @@ public class Equipory extends Widget implements DTarget {
 	    }, bgc);
 //	ava.color = null;
 
-	bonuses = add(new AttrBonusesWdg(isz.y), isz.x + 5, 0);
+	bonuses = add(new AttrBonusesWdg(isz.y - UI.scale(20)), isz.x + 5, 0);
 	pack();
     }
 
@@ -168,7 +172,7 @@ public class Equipory extends Widget implements DTarget {
 	    GItem g = (GItem)child;
 	    ArrayList<WItem> v = new ArrayList<>();
 	    for(int i = 0; i < args.length; i++) {
-		int ep = (Integer)args[i];
+		int ep = Utils.iv(args[i]);
 		if(ep < ecoords.length) {
 		    WItem wdg = add(new WItem(g), ecoords[ep].add(1, 1));
 		    v.add(wdg);
@@ -178,6 +182,7 @@ public class Equipory extends Widget implements DTarget {
 	    v.trimToSize();
 	    g.sendttupdate = true;
 	    wmap.put(g, v);
+	    checkForParasites(g);
 	    synchronized (ava) {seq++;}
 	} else {
 	    super.addchild(child, args);
@@ -252,9 +257,6 @@ public class Equipory extends Widget implements DTarget {
     }
 
     public Object tooltip(Coord c, Widget prev) {
-	Object tt = super.tooltip(c, prev);
-	if(tt != null)
-	    return(tt);
 	int sl = epat(c);
 	if(sl >= 0)
 	    return(etts[sl]);
@@ -269,17 +271,91 @@ public class Equipory extends Widget implements DTarget {
     public boolean iteminteract(Coord cc, Coord ul) {
 	return(false);
     }
-    
-    public boolean has(String name) {
-	return wmap.keySet().stream()
-	    .anyMatch(item -> {
-		try {
-		    return item.resname().contains(name);
-		} catch (Loading ignored) {
-		    return false;
-		}
-	    });
+
+    @Override
+    public void tick(double dt) {
+	super.tick(dt);
+	processParasites();
     }
+
+    @Override
+    protected void attached() {
+	super.attached();
+
+	Coord pos = pos("br");
+	if(isMe()) {
+	    adda(new CFGBox("Auto drop parasites", CFG.AUTO_DROP_PARASITES, "Drop leeches and ticks as soon as they attach to you.") {
+		@Override
+		public void set(boolean a) {
+		    super.set(a);
+		    if(a) {wmap.keySet().forEach(Equipory.this::checkForParasites);}
+		}
+	    }, pos, 1, 1);
+	} else {
+	    int w = UI.scale(45);
+	    pos = adda(new Button(w, "Drop", false, this::dropAll).settip("Drop all equipped items"), pos, 1, 1)
+		.pos("ul").subs(3, 0);
+	    adda(new Button(w, "Steal", false, this::transferAll).settip("Take all equipped items"), pos, 1, 0);
+	}
+    }
+
+    private boolean isMe() {return this == ui.gui.equipory;}
+
+    private boolean hasBatCape;
+    long batSeq = -1;
+
+    public boolean hasBatCape() {
+	//look into making this caching flexible if we ever use this for more than bat capes
+	if(seq != batSeq) {
+	    try {
+		hasBatCape = has("/batcape");
+		batSeq = seq;
+	    } catch (Loading ignored) {
+		return false;
+	    }
+	}
+	return hasBatCape;
+    }
+
+    public boolean has(String name) throws Loading {
+	for (GItem item : wmap.keySet()) {
+	    if(item.resname().contains(name)) {return true;}
+	}
+	return false;
+    }
+
+    private static final List<GItem> toCheckForParasites = new LinkedList<>();
+    private long lastParasiteCheck = 0;
+
+    private void checkForParasites(GItem item) {
+	if(CFG.AUTO_DROP_PARASITES.get() && !processParasite(item)) {
+	    toCheckForParasites.add(item);
+	}
+    }
+
+    private boolean processParasite(GItem item) {
+	try {
+	    String name = item.resname();
+	    if(name.contains("/leech") || name.contains("/tick")) {
+		item.drop();
+	    }
+	    return true;
+	} catch (Loading ignored) {
+	    return false;
+	}
+    }
+
+    private void processParasites() {
+	if(!CFG.AUTO_DROP_PARASITES.get() || toCheckForParasites.isEmpty()) {return;}
+	long now = System.currentTimeMillis();
+	if(now - lastParasiteCheck < 50) {return;}
+	lastParasiteCheck = now;
+	toCheckForParasites.removeIf(this::processParasite);
+    }
+
+    private void dropAll() {wmap.keySet().forEach(GItem::drop);}
+
+    private void transferAll() {wmap.keySet().forEach(GItem::transfer);}
     
     public void sendDrop() {
 	sendDrop(-1);

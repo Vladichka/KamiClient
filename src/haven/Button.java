@@ -52,7 +52,7 @@ public class Button extends SIWidget {
     static Text.Furnace nf = new PUtils.BlurFurn(new PUtils.TexFurn(tf, Window.ctex), UI.rscale(0.75), UI.rscale(0.75), new Color(80, 40, 0));
     private boolean a = false, dis = false;
     private UI.Grab d = null;
-    
+	
     @RName("btn")
     public static class $Btn implements Factory {
 	public Widget create(UI ui, Object[] args) {
@@ -75,23 +75,23 @@ public class Button extends SIWidget {
 	    return(wrapped(UI.scale(Utils.iv(args[0])), (String)args[1]));
 	}
     }
-    
+	
     public static Button wrapped(int w, String text) {
 	text = L10N.button(text);
 	Button ret = new Button(w, tf.renderwrap(text, w - margin));
 	return(ret);
     }
-    
+        
     private static boolean largep(int w) {
 	return(w >= (bl.getWidth() + bm.getWidth() + br.getWidth()));
     }
-    
+
     private Button(int w, boolean lg) {
 	super(new Coord(w, lg?hl:hs));
 	this.w = w;
 	this.lg = lg;
     }
-    
+
     public Button(int w, String text, boolean lg, Runnable action) {
 	this(w, lg);
 	if(i10n()) text = L10N.button(text);
@@ -99,35 +99,35 @@ public class Button extends SIWidget {
 	this.cont = this.text.img;
 	this.action = action;
     }
-    
+
     public Button(int w, String text, boolean lg) {
 	this(w, text, lg, null);
 	this.action = () -> wdgmsg("activate");
     }
-    
+
     public Button(int w, String text, Runnable action) {
 	this(w, text, largep(w), action);
     }
-    
+
     public Button(int w, String text) {
 	this(w, text, largep(w));
     }
-    
+
     public Button(int w, Text text) {
 	this(w, largep(w));
 	this.text = text;
 	this.cont = text.img;
     }
-    
+	
     public Button(int w, BufferedImage cont) {
 	this(w, largep(w));
 	this.cont = cont;
     }
     
     public void autosize(boolean on){
-	if(autosized != on){
-	    autosized = on;
-	    redraw();
+        if(autosized != on){
+            autosized = on;
+            redraw();
 	}
     }
     
@@ -136,36 +136,36 @@ public class Button extends SIWidget {
 	if(autosized && cont != null) {sz.x = Math.max(w, cont.getWidth() + 10);}
 	super.redraw();
     }
-    
+	
     public Button action(Runnable action) {
 	this.action = action;
 	return(this);
     }
-    
+
     public void draw(BufferedImage img) {
 	Graphics g = img.getGraphics();
 	int yo = lg?((hl - hs) / 2):0;
-	
+
 	g.drawImage(a?dt:ut, UI.scale(4), yo + UI.scale(4), sz.x - UI.scale(8), hs - UI.scale(8), null);
-	
+
 	Coord tc = sz.sub(Utils.imgsz(cont)).div(2);
 	if(a)
 	    tc = tc.add(UI.scale(1), UI.scale(1));
 	g.drawImage(cont, tc.x, tc.y, null);
-	
+
 	g.drawImage(bl, 0, yo, null);
 	g.drawImage(br, sz.x - br.getWidth(), yo, null);
 	g.drawImage(bt, bl.getWidth(), yo, sz.x - bl.getWidth() - br.getWidth(), bt.getHeight(), null);
 	g.drawImage(bb, bl.getWidth(), yo + hs - bb.getHeight(), sz.x - bl.getWidth() - br.getWidth(), bb.getHeight(), null);
 	if(lg)
 	    g.drawImage(bm, (sz.x - bm.getWidth()) / 2, 0, null);
-	
+
 	g.dispose();
-	
+
 	if(dis)
 	    PUtils.monochromize(img, Color.LIGHT_GRAY);
     }
-    
+	
     public void change(String text, Color col) {
 	if(i10n()) text = L10N.button(text);
 	this.text = tf.render(text, col);
@@ -179,18 +179,18 @@ public class Button extends SIWidget {
 	this.cont = this.text.img;
 	redraw();
     }
-    
+
     public void disable(boolean dis) {
 	this.dis = dis;
 	redraw();
     }
-    
+
     public void click() {
 	if(action != null)
 	    action.run();
     }
-    
-    public boolean gkeytype(java.awt.event.KeyEvent ev) {
+
+    public boolean gkeytype(GlobKeyEvent ev) {
 	click();
 	return(true);
     }
@@ -208,47 +208,48 @@ public class Button extends SIWidget {
 	}
     }
     
-    public void mousemove(Coord c) {
+    public void mousemove(MouseMoveEvent ev) {
+	super.mousemove(ev);
 	if(d != null) {
-	    boolean a = c.isect(Coord.z, sz);
+	    boolean a = ev.c.isect(Coord.z, sz);
 	    if(a != this.a) {
 		this.a = a;
 		redraw();
 	    }
 	}
     }
-    
+
     protected void depress() {
 	ui.sfx(click);
     }
-    
+
     protected void unpress() {
 	ui.sfx(click);
     }
-    
-    public boolean mousedown(Coord c, int button) {
-	if((button != 1) || dis)
-	    return(false);
+
+    public boolean mousedown(MouseDownEvent ev) {
+	if((ev.b != 1) || dis)
+	    return(super.mousedown(ev));
 	a = true;
 	d = ui.grabmouse(this);
 	depress();
 	redraw();
 	return(true);
     }
-    
-    public boolean mouseup(Coord c, int button) {
-	if((d != null) && button == 1) {
+	
+    public boolean mouseup(MouseUpEvent ev) {
+	if((d != null) && ev.b == 1) {
 	    d.remove();
 	    d = null;
 	    a = false;
 	    redraw();
-	    if(c.isect(new Coord(0, 0), sz)) {
+	    if(ev.c.isect(Coord.z, sz)) {
 		unpress();
 		click();
 	    }
 	    return(true);
 	}
-	return(false);
+	return(super.mouseup(ev));
     }
     
     public void large(boolean val) {

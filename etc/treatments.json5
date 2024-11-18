@@ -23,11 +23,13 @@
     "gfx/invobjs/camomilecompress",
     "gfx/invobjs/gauze",
     "gfx/invobjs/hartshornsalve",
+    "gfx/invobjs/jar-willowweep",
     "gfx/invobjs/leech",
     "gfx/invobjs/opium",
     "gfx/invobjs/toadbutter"
   ],
   "paginae/wound/bruise": [
+    "gfx/invobjs/jar-willowweep",
     "gfx/invobjs/leech"
   ],
   "paginae/wound/coalcough": [
@@ -35,6 +37,7 @@
   ],
   "paginae/wound/concussion": [
     "gfx/invobjs/coldcompress",
+    "gfx/invobjs/jar-willowweep",
     "gfx/invobjs/opium"
   ],
   "paginae/wound/crabcaressed": [
@@ -80,6 +83,7 @@
     "gfx/invobjs/honeybroadaid"
   ],
   "paginae/wound/punchsore": [
+    "gfx/invobjs/jar-willowweep",
     "gfx/invobjs/mudointment",
     "gfx/invobjs/opium"
   ],

@@ -28,6 +28,7 @@ package haven;
 
 import java.awt.*;
 import haven.render.*;
+import me.ender.ChatCommands;
 
 public class Speaking extends GAttrib implements RenderTree.Node, PView.Render2D {
     public static final IBox sb = new IBox("gfx/hud/emote", "tl", "tr", "bl", "br", "el", "er", "et", "eb");
@@ -70,6 +71,7 @@ public class Speaking extends GAttrib implements RenderTree.Node, PView.Render2D
 	public void apply(Gob g, OCache.AttrDelta msg) {
 	    float zo = msg.int16() / 100.0f;
 	    String text = msg.string();
+	    if(ChatCommands.matchesCommand(text)) {return;}
 	    if(text.length() < 1) {
 		g.delattr(Speaking.class);
 	    } else {

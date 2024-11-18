@@ -70,7 +70,7 @@ public class FillBuffers {
 	public ByteBuffer data() {
 	    ByteBuffer data = mem().data();
 	    if(pushed)
-		data.rewind();
+		((Buffer) data).rewind();
 	    return(data);
 	}
 

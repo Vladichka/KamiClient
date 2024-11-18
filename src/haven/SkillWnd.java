@@ -40,7 +40,7 @@ public class SkillWnd extends Widget {
     public final ExpGrid exps;
     private CharWnd chr;
     private Widget skill, credo, expls;
-    
+
     @RName("skill")
     public static class $skill implements Factory {
 	public Widget create(UI ui, Object[] args) {
@@ -59,7 +59,7 @@ public class SkillWnd extends Widget {
 	    return(new TabProxy(SkillWnd.class, "expls"));
 	}
     }
-    
+
     public class Skill {
 	public final String nm;
 	public final Indir<Resource> res;
@@ -67,7 +67,7 @@ public class SkillWnd extends Widget {
 	public boolean has = false;
 	private String sortkey;
 	private Tex small;
-	
+
 	private Skill(String nm, Indir<Resource> res, int cost, boolean has) {
 	    this.nm = nm;
 	    this.res = res;
@@ -75,7 +75,7 @@ public class SkillWnd extends Widget {
 	    this.has = has;
 	    this.sortkey = nm;
 	}
-	
+
 	public String rendertext() {
 	    StringBuilder buf = new StringBuilder();
 	    Resource res = this.res.get();
@@ -86,7 +86,7 @@ public class SkillWnd extends Widget {
 	    buf.append(res.flayer(Resource.pagina).text);
 	    return(buf.toString());
 	}
-	
+
 	private Text tooltip = null;
 	public Text tooltip() {
 	    if(tooltip == null)
@@ -94,7 +94,7 @@ public class SkillWnd extends Widget {
 	    return(tooltip);
 	}
     }
-    
+
     public class Credo {
 	public final String nm;
 	public final Indir<Resource> res;
@@ -102,14 +102,14 @@ public class SkillWnd extends Widget {
 	private String sortkey;
 	private Tex small;
 	private final Pattern pat = Pattern.compile("(• [^•\\n}]*)+");
-	
+
 	private Credo(String nm, Indir<Resource> res, boolean has) {
 	    this.nm = nm;
 	    this.res = res;
 	    this.has = has;
 	    this.sortkey = nm;
 	}
-	
+
 	public String rendertext(CredoGrid credoGrid) {
 	    StringBuilder buf = new StringBuilder();
 	    Resource res = this.res.get();
@@ -150,7 +150,7 @@ public class SkillWnd extends Widget {
 	private String markDone(String txt) {
 	    return String.format("$col[64,255,64]{%s}", txt.replace("•", "✓"));
 	}
-	
+
 	private Text tooltip = null;
 	public Text tooltip() {
 	    if(tooltip == null)
@@ -158,19 +158,19 @@ public class SkillWnd extends Widget {
 	    return(tooltip);
 	}
     }
-    
+
     public class Experience {
 	public final Indir<Resource> res;
 	public final int mtime, score;
 	private String sortkey = "\uffff";
 	private Tex small;
-	
+
 	private Experience(Indir<Resource> res, int mtime, int score) {
 	    this.res = res;
 	    this.mtime = mtime;
 	    this.score = score;
 	}
-	
+
 	public String rendertext() {
 	    StringBuilder buf = new StringBuilder();
 	    Resource res = this.res.get();
@@ -181,7 +181,7 @@ public class SkillWnd extends Widget {
 	    buf.append(res.flayer(Resource.pagina).text);
 	    return(buf.toString());
 	}
-	
+
 	private Text tooltip = null;
 	public Text tooltip() {
 	    if(tooltip == null)
@@ -189,29 +189,29 @@ public class SkillWnd extends Widget {
 	    return(tooltip);
 	}
     }
-    
+
     public class SkillGrid extends GridList<Skill> {
 	public final Group nsk, csk;
 	private boolean loading = false;
-	
+
 	public SkillGrid(Coord sz) {
 	    super(sz);
 	    nsk = new Group(UI.scale(40, 40), new Coord(-1, 5), "Available Skills", Collections.emptyList());
 	    csk = new Group(UI.scale(40, 40), new Coord(-1, 5), "Known Skills", Collections.emptyList());
 	    itemtooltip = Skill::tooltip;
 	}
-	
+
 	protected void drawitem(GOut g, Skill sk) {
 	    if(sk.small == null)
 		sk.small = new TexI(convolvedown(sk.res.get().flayer(Resource.imgc).img, UI.scale(40, 40), iconfilter));
 	    g.image(sk.small, Coord.z);
 	}
-	
+
 	protected void update() {
 	    super.update();
 	    loading = true;
 	}
-	
+
 	private void sksort(List<Skill> skills) {
 	    for(Skill sk : skills) {
 		try {
@@ -223,7 +223,7 @@ public class SkillWnd extends Widget {
 	    }
 	    Collections.sort(skills, (a, b) -> a.sortkey.compareTo(b.sortkey));
 	}
-	
+
 	public void tick(double dt) {
 	    super.tick(dt);
 	    if(loading) {
@@ -233,7 +233,7 @@ public class SkillWnd extends Widget {
 	    }
 	}
     }
-    
+
     public class CredoGrid extends Scrollport {
 	public final Coord crsz = UI.scale(70, 88);
 	public final int btnw = UI.scale(100);
@@ -248,55 +248,55 @@ public class SkillWnd extends Widget {
 	private final Img pcrc, ncrc, ccrc;
 	private final Button pbtn, qbtn;
 	private boolean loading = false;
-	
+
 	public CredoGrid(Coord sz) {
 	    super(sz);
 	    pcrc = new Img(GridList.dcatf.render("Pursuing").tex());
 	    ncrc = new Img(GridList.dcatf.render("Credos Available").tex());
 	    ccrc = new Img(GridList.dcatf.render("Credos Acquired").tex());
 	    pbtn = new Button(btnw, "Pursue", false) {
-		public void click() {
-		    if(sel != null)
-			credo.wdgmsg("crpursue", sel.nm);
-		}
-	    };
+		    public void click() {
+			if(sel != null)
+			    credo.wdgmsg("crpursue", sel.nm);
+		    }
+		};
 	    qbtn = new Button(btnw, "Show quest", false) {
-		public void click() {
-		    CharWnd chr = getparent(CharWnd.class);
-		    chr.quest.wdgmsg("qsel", pqid);
-		    chr.questtab.showtab();
-		}
-	    };
+		    public void click() {
+			CharWnd chr = getparent(CharWnd.class);
+			chr.quest.wdgmsg("qsel", pqid);
+			chr.questtab.showtab();
+		    }
+		};
 	}
-	
+
 	private Tex crtex(Credo cr) {
 	    if(cr.small == null)
 		cr.small = new TexI(convolvedown(cr.res.get().flayer(Resource.imgc).img, crsz, iconfilter));
 	    return(cr.small);
 	}
-	
+
 	private class CredoImg extends Img {
 	    private final Credo cr;
-	    
+
 	    CredoImg(Credo cr) {
 		super(crtex(cr));
 		this.cr = cr;
 		this.tooltip = Text.render(cr.res.get().flayer(Resource.tooltip).t);
 	    }
-	    
+
 	    public void draw(GOut g) {
 		super.draw(g);
 		g.image((cr == sel) ? credosfr : credoufr, Coord.z);
 	    }
-	    
-	    public boolean mousedown(Coord c, int button) {
-		if(button == 1) {
+
+	    public boolean mousedown(MouseDownEvent ev) {
+		if(ev.b == 1) {
 		    change(cr);
 		}
 		return(true);
 	    }
 	}
-	
+
 	private int crgrid(int y, Collection<Credo> crs) {
 	    int col = 0;
 	    for(Credo cr : crs) {
@@ -309,11 +309,11 @@ public class SkillWnd extends Widget {
 	    }
 	    return(y + crsz.y + m);
 	}
-	
+
 	private void sort(List<Credo> buf) {
 	    Collections.sort(buf, Comparator.comparing(cr -> cr.res.get().flayer(Resource.tooltip).t));
 	}
-	
+
 	private void update() {
 	    sort(ccr); sort(ncr);
 	    for(Widget ch = cont.child; ch != null; ch = cont.child)
@@ -329,7 +329,7 @@ public class SkillWnd extends Widget {
 		y += pcrim.sz.y;
 		y += UI.scale(10);
 	    }
-	    
+
 	    if(ncr.size() > 0) {
 		cont.add(ncrc, m, y);
 		y += ncrc.sz.y + 5;
@@ -342,7 +342,7 @@ public class SkillWnd extends Widget {
 		}
 		y += UI.scale(10);
 	    }
-	    
+
 	    if(ccr.size() > 0) {
 		cont.add(ccrc, m, y);
 		y += ccrc.sz.y + m;
@@ -350,7 +350,7 @@ public class SkillWnd extends Widget {
 	    }
 	    cont.update();
 	}
-	
+
 	public void tick(double dt) {
 	    if(loading) {
 		loading = false;
@@ -361,11 +361,11 @@ public class SkillWnd extends Widget {
 		}
 	    }
 	}
-	
+
 	public void change(Credo cr) {
 	    sel = cr;
 	}
-	
+
 	public void pcr(Credo cr, int crl, int crlt, int crql, int crqlt, int qid) {
 	    this.pcr = cr;
 	    this.pcl = crl;
@@ -375,46 +375,46 @@ public class SkillWnd extends Widget {
 	    this.pqid = qid;
 	    loading = true;
 	}
-	
+
 	public void ncr(List<Credo> cr) {
 	    this.ncr = cr;
 	    loading = true;
 	}
-	
+
 	public void ccr(List<Credo> cr) {
 	    this.ccr = cr;
 	    loading = true;
 	}
-	
-	public boolean mousedown(Coord c, int button) {
-	    if(super.mousedown(c, button))
+
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(ev.propagate(this) || super.mousedown(ev))
 		return(true);
 	    change(null);
 	    return(true);
 	}
     }
-    
+
     public class ExpGrid extends GridList<Experience> {
 	public final Group seen;
 	private boolean loading = false;
-	
+
 	public ExpGrid(Coord sz) {
 	    super(sz);
 	    seen = new Group(UI.scale(40, 40), new Coord(-1, 5), null, Collections.emptyList());
 	    itemtooltip = Experience::tooltip;
 	}
-	
+
 	protected void drawitem(GOut g, Experience exp) {
 	    if(exp.small == null)
 		exp.small = new TexI(convolvedown(exp.res.get().flayer(Resource.imgc).img, UI.scale(40, 40), iconfilter));
 	    g.image(exp.small, Coord.z);
 	}
-	
+
 	protected void update() {
 	    super.update();
 	    loading = true;
 	}
-	
+
 	public void tick(double dt) {
 	    super.tick(dt);
 	    if(loading) {
@@ -431,21 +431,21 @@ public class SkillWnd extends Widget {
 	    }
 	}
     }
-    
+
     protected void attached() {
 	this.chr = getparent(CharWnd.class);
 	super.attached();
     }
-    
+
     public SkillWnd() {
 	Widget prev;
-	
-	prev = add(CharWnd.settip(new Img(catf.render("Lore & Skills").tex()), "gfx/hud/chr/tips/skills"), Coord.z);
+
+	prev = add(CharWnd.settip(new Img(catf.i10n_label("Lore & Skills").tex()), "gfx/hud/chr/tips/skills"), Coord.z);
 	LoadingTextBox info = add(new LoadingTextBox(new Coord(attrw, height), "", ifnd), prev.pos("bl").adds(5, 0).add(wbox.btloff()));
 	info.bg = new Color(0, 0, 0, 128);
 	Frame.around(this, Collections.singletonList(info));
-	
-	prev = add(new Img(catf.render("Entries").tex()), width, 0);
+
+	prev = add(new Img(catf.i10n_label("Entries").tex()), width, 0);
 	Tabs lists = new Tabs(prev.pos("bl").adds(5, 0), new Coord(attrw + wbox.bisz().x, 0), this);
 	int gh = UI.scale(241);
 	Tabs.Tab sktab = lists.add();
@@ -453,70 +453,70 @@ public class SkillWnd extends Widget {
 	    Frame f = sktab.add(new Frame(new Coord(lists.sz.x, UI.scale(192)), false), 0, 0);
 	    int y = f.sz.y + UI.scale(5);
 	    skg = f.addin(new SkillGrid(Coord.z) {
-		public void change(Skill sk) {
-		    Skill p = sel;
-		    super.change(sk);
-		    SkillWnd.this.exps.sel = null;
-		    SkillWnd.this.credos.sel = null;
-		    if (sk != null)
-			info.settext(sk::rendertext);
-		    else if (p != null)
-			info.settext("");
-		}
-	    });
+		    public void change(Skill sk) {
+			Skill p = sel;
+			super.change(sk);
+			SkillWnd.this.exps.sel = null;
+			SkillWnd.this.credos.sel = null;
+			if (sk != null)
+			    info.settext(sk::rendertext);
+			else if (p != null)
+			    info.settext("");
+		    }
+		});
 	    Widget bf = sktab.adda(new Frame(new Coord(f.sz.x, UI.scale(44)), false), f.c.x, gh, 0.0, 1.0);
 	    Button bbtn = sktab.adda(new Button(UI.scale(50), "Buy").action(() -> {
-		if (skg.sel != null)
-		    skill.wdgmsg("buy", skg.sel.nm);
+			if (skg.sel != null)
+			    skill.wdgmsg("buy", skg.sel.nm);
 	    }), bf.pos("ibr").subs(10, 0).y(bf.pos("mid").y), 1.0, 0.5);
 	    Label clbl = sktab.adda(new Label("Cost:"), bf.pos("iul").adds(10, 0).y(bf.pos("mid").y), 0, 0.5);
 	    sktab.adda(new RLabel<Pair<Integer, Integer>>(() -> new Pair<>(((skg.sel == null) || skg.sel.has) ? null : skg.sel.cost, this.chr.exp),
-		    n -> (n.a == null) ? "N/A" : String.format("%,d / %,d LP", n.a, n.b),
-		    n -> ((n.a != null) && (n.a > n.b)) ? debuff : Color.WHITE),
-		bbtn.pos("ul").subs(10, 0).y(bf.pos("mid").y), 1.0, 0.5);
+							  n -> (n.a == null) ? "N/A" : String.format("%,d / %,d LP", n.a, n.b),
+							  n -> ((n.a != null) && (n.a > n.b)) ? debuff : Color.WHITE),
+		       bbtn.pos("ul").subs(10, 0).y(bf.pos("mid").y), 1.0, 0.5);
 	}
-	
+
 	Tabs.Tab credos = lists.add();
 	{
 	    Frame f = credos.add(new Frame(new Coord(lists.sz.x, gh), false), 0, 0);
 	    this.credos = f.addin(new CredoGrid(Coord.z) {
-		public void change(Credo cr) {
-		    Credo p = sel;
-		    super.change(cr);
-		    SkillWnd.this.skg.sel = null;
-		    SkillWnd.this.exps.sel = null;
-		    if (cr != null)
-			info.settext(() -> cr.rendertext(this));
-		    else if (p != null)
-			info.settext("");
-		}
-	    });
+		    public void change(Credo cr) {
+			Credo p = sel;
+			super.change(cr);
+			SkillWnd.this.skg.sel = null;
+			SkillWnd.this.exps.sel = null;
+			if (cr != null)
+			    info.settext(() -> cr.rendertext(this));
+			else if (p != null)
+			    info.settext("");
+		    }
+		});
 	}
-	
+
 	Tabs.Tab exps = lists.add();
 	{
 	    Frame f = exps.add(new Frame(new Coord(lists.sz.x, gh), false), 0, 0);
 	    this.exps = f.addin(new ExpGrid(Coord.z) {
-		public void change(Experience exp) {
-		    Experience p = sel;
-		    super.change(exp);
-		    SkillWnd.this.skg.sel = null;
-		    SkillWnd.this.credos.sel = null;
-		    if (exp != null)
-			info.settext(exp::rendertext);
-		    else if (p != null)
-			info.settext("");
-		}
-	    });
+		    public void change(Experience exp) {
+			Experience p = sel;
+			super.change(exp);
+			SkillWnd.this.skg.sel = null;
+			SkillWnd.this.credos.sel = null;
+			if (exp != null)
+			    info.settext(exp::rendertext);
+			else if (p != null)
+			    info.settext("");
+		    }
+		});
 	}
 	lists.pack();
 	addhlp(lists.c.add(0, lists.sz.y + UI.scale(5)), UI.scale(5), lists.sz.x,
-	    lists.new TabButton(0, "Skills", sktab),
-	    lists.new TabButton(0, "Credos", credos),
-	    lists.new TabButton(0, "Lore",   exps));
+	      lists.new TabButton(0, "Skills", sktab),
+	      lists.new TabButton(0, "Credos", credos),
+	      lists.new TabButton(0, "Lore",   exps));
 	pack();
     }
-    
+
     private List<Skill> decsklist(Object[] args, int a, boolean has) {
 	List<Skill> buf = new ArrayList<>();
 	while(a < args.length) {
@@ -527,7 +527,7 @@ public class SkillWnd extends Widget {
 	}
 	return(buf);
     }
-    
+
     private List<Credo> deccrlist(Object[] args, int a, boolean has) {
 	List<Credo> buf = new ArrayList<>();
 	while(a < args.length) {
@@ -537,7 +537,7 @@ public class SkillWnd extends Widget {
 	}
 	return(buf);
     }
-    
+
     private List<Experience> decexplist(Object[] args, int a) {
 	List<Experience> buf = new ArrayList<>();
 	while(a < args.length) {
@@ -548,7 +548,7 @@ public class SkillWnd extends Widget {
 	}
 	return(buf);
     }
-    
+
     public void addchild(Widget child, Object... args) {
 	String place = (args[0] instanceof String) ? (((String)args[0]).intern()) : null;
 	if(place == "skill") {
@@ -561,7 +561,7 @@ public class SkillWnd extends Widget {
 	    super.addchild(child, args);
 	}
     }
-    
+
     public void uimsg(String nm, Object... args) {
 	if(nm == "csk") {
 	    skg.csk.update(decsklist(args, 0, true));
@@ -582,7 +582,7 @@ public class SkillWnd extends Widget {
 		int crql = Utils.iv(args[a++]), crqlt = Utils.iv(args[a++]);
 		int qid = Utils.iv(args[a++]);
 		credos.pcr(new Credo(cnm, res, false),
-		    crl, crlt, crql, crqlt, qid);
+			   crl, crlt, crql, crqlt, qid);
 	    } else {
 		credos.pcr(null, 0, 0, 0, 0, 0);
 	    }

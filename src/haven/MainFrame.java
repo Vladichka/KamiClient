@@ -278,7 +278,7 @@ public class MainFrame extends java.awt.Frame implements Console.Directory {
 	    try {
 		AuthClient cl = new AuthClient((Bootstrap.authserv.get() == null) ? Bootstrap.defserv.get() : Bootstrap.authserv.get(), Bootstrap.authport.get());
 		try {
-		    if((username = cl.trytoken(username, Utils.hex2byte(token))) == null)
+		    if((username = new AuthClient.TokenCred(username, Utils.hex2byte(token)).tryauth(cl)) == null)
 			throw(new ConnectionError("authentication with saved token failed"));
 		    cookie = cl.getcookie();
 		} finally {
@@ -426,6 +426,7 @@ public class MainFrame extends java.awt.Frame implements Console.Directory {
     }
 
     private static void main2(String[] args) {
+	initfullscreen.set(CFG.VIDEO_FULL_SCREEN.get());
 	Config.cmdline(args);
 	status("start");
 	try {
@@ -455,32 +456,35 @@ public class MainFrame extends java.awt.Frame implements Console.Directory {
 	System.exit(0);
     }
     
+    public static boolean crashed = false;
+    
     public static void main(final String[] args) {
 	/* Set up the error handler as early as humanly possible. */
 	ThreadGroup g = new ThreadGroup("Haven main group");
-	String ed;
-	URL errordest = null;
-	try {
-	    if(!(ed = Utils.getprop("haven.errorurl", "")).equals("")) {
-		errordest = new java.net.URL(ed);
+	String ed = Config.get().getprop("haven.errorurl", "");
+	if(ed.equals("stderr")) {
+	    g = new haven.error.SimpleHandler("Haven main group", true);
+	} else {
+	    URL errordest = null;
+	    try {
+		if(!(ed = Utils.getprop("haven.errorurl", "")).equals("")) {
+		    errordest = new java.net.URI(ed).toURL();
+		}
+	    } catch (java.net.MalformedURLException | java.net.URISyntaxException e) {
 	    }
-	} catch (java.net.MalformedURLException e) {
+	    final haven.error.ErrorHandler hg = new haven.error.ErrorHandler(errordest);
+	    hg.sethandler(new haven.error.ErrorGui(null) {
+		public void errorsent() {
+		    crashed = true;
+		    hg.interrupt();
+		}
+	    });
+	    g = hg;
+	    new DeadlockWatchdog(hg).start();
 	}
-	final haven.error.ErrorHandler hg = new haven.error.ErrorHandler(errordest);
-	hg.sethandler(new haven.error.ErrorGui(null) {
-	    public void errorsent() {
-		crashed = true;
-		hg.interrupt();
-	    }
-	});
-	g = hg;
-	new DeadlockWatchdog(hg).start();
- 
 	Thread main = new HackThread(g, () -> main2(args), "Haven main thread");
 	main.start();
     }
-    
-    public static boolean crashed = false;
 	
     private static void dumplist(Collection<Resource> list, Path fn) {
 	try {

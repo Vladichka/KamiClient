@@ -45,7 +45,7 @@ public class PathVisualizer implements RenderTree.Node {
 	    tmoves = new HashSet<>();
 	}
 	Map<PathCategory, List<Pair<Coord3f, Coord3f>>> categorized = new HashMap<>();
-	
+ 
 	for (Moving m : tmoves) {
 	    PathCategory category = categorize(m);
 	    if(!categorized.containsKey(category)) {
@@ -58,7 +58,7 @@ public class PathVisualizer implements RenderTree.Node {
 		));
 	    } catch (Loading ignored) {}
 	}
-	
+    
 	Set<PathCategory> selected = new HashSet<>(CFG.DISPLAY_GOB_PATHS_FOR.get());
 	if(CFG.QUEUE_PATHS.get() && path != null) {
 	    List<Pair<Coord3f, Coord3f>> lines = path.lines();
@@ -68,7 +68,7 @@ public class PathVisualizer implements RenderTree.Node {
 	    }
 	    if(selected.contains(PathCategory.ME)) {selected.add(PathCategory.QUEUED);}
 	}
-	
+    
 	for (PathCategory cat : PathCategory.values()) {
 	    List<Pair<Coord3f, Coord3f>> lines = categorized.get(cat);
 	    MovingPath path = paths.get(cat);
@@ -80,7 +80,7 @@ public class PathVisualizer implements RenderTree.Node {
 		path.update(lines);
 	    }
 	}
-	
+    
     }
     
     private PathCategory categorize(Moving m) {
@@ -147,14 +147,14 @@ public class PathVisualizer implements RenderTree.Node {
 	public void removed(RenderTree.Slot slot) {
 	    synchronized (slots) {slots.remove(slot);}
 	}
-	
+ 
 	@Override
 	public void draw(Pipe context, Render out) {
 	    if(model != null) {
 		out.draw(context, model);
 	    }
 	}
-	
+ 
 	public void update(List<Pair<Coord3f, Coord3f>> lines) {
 	    if(lines == null || lines.isEmpty()) {
 		model = null;
@@ -173,7 +173,7 @@ public class PathVisualizer implements RenderTree.Node {
 		tslots.forEach(RenderTree.Slot::update);
 	    } catch (Exception ignored) {}
 	}
-	
+    
     }
     
     public enum PathCategory {
@@ -219,13 +219,13 @@ public class PathVisualizer implements RenderTree.Node {
 		instance = null;
 	    }
 	}
-	
+ 
 	@Override
 	public void destroy() {
 	    super.destroy();
 	    instance = null;
 	}
-	
+ 
 	public CategoryOpts() {
 	    super(Coord.z, "Display paths for");
 	    justclose = true;

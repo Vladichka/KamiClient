@@ -29,6 +29,8 @@ package haven;
 import java.util.*;
 import java.awt.Color;
 import haven.resutil.Curiosity;
+import me.ender.ui.CFGBox;
+
 import static haven.CharWnd.*;
 import static haven.ExtInventory.*;
 import static haven.PUtils.*;
@@ -46,10 +48,8 @@ public class SAttrWnd extends Widget {
 	}
     }
     
-    public class SAttr extends Widget {
-	public final String nm;
+    public class SAttr extends CharWnd.AttrWdg {
 	public final Text rnm;
-	public final Glob.CAttr attr;
 	public final Tex img;
 	public final Color bg;
 	public final Resource res;
@@ -59,12 +59,10 @@ public class SAttrWnd extends Widget {
 	private int cbv, ccv;
 	
 	private SAttr(Glob glob, String attr, Color bg) {
-	    super(new Coord(attrw, attrf.height() + UI.scale(2)));
-	    this.res = Resource.local().loadwait("gfx/hud/chr/" + attr);
-	    this.nm = attr;
+	    super(Coord.of(attrw, attrf.height() + UI.scale(2)), glob, attr);
+	    this.res = Loading.waitfor(this.attr.res());
 	    this.img = new TexI(convolve(res.flayer(Resource.imgc).img, new Coord(this.sz.y, this.sz.y), iconfilter));
 	    this.rnm = attrf.render(res.flayer(Resource.tooltip).t);
-	    this.attr = glob.getcattr(attr);
 	    this.bg = bg;
 	    add = adda(new IButton("gfx/hud/buttons/add", "u", "d", "h").action(() -> {if(ui.modshift){adj(5);}else if(ui.modctrl){adj(10);}else{adj(1);}}),
 		sz.x - UI.scale(5), sz.y / 2, 1, 0.5);
@@ -83,12 +81,8 @@ public class SAttrWnd extends Widget {
 		Color c = Color.WHITE;
 		if(ccv > cbv) {
 		    c = buff;
-		    tooltip = String.format("%d + %d", cbv, ccv - cbv);
 		} else if(ccv < cbv) {
 		    c = debuff;
-		    tooltip = String.format("%d - %d", cbv, cbv - ccv);
-		} else {
-		    tooltip = null;
 		}
 		if(tbv > 0)
 		    c = tbuff;
@@ -128,8 +122,8 @@ public class SAttrWnd extends Widget {
 	    updcost();
 	}
 	
-	public boolean mousewheel(Coord c, int a) {
-	    adj(-a);
+	public boolean mousewheel(MouseWheelEvent ev) {
+	    adj(-ev.a);
 	    return(true);
 	}
     }
@@ -173,7 +167,7 @@ public class SAttrWnd extends Widget {
 		pos("cbr").subs(2, 2), 1.0, 1.0);
 	    plbl = adda(new Label("Learning points:"), pval.pos("ul").subs(0, 2).xs(2), 0.0, 1.0);
 	    this.inv.locked = CFG.LOCK_STUDY.get();
-	    add(new OptWnd.CFGBox("Lock study", CFG.LOCK_STUDY) {
+	    add(new CFGBox("Lock study", CFG.LOCK_STUDY) {
 		@Override
 		public void set(boolean a) {
 		    super.set(a);
@@ -229,7 +223,7 @@ public class SAttrWnd extends Widget {
     
     public SAttrWnd(Glob glob) {
 	Widget prev;
-	prev = add(CharWnd.settip(new Img(catf.render("Abilities").tex()), "gfx/hud/chr/tips/sattr"), Coord.z);
+	prev = add(CharWnd.settip(new Img(catf.i10n_label("Abilities").tex()), "gfx/hud/chr/tips/sattr"), Coord.z);
 	attrs = new ArrayList<>();
 	SAttr aw;
 	attrs.add(aw = add(new SAttr(glob, "unarmed", every), prev.pos("bl").adds(5, 0).add(wbox.btloff())));
@@ -247,7 +241,7 @@ public class SAttrWnd extends Widget {
 	attrs.add(aw = add(new SAttr(glob, "lore", every), aw.pos("bl")));
 	Widget lframe = Frame.around(this, attrs);
 	
-	prev = add(CharWnd.settip(new Img(catf.render("Study Report").tex()), "gfx/hud/chr/tips/study"), width, 0);
+	prev = add(CharWnd.settip(new Img(catf.i10n_label("Study Report").tex()), "gfx/hud/chr/tips/study"), width, 0);
 	studyc = prev.pos("bl").adds(5, 0);
 	Widget bframe = adda(new Frame(new Coord(attrw, UI.scale(105)), true), prev.pos("bl").adds(5, 0).x, lframe.pos("br").y, 0.0, 1.0);
 	int rx = bframe.pos("iur").subs(10, 0).x;

@@ -4,14 +4,14 @@ import java.awt.*;
 
 public class FEPMeter extends Widget {
     private static final Tex bg = Resource.loadtex("gfx/hud/meter/custom/fep");
-    
+
     private final BAttrWnd.FoodMeter food;
-    
+
     public FEPMeter(BAttrWnd.FoodMeter food) {
 	super(IMeter.fsz);
 	this.food = food;
     }
-    
+
     @Override
     public void draw(GOut g) {
 	Coord isz = IMeter.msz;
@@ -33,9 +33,19 @@ public class FEPMeter extends Widget {
 	g.chcolor();
 	g.image(bg, Coord.z);
     }
-    
+
     @Override
     public Object tooltip(Coord c, Widget prev) {
 	return food.tooltip(c, prev);
+    }
+
+    public static void add(UI ui) {
+	if(ui.gui == null || ui.gui.chrwdg == null) {return;}
+	ui.gui.addcmeter(new FEPMeter(ui.gui.chrwdg.battr.feps));
+    }
+
+    public static void rem(UI ui) {
+	if(ui.gui == null) {return;}
+	ui.gui.delcmeter(FEPMeter.class);
     }
 }

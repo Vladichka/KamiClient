@@ -710,7 +710,7 @@ public class InstanceList implements RenderList<Rendered>, RenderList.Adapter, D
 	    InstKey key = uslotmap.get(slot);
 	    if(key == null) {
 		if (!invalid.containsKey(slot))
-		    return; // Probably not good but. Whatever.
+		    return; // KamiClient Experimental
 		if(invalid.remove(slot) != Boolean.TRUE)
 		    throw(new IllegalStateException("removing non-present slot"));
 		ninvalid--;

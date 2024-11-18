@@ -54,7 +54,7 @@ public class FoodService {
 	try {
 	    if (FOOD_DATA_CACHE_FILE.exists()) {
 		String jsonData = String.join("", Files.readAllLines(FOOD_DATA_CACHE_FILE.toPath(), StandardCharsets.UTF_8));
-		System.out.println("load from file: " + jsonData);
+		//System.out.println("load from file: " + jsonData);
 		JSONObject object = new JSONObject(jsonData);
 		object.keySet().forEach(key -> cachedItems.put(key, new ParsedFoodInfo()));
 		System.out.println("Loaded food data file: " + cachedItems.size() + " entries");

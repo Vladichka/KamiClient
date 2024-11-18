@@ -28,9 +28,11 @@ package haven;
 
 import java.util.*;
 import haven.render.*;
+import me.ender.CustomizeStaticSprite;
 
 public class StaticSprite extends Sprite {
     public final RenderTree.Node[] parts;
+    
     public static final Factory fact = new Factory() {
 	    public Sprite create(Owner owner, Resource res, Message sdt) {
 		if((res.layer(FastMesh.MeshRes.class) != null) ||
@@ -79,7 +81,7 @@ public class StaticSprite extends Sprite {
     }
 
     public void added(RenderTree.Slot slot) {
-	StaticSpriteCustomization.added(this, slot);
+	CustomizeStaticSprite.added(this, slot);
 	for(RenderTree.Node p : parts)
 	    slot.add(p);
     }

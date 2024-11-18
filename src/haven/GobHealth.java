@@ -29,6 +29,7 @@ package haven;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.Random;
+
 import haven.render.*;
 import haven.resutil.CrackTex;
 
@@ -54,8 +55,6 @@ public class GobHealth extends GAttrib implements Gob.SetupMod {
     }
     
     public Pipe.Op gobstate() {
-	if(hp >= 1)
-	    return(null);
 	return(fx);
     }
 

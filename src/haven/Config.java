@@ -28,6 +28,7 @@ package haven;
 
 import haven.rx.Reactor;
 import integrations.mapv4.MappingClient;
+import me.ender.ClientUtils;
 
 import java.io.*;
 import java.net.URI;
@@ -35,24 +36,19 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.io.PrintStream;
 import java.util.Properties;
 import java.util.function.*;
-import java.io.*;
-import java.nio.file.*;
-import java.util.Properties;
-import java.net.URI;
-import java.net.URLConnection;
-import java.io.PrintStream;
 
 public class Config {
-    public static final File HOMEDIR = new File("").getAbsoluteFile();
-    public static final String LINE_SEPARATOR = System.getProperty("line.separator");
+    public static final String LINE_SEPARATOR = System.lineSeparator();
     public static final Properties jarprops = getjarprops();
-    public static final String confid = jarprops.getProperty("config.client-id", "KamiClient");
+    public static final File HOMEDIR = getHomeDir();
+    public static final String confid = get().getprop("config.client-id", "KamiClient");
     public static final Variable<Boolean> par = Variable.def(() -> true);
     public final Properties localprops = getlocalprops();
 
+    
+    
     private static Config global = null;
     public static Config get() {
 	if(global != null)
@@ -93,6 +89,17 @@ public class Config {
 	} catch(IOException e) {
 	    throw(new Error(e));
 	}
+    }
+    
+    private static File getHomeDir() {
+	String dir = get().getprop("config.homedir", "workdir");
+	if("hashdir".equals(dir)) {
+	    File file = new File(HashDirCache.findbase().getParent() + File.separator + "ender-client");
+	    file.mkdirs();
+	    return file.getAbsoluteFile();
+	}
+	
+	return new File("").getAbsoluteFile();
     }
     
     public static File getFile(String name) {
@@ -137,7 +144,7 @@ public class Config {
     private static String getString(InputStream inputStream) {
 	if(inputStream != null) {
 	    try {
-		return Utils.stream2str(inputStream);
+		return ClientUtils.stream2str(inputStream);
 	    } catch (Exception ignore) {
 	    } finally {
 		try {inputStream.close();} catch (IOException ignored) {}
@@ -460,7 +467,7 @@ public class Config {
     {
 	return playername;
     }
-
+    
     static {
 	Console.setscmd("par", new Console.Command() {
 		public void run(Console cons, String[] args) {

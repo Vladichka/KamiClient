@@ -63,7 +63,7 @@ public class LocalInspect extends Widget {
 		}
 		String tip = ob.tooltip();
 		String contents = ob.contents();
-		if(contents != null) {
+		if(contents != null && !contents.isEmpty()) {
 		    tip += " of " + contents;
 		}
 		return tip;

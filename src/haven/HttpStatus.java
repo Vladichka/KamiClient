@@ -35,13 +35,13 @@ public class HttpStatus extends HackThread {
     public String status;
     public int users;
     private boolean quit = false;
-
+    
     public HttpStatus(URL src) {
 	super("Server status updater");
 	setDaemon(true);
 	this.src = src;
     }
-
+    
     private static URL defsrc(String host) {
 	try {
 	    return(new URI("http", host, "/mt/srv-mon", null).toURL());
@@ -49,15 +49,15 @@ public class HttpStatus extends HackThread {
 	    throw(new RuntimeException(e));
 	}
     }
-
+    
     public HttpStatus(String host) {
 	this(defsrc(host));
     }
-
+    
     public HttpStatus() {
 	this(defsrc(Bootstrap.defserv.get()));
     }
-
+    
     private void handle(String... words) {
 	if(words.length < 1) {
 	    synchronized(this) {
@@ -83,12 +83,12 @@ public class HttpStatus extends HackThread {
 	    }
 	}
     }
-
+    
     private void handle(byte[] buf, int off, int len) {
 	String[] words = Utils.splitwords(new String(buf, off, len, Utils.utf8));
 	handle(words);
     }
-
+    
     private InputStream cur = null;
     public void run() {
 	boolean again = false;
@@ -119,7 +119,10 @@ public class HttpStatus extends HackThread {
 		    int len = 0;
 		    while(true) {
 			int off = len;
-			len += fp.read(buf, off, buf.length - len);
+			int rv = fp.read(buf, len, buf.length - len);
+			if(rv < 0)
+			    break;
+			len += rv;
 			line: while(true) {
 			    for(int i = off; i < len; i++) {
 				if(buf[i] == 10) {
@@ -142,7 +145,7 @@ public class HttpStatus extends HackThread {
 	    }
 	}
     }
-
+    
     public void quit() {
 	synchronized(this) {
 	    quit = true;

@@ -43,7 +43,7 @@ public class GobIcon extends GAttrib {
     public final byte[] sdt;
     private Icon icon;
     public final boolean isCustom;
-    
+
     public GobIcon(Gob g, Indir<Resource> res, byte[] sdt) {
 	super(g);
 	this.res = res;
@@ -57,17 +57,17 @@ public class GobIcon extends GAttrib {
 	this.sdt = new byte[0];
 	this.isCustom = isCustom;
     }
-    
+
     public static abstract class Icon {
 	public static final Object[] nilid = new Object[0];
 	public final OwnerContext owner;
 	public final Resource res;
-	
+
 	public Icon(OwnerContext owner, Resource res) {
 	    this.owner = owner;
 	    this.res = res;
 	}
-	
+
 	public String tooltip() {
 	    String tt = name();
 	    try {
@@ -80,7 +80,7 @@ public class GobIcon extends GAttrib {
 	public static enum Markable {
 	    UNMARKABLE, NONDEFAULT, DEFAULT
 	}
-	
+
 	public abstract String name();
 	public abstract BufferedImage image();
 	public abstract void draw(GOut g, Coord cc);
@@ -88,14 +88,14 @@ public class GobIcon extends GAttrib {
 	public Object[] id() {return(nilid);}
 	public int z() {return(0);}
 	public Markable markable() {return(Markable.UNMARKABLE);}
-	
+
 	@Resource.PublishedCode(name = "mapicon")
 	public static interface Factory {
 	    public Icon create(OwnerContext owner, Resource res, Message sdt);
 	    public Collection<? extends Icon> enumerate(OwnerContext owner, Resource res, Message sdt);
 	}
     }
-    
+
     public static class Image {
 	private static final Map<Resource, Image> cache = new WeakHashMap<>();
 	public final BufferedImage img;
@@ -104,7 +104,7 @@ public class GobIcon extends GAttrib {
 	public boolean rot;
 	public double ao;
 	public int z;
-	
+
 	public Image(Resource res) {
 	    Resource.Image rimg = res.layer(Resource.imgc);
 	    BufferedImage img = rimg.scaled();
@@ -133,7 +133,7 @@ public class GobIcon extends GAttrib {
 	    if(data != null)
 		this.z = Utils.intvard(data, 0);
 	}
-	
+
 	public static Image get(Resource res) {
 	    synchronized(cache) {
 		Image img = cache.get(res);
@@ -145,32 +145,32 @@ public class GobIcon extends GAttrib {
 	    }
 	}
     }
-    
+
     public static class ImageIcon extends Icon {
 	public final Image img;
 	private final Gob gob = owner.fcontext(Gob.class, false);
-	
+
 	public ImageIcon(OwnerContext owner, Resource res, Image img) {
 	    super(owner, res);
 	    this.img = img;
 	}
-	
+
 	public String name() {
 	    Resource.Tooltip name = res.layer(Resource.tooltip);
 	    return(name == null ? "???" : name.t);
 	}
-	
+
 	public BufferedImage image() {
 	    return(res.flayer(Resource.imgc).img);
 	}
-	
+
 	public void draw(GOut g, Coord cc) {
 	    if(!img.rot)
 		g.image(img.tex, cc.sub(img.cc));
 	    else
 		g.rotimage(img.tex, cc, img.cc, ((gob == null) ? 0 : -gob.a) + img.ao);
 	}
-	
+
 	public boolean checkhit(Coord c) {
 	    Coord oc = c.add(img.cc);
 	    if(!oc.isect(Coord.z, PUtils.imgsz(img.img)))
@@ -179,47 +179,47 @@ public class GobIcon extends GAttrib {
 		return(true);
 	    return(img.img.getRaster().getSample(oc.x, oc.y, 3) >= 128);
 	}
-	
+
 	public int z() {
 	    return(img.z);
 	}
-	
+
 	private int markdata() {
 	    byte[] data = res.flayer(Resource.imgc).kvdata.get("mm/mark");
 	    if(data == null)
 		return(0);
 	    return(Utils.intvard(data, 0));
 	}
-	
+
 	public Markable markable() {
 	    switch(markdata()) {
-		case 1:
-		    return(Markable.NONDEFAULT);
-		case 2:
-		    return(Markable.DEFAULT);
-		default:
-		    return(Markable.UNMARKABLE);
+	    case 1:
+		return(Markable.NONDEFAULT);
+	    case 2:
+		return(Markable.DEFAULT);
+	    default:
+		return(Markable.UNMARKABLE);
 	    }
 	}
-	
+
 	public static final Factory factory = new Factory() {
-	    public ImageIcon create(OwnerContext owner, Resource res, Message sdt) {
-		return(new ImageIcon(owner, res, Image.get(res)));
-	    }
-	    
-	    public Collection<ImageIcon> enumerate(OwnerContext owner, Resource res, Message sdt) {
-		return(Collections.singletonList(new ImageIcon(owner, res, Image.get(res))));
-	    }
-	};
+		public ImageIcon create(OwnerContext owner, Resource res, Message sdt) {
+		    return(new ImageIcon(owner, res, Image.get(res)));
+		}
+
+		public Collection<ImageIcon> enumerate(OwnerContext owner, Resource res, Message sdt) {
+		    return(Collections.singletonList(new ImageIcon(owner, res, Image.get(res))));
+		}
+	    };
     }
-    
+
     public static Icon.Factory getfac(Resource res) {
 	Icon.Factory fac = res.getcode(Icon.Factory.class, false);
 	if(fac != null)
 	    return(fac);
 	return(ImageIcon.factory);
     }
-    
+
     public Icon icon() {
 	if(this.icon == null) {
 	    Resource res = this.res.get();
@@ -227,69 +227,69 @@ public class GobIcon extends GAttrib {
 	}
 	return(this.icon);
     }
-    
+
     private static Consumer<UI> resnotif(String nm) {
 	return(ui -> {
-	    Indir<Resource> resid = Resource.local().load(nm);
-	    ui.sess.glob.loader.defer(() -> {
-		Resource res;
-		try {
-		    res = resid.get();
-		} catch(Loading l) {
-		    throw(l);
-		} catch(RuntimeException e) {
-		    ui.error("Could not play " + nm);
-		    return;
-		}
-		Audio.CS clip = Audio.fromres(res);
-		ui.sfx(clip);
-	    }, null);
-	});
+		Indir<Resource> resid = Resource.local().load(nm);
+		ui.sess.glob.loader.defer(() -> {
+			Resource res;
+			try {
+			    res = resid.get();
+			} catch(Loading l) {
+			    throw(l);
+			} catch(RuntimeException e) {
+			    ui.error("Could not play " + nm);
+			    return;
+			}
+			Audio.CS clip = Audio.fromres(res);
+			ui.sfx(clip);
+		    }, null);
+	    });
     }
-    
+
     private static Consumer<UI> wavnotif(Path path) {
 	return(ui -> {
-	    ui.sess.glob.loader.defer(() -> {
-		Audio.CS clip;
-		InputStream fail = null;
-		try {
-		    fail = Files.newInputStream(path);
-		    clip = Audio.PCMClip.fromwav(new BufferedInputStream(fail));
-		    fail = null;
-		} catch(IOException e) {
-		    String msg = e.getMessage();
-		    if(e instanceof FileSystemException)
-			msg = "Could not open file";
-		    ui.error("Could not play " + path + ": " + msg);
-		    return;
-		} finally {
-		    if(fail != null) {
+		ui.sess.glob.loader.defer(() -> {
+			Audio.CS clip;
+			InputStream fail = null;
 			try {
-			    fail.close();
+			    fail = Files.newInputStream(path);
+			    clip = Audio.PCMClip.fromwav(new BufferedInputStream(fail));
+			    fail = null;
 			} catch(IOException e) {
-			    new Warning(e, "unexpected error on close").issue();
+			    String msg = e.getMessage();
+			    if(e instanceof FileSystemException)
+				msg = "Could not open file";
+			    ui.error("Could not play " + path + ": " + msg);
+			    return;
+			} finally {
+			    if(fail != null) {
+				try {
+				    fail.close();
+				} catch(IOException e) {
+				    new Warning(e, "unexpected error on close").issue();
+				}
+			    }
 			}
-		    }
-		}
-		ui.sfx(clip);
-	    }, null);
-	});
+			ui.sfx(clip);
+		    }, null);
+	    });
     }
-    
+
     private static final Map<Object, Double> lastnotifs = new HashMap<>();
     private static Consumer<UI> notiflimit(Consumer<UI> bk, Object id) {
 	return(ui -> {
-	    double now = Utils.rtime();
-	    synchronized(lastnotifs) {
-		Double last = lastnotifs.get(id);
-		if((last != null) && (now - last < 0.5))
-		    return;
-		lastnotifs.put(id, now);
-	    }
-	    bk.accept(ui);
-	});
+		double now = Utils.rtime();
+		synchronized(lastnotifs) {
+		    Double last = lastnotifs.get(id);
+		    if((last != null) && (now - last < 0.5))
+			return;
+		    lastnotifs.put(id, now);
+		}
+		bk.accept(ui);
+	    });
     }
-    
+
     
     public String tooltip() {
 	String tt = null;
@@ -310,44 +310,44 @@ public class GobIcon extends GAttrib {
 	public String resns;
 	public Path filens;
 	public boolean mark, markset;
-	
+
 	public static class ID {
 	    public final String res;
 	    public final Object[] sub;
-	    
+
 	    public ID(String res, Object[] sub) {
 		this.res = res;
 		this.sub = sub;
 	    }
-	    
+
 	    public int hashCode() {
 		return((res.hashCode() * 31) + Arrays.deepHashCode(sub));
 	    }
-	    
+
 	    public boolean equals(ID that) {
 		return(this.res.equals(that.res) && Arrays.deepEquals(this.sub, that.sub));
 	    }
-	    
+
 	    public boolean equals(Object x) {
 		return((x instanceof ID) && equals((ID)x));
 	    }
 	}
-	
+
 	public Setting(Resource.Saved res, Object[] id, Icon icon, Settings.ResID from) {
 	    this.res = res;
 	    this.id = new ID(res.name, id);
 	    this.icon = icon;
 	    this.from = from;
 	}
-	
+
 	public Setting(Resource.Saved res, Object[] id) {
 	    this(res, id, null, null);
 	}
-	
+
 	public Setting(Icon icon, Settings.ResID from) {
 	    this(new Resource.Saved(Resource.remote(), icon.res.name, icon.res.ver), icon.id(), icon, from);
 	}
-	
+
 	public Consumer<UI> notification() {
 	    if(resns != null)
 		return(notiflimit(resnotif(resns), resns));
@@ -355,25 +355,25 @@ public class GobIcon extends GAttrib {
 		return(notiflimit(wavnotif(filens), filens));
 	    return(null);
 	}
-	
+
 	private Resource lres;
 	public Resource resource() {
 	    if(this.lres != null)
 		return(this.lres);
 	    return(this.lres = this.res.get());
 	}
-	
+
 	public boolean getmarkablep() {
 	    return(icon.markable() != Icon.Markable.UNMARKABLE);
 	}
-	
+
 	public boolean getmarkp() {
 	    if(markset)
 		return(mark);
 	    return(icon.markable() == Icon.Markable.DEFAULT);
 	}
     }
-    
+
     public static class Settings implements OwnerContext, Serializable {
 	public static final byte[] sig = "Icons".getBytes(Utils.ascii);
 	public final UI ui;
@@ -381,38 +381,38 @@ public class GobIcon extends GAttrib {
 	public Map<Setting.ID, Setting> settings = new HashMap<>();
 	public int tag = -1;
 	public boolean notify = false;
-	
+
 	public Settings(UI ui, String filename) {
 	    this.ui = ui;
 	    this.filename = filename;
 	}
-	
+
 	public Setting get(Icon icon) {
 	    return(settings.get(new Setting.ID(icon.res.name, icon.id())));
 	}
-	
+
 	public static class ResID {
 	    public final Resource.Saved res;
 	    public final byte[] data;
-	    
+
 	    public ResID(Resource.Saved res, byte[] data) {
 		this.res = res;
 		this.data = data;
 	    }
-	    
+
 	    public int hashCode() {
 		return((res.name.hashCode() * 31) + Arrays.hashCode(data));
 	    }
-	    
+
 	    public boolean equals(ResID that) {
 		return(this.res.name.equals(that.res.name) && Arrays.equals(this.data, that.data));
 	    }
-	    
+
 	    public boolean equals(Object x) {
 		return((x instanceof ResID) && equals((ResID)x));
 	    }
 	}
-	
+
 	private Loader loading = null;
 	public class Loader implements Runnable {
 	    public final Queue<ResID> load = new ArrayDeque<>();
@@ -424,7 +424,7 @@ public class GobIcon extends GAttrib {
 	    private ResID r = null;
 	    private Loader next = null;
 	    private Map<Setting.ID, Setting> nset = null;
-	    
+
 	    private void merge(Setting set, Setting conf) {
 		set.show    = conf.show;
 		set.defshow = conf.defshow;
@@ -434,7 +434,7 @@ public class GobIcon extends GAttrib {
 		if(set.markset = conf.markset)
 		    set.mark = conf.mark;
 	    }
-	    
+
 	    public void run() {
 		if(nset == null)
 		    nset = new HashMap<>(settings);
@@ -493,7 +493,7 @@ public class GobIcon extends GAttrib {
 			ui.loader.defer(next, null);
 		}
 	    }
-	    
+
 	    public void submit() {
 		synchronized(Settings.this) {
 		    if(loading == null)
@@ -504,12 +504,12 @@ public class GobIcon extends GAttrib {
 		}
 	    }
 	}
-	
+
 	private final ClassResolver<Settings> ctxr = new ClassResolver<Settings>()
 	    .add(Glob.class, s -> s.ui.sess.glob)
 	    .add(Session.class, s -> s.ui.sess);
 	public <T> T context(Class<T> cl) {return(ctxr.context(cl, this));}
-	
+
 	public void receive(Object[] args) {
 	    int tag = Utils.iv(args[0]);
 	    if(args[1] instanceof String) {
@@ -546,7 +546,7 @@ public class GobIcon extends GAttrib {
 		l.submit();
 	    }
 	}
-	
+
 	private static void encodeset(Map<Object, Object> buf, Setting set) {
 	    if(set.show)    buf.put("s", 1);
 	    if(set.defshow) buf.put("d", 1);
@@ -555,7 +555,7 @@ public class GobIcon extends GAttrib {
 	    if(set.resns != null)  buf.put("R", set.resns);
 	    if(set.filens != null) buf.put("W", set.filens.toString());
 	}
-	
+
 	public void save(Message dst) {
 	    Map<ResID, Collection<Setting>> byid = new HashMap<>();
 	    for(Setting set : settings.values())
@@ -588,12 +588,12 @@ public class GobIcon extends GAttrib {
 		abuf.add(Utils.mapencn(rbuf));
 	    }
 	    buf.put("icons", abuf.toArray(new Object[0]));
-	    
+
 	    dst.addbytes(sig);
 	    dst.adduint8(3);
 	    dst.addlist(Utils.mapencn(buf));
 	}
-	
+
 	private static void parseset(Setting set, Map<Object, Object> data) {
 	    set.show    = Utils.bv(data.getOrDefault("s", 0));
 	    set.defshow = Utils.bv(data.getOrDefault("d", 0));
@@ -609,7 +609,7 @@ public class GobIcon extends GAttrib {
 		new Warning(e, "could not read path").issue();
 	    }
 	}
-	
+
 	public void load(Message blob, UI ui) {
 	    if(!Arrays.equals(blob.bytes(sig.length), sig))
 		throw(new Message.FormatError("Invalid signature"));
@@ -624,7 +624,7 @@ public class GobIcon extends GAttrib {
 		Map<Object, Object> icon = Utils.mapdecn(eicon);
 		Object[] eres = (Object[])icon.get("res");
 		ResID res = new ResID(new Resource.Saved(Resource.remote(), (String)eres[0], Utils.iv(eres[1])),
-		    (eres.length > 2) ? (byte[])eres[2] : new byte[0]);
+				      (eres.length > 2) ? (byte[])eres[2] : new byte[0]);
 		Collection<Setting> sets = new ArrayList<>();
 		Setting set = new Setting(res.res, Icon.nilid);
 		parseset(set, icon);
@@ -643,7 +643,7 @@ public class GobIcon extends GAttrib {
 	    Radar.addCustomSettings(l, ui);
 	    l.submit();
 	}
-	
+
 	public void save() {
 	    if(ResCache.global == null)
 		return;
@@ -653,7 +653,7 @@ public class GobIcon extends GAttrib {
 		new Warning(e, "failed to store icon-conf").issue();
 	    }
 	}
-	
+
 	private boolean saveagain = false, saving = false;
 	private void dsave0() {
 	    save();
@@ -666,7 +666,7 @@ public class GobIcon extends GAttrib {
 		}
 	    }
 	}
-	
+
 	public void dsave() {
 	    synchronized(this) {
 		if(!saving) {
@@ -677,7 +677,7 @@ public class GobIcon extends GAttrib {
 		}
 	    }
 	}
-	
+
 	public static Settings load(UI ui, String name) throws IOException {
 	    if(ResCache.global == null)
 		return(new Settings(ui, name));
@@ -690,24 +690,24 @@ public class GobIcon extends GAttrib {
 	    return(new Settings(ui, name));
 	}
     }
-    
+
     public static class NotificationSetting {
 	public final String name, res;
 	public final Path wav;
-	
+
 	private NotificationSetting(String name, String res, Path wav) {this.name = name; this.res = res; this.wav = wav;}
 	public NotificationSetting(String name, String res) {this(name, res, null);}
 	public NotificationSetting(String name, Path wav)   {this(name, null, wav);}
 	public NotificationSetting(Path wav) {this(wav.getFileName().toString(), wav);}
-	
+
 	public boolean act(Setting conf) {
 	    return(Utils.eq(conf.resns, this.res) && Utils.eq(conf.filens, wav));
 	}
-	
+
 	public static final NotificationSetting nil = new NotificationSetting("None", null, null);
 	public static final NotificationSetting other = new NotificationSetting("Select file...", null, null);
 	public static final List<NotificationSetting> builtin;
-	
+
 	static {
 	    List<NotificationSetting> buf = new ArrayList<>();
 	    buf.add(new NotificationSetting("Bell 1", "sfx/hud/mmap/bell1"));
@@ -720,7 +720,7 @@ public class GobIcon extends GAttrib {
 	    builtin = buf;
 	}
     }
-    
+
     public static class SettingsWindow extends WindowX {
 	public final Settings conf;
 	private final PackCont.LinPack cont;
@@ -728,14 +728,14 @@ public class GobIcon extends GAttrib {
 	private Widget setbox;
 	private final CheckBox toggleAll;
 	private GobIconCategoryList.GobCategory category = GobIconCategoryList.GobCategory.ALL;
-	
+
 	public static class ListIcon {
 	    public final Setting conf;
 	    public final String name;
 	    public final Object[] id;
 	    public Text tname = null;
 	    public Text tresnm = null;
-	    
+
 	    public ListIcon(Setting conf) {
 		this.conf = conf;
 		this.name = conf.icon.name();
@@ -760,11 +760,11 @@ public class GobIcon extends GAttrib {
 		return(new TexI(PUtils.convolve(img, tsz, filter)));
 	    }
 	}
-	
+
 	private <T> Consumer<T> andsave(Consumer<T> main) {
 	    return(val -> {main.accept(val); conf.dsave();});
 	}
-	
+    
 	private static final Text.Foundry elf = CharWnd.attrf;
 	private static final int elh = elf.height() + UI.scale(2);
 	public class IconList extends SSearchBox<ListIcon, IconList.IconLine> {
@@ -772,30 +772,30 @@ public class GobIcon extends GAttrib {
 	    private List<ListIcon> categorized = Collections.emptyList();
 	    private Map<Setting.ID, Setting> cur = null;
 	    private boolean reorder = false;
-	    
+
 	    private IconList(Coord sz) {
 		super(sz, elh);
 	    }
-	    
+
 	    public class IconLine extends SListWidget.ItemWidget<ListIcon> {
 		public IconLine(Coord sz, ListIcon icon) {
 		    super(IconList.this, sz, icon);
 		    Widget prev;
 		    prev = adda(new CheckBox("").state(() -> icon.conf.notify).set(andsave(val -> icon.conf.notify = val)).settip("Notify"),
-			sz.x - UI.scale(2) - (sz.y / 2), sz.y / 2, 0.5, 0.5);
+				sz.x - UI.scale(2) - (sz.y / 2), sz.y / 2, 0.5, 0.5);
 		    prev = adda(new CheckBox("").state(() -> icon.conf.show).set(andsave(val -> {icon.conf.show = val;updateAllCheckbox();})).settip("Display"),
-			prev.c.x - UI.scale(2) - (sz.y / 2), sz.y / 2, 0.5, 0.5);
+				prev.c.x - UI.scale(2) - (sz.y / 2), sz.y / 2, 0.5, 0.5);
 		    add(SListWidget.IconText.of(Coord.of(prev.c.x - UI.scale(2), sz.y), item.conf.icon::image, item.conf.icon::name), Coord.z);
 		}
 	    }
-	    
+
 	    protected boolean searchmatch(ListIcon icon, String text) {
 		return((icon.name != null) &&
-		    (icon.name.toLowerCase().indexOf(text.toLowerCase()) >= 0));
+		       (icon.name.toLowerCase().indexOf(text.toLowerCase()) >= 0));
 	    }
 	    protected List<ListIcon> allitems() {return(categorized);}
 	    protected IconLine makeitem(ListIcon icon, int idx, Coord sz) {return(new IconLine(sz, icon));}
-	    
+
 	    public void tick(double dt) {
 		Map<Setting.ID, Setting> cur = this.cur;
 		if(cur != conf.settings) {
@@ -810,13 +810,13 @@ public class GobIcon extends GAttrib {
 		if(this.reorder) {
 		    this.reorder = false;
 		    Collections.sort(ordered, (a, b) -> {
-			int c;;
-			if((c = a.name.compareTo(b.name)) != 0)
-			    return(c);
-			if((c = Utils.compare(a.id, b.id)) != 0)
-			    return(c);
-			return(0);
-		    });
+			    int c;;
+			    if((c = a.name.compareTo(b.name)) != 0)
+				return(c);
+			    if((c = Utils.compare(a.id, b.id)) != 0)
+				return(c);
+			    return(0);
+			});
 		    categorized = list.ordered.stream()
 			.filter(category::matches)
 			.collect(Collectors.toList());
@@ -832,8 +832,8 @@ public class GobIcon extends GAttrib {
 		updateAllCheckbox();
 	    }
 	    
-	    public boolean keydown(java.awt.event.KeyEvent ev) {
-		if(ev.getKeyCode() == java.awt.event.KeyEvent.VK_SPACE) {
+	    public boolean keydown(KeyDownEvent ev) {
+		if(ev.code == ev.awt.VK_SPACE) {
 		    if(sel != null) {
 			sel.conf.show = !sel.conf.show;
 			conf.dsave();
@@ -843,7 +843,7 @@ public class GobIcon extends GAttrib {
 		}
 		return(super.keydown(ev));
 	    }
-	    
+
 	    public void change(ListIcon icon) {
 		super.change(icon);
 		if(setbox != null) {
@@ -855,38 +855,38 @@ public class GobIcon extends GAttrib {
 		}
 	    }
 	}
-	
+
 	public class IconSettings extends Widget {
 	    public final Setting conf;
 	    public final NotifBox nb;
-	    
+
 	    public IconSettings(int w, Setting conf) {
 		super(Coord.z);
 		this.conf = conf;
 		Widget prev = add(new CheckBox("Display").state(() -> conf.show).set(andsave(val -> conf.show = val)),
-		    0, 0);
+				  0, 0);
 		add(new CheckBox("Notify").state(() -> conf.notify).set(andsave(val -> conf.notify = val)),
 		    w / 2, 0);
 		Button pb = new Button(UI.scale(50), "Play") {
-		    protected void depress() {}
-		    protected void unpress() {}
-		    public void click() {play();}
-		};
+			protected void depress() {}
+			protected void unpress() {}
+			public void click() {play();}
+		    };
 		prev = add(new Label("Sound to play on notification:"), prev.pos("bl").adds(0, 5));
 		nb = new NotifBox(w - pb.sz.x - UI.scale(15));
 		addhl(prev.pos("bl").adds(0, 2), w, prev = Frame.with(nb, false), pb);
 		if(conf.getmarkablep()) {
 		    add(new CheckBox("Place permanent marker")
-			    .state(() -> conf.markset ? conf.mark : conf.getmarkp())
-			    .set(andsave(val -> {conf.markset = true; conf.mark = val;})),
+			.state(() -> conf.markset ? conf.mark : conf.getmarkp())
+			.set(andsave(val -> {conf.markset = true; conf.mark = val;})),
 			prev.pos("bl").adds(0, 5));
 		}
 		pack();
 	    }
-	    
+
 	    public class NotifBox extends SDropBox<NotificationSetting, Widget> {
 		private final List<NotificationSetting> items = new ArrayList<>();
-		
+
 		public NotifBox(int w) {
 		    super(w, UI.scale(160), UI.scale(20));
 		    items.add(NotificationSetting.nil);
@@ -902,27 +902,27 @@ public class GobIcon extends GAttrib {
 			}
 		    }
 		}
-		
+
 		protected List<NotificationSetting> items() {return(items);}
 		protected Widget makeitem(NotificationSetting item, int idx, Coord sz) {return(SListWidget.TextItem.of(sz, Text.std, () -> item.name));}
-		
+
 		private void selectwav() {
 		    java.awt.EventQueue.invokeLater(() -> {
-			JFileChooser fc = new JFileChooser();
-			fc.setFileFilter(new FileNameExtensionFilter("PCM wave file", "wav"));
-			if(fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
-			    return;
-			for(Iterator<NotificationSetting> i = items.iterator(); i.hasNext();) {
-			    NotificationSetting item = i.next();
-			    if(item.wav != null)
-				i.remove();
-			}
-			NotificationSetting ws = new NotificationSetting(fc.getSelectedFile().toPath());
-			items.add(items.indexOf(NotificationSetting.other), ws);
-			change(ws);
-		    });
+			    JFileChooser fc = new JFileChooser();
+			    fc.setFileFilter(new FileNameExtensionFilter("PCM wave file", "wav"));
+			    if(fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
+				return;
+			    for(Iterator<NotificationSetting> i = items.iterator(); i.hasNext();) {
+				NotificationSetting item = i.next();
+				if(item.wav != null)
+				    i.remove();
+			    }
+			    NotificationSetting ws = new NotificationSetting(fc.getSelectedFile().toPath());
+			    items.add(items.indexOf(NotificationSetting.other), ws);
+			    change(ws);
+			});
 		}
-		
+
 		public void change(NotificationSetting item) {
 		    super.change(item);
 		    if(item == NotificationSetting.other) {
@@ -934,7 +934,7 @@ public class GobIcon extends GAttrib {
 		    }
 		}
 	    }
-	    
+
 	    private void play() {
 		NotificationSetting sel = nb.sel;
 		if(sel == null) sel = NotificationSetting.nil;
@@ -944,7 +944,7 @@ public class GobIcon extends GAttrib {
 		    wavnotif(sel.wav).accept(ui);
 	    }
 	}
-	
+
 	public SettingsWindow(Settings conf) {
 	    super(Coord.z, "Icon settings");
 	    this.conf = conf;
@@ -973,30 +973,30 @@ public class GobIcon extends GAttrib {
 	    
 	    left.last(new HRuler(list.sz.x), 0);
 	    left.last(new CheckBox("Notification on newly seen icons") {
-		{this.a = conf.notify;}
-		
-		public void changed(boolean val) {
-		    conf.notify = val;
-		    conf.dsave();
-		}
-	    }, UI.scale(5));
+		    {this.a = conf.notify;}
+
+		    public void changed(boolean val) {
+			conf.notify = val;
+			conf.dsave();
+		    }
+		}, UI.scale(5));
 	    cont.pack();
 	    left.pack();
 	    root.pack();
 	    updateAllCheckbox();
 	}
-	
+    
 	private void updateAllCheckbox() {
 	    if(toggleAll == null) {
 		return;
 	    }
 	    List<? extends ListIcon> items = list != null ? list.items() : null;
-	    toggleAll.a = items != null
-		&& !items.isEmpty()
+	    toggleAll.a = items != null 
+		&& !items.isEmpty() 
 		&& items.stream().allMatch(icon -> icon.conf.show);
 	}
     }
-    
+
     @OCache.DeltaType(OCache.OD_ICON)
     public static class $icon implements OCache.Delta {
 	public void apply(Gob g, OCache.AttrDelta msg) {

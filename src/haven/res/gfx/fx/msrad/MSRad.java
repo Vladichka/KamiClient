@@ -6,20 +6,28 @@ package haven.res.gfx.fx.msrad;
 
 import java.awt.*;
 import java.util.*;
+
 import haven.*;
 import haven.render.*;
+import me.ender.CFGOverlayId;
 
 /* >spr: MSRad */
 @haven.FromResource(name = "gfx/fx/msrad", version = 16)
 public class MSRad extends Sprite {
     public static boolean show = false;
     public static Collection<MSRad> current = new WeakList<>();
-    final ColoredRadius fx;
+    public static final String OL_TAG = "mine_support";
+    final ColoredRadius circle;
+    final SquareRadiiOverlay overlay;
     final Collection<RenderTree.Slot> slots = new ArrayList<>(1);
+    
+    public static final MCache.OverlayInfo safeol = new CFGOverlayId(CFG.COLOR_MINE_SUPPORT_OVERLAY, OL_TAG);
     
     public MSRad(Owner owner, Resource res, float r, Color color1, Color color2) {
 	super(owner, res);
-	fx = new ColoredRadius((Gob) owner, r, color1, color2);
+	Gob gob = (Gob) owner;
+	circle = new ColoredRadius(gob, r, color1, color2);
+	overlay = new SquareRadiiOverlay(gob, r, safeol);
     }
     
     public MSRad(Owner owner, Resource res, float r, Color color) {
@@ -39,6 +47,7 @@ public class MSRad extends Sprite {
     }
     
     public static void show(boolean show) {
+	if(MSRad.show == show) {return;}
 	for (MSRad spr : current)
 	    spr.show1(show);
 	MSRad.show = show;
@@ -46,7 +55,9 @@ public class MSRad extends Sprite {
     
     public void show1(boolean show) {
 	if(show) {
-	    Loading.waitfor(() -> RUtils.multiadd(slots, fx));
+	    if(useRadii()) {
+		Loading.waitfor(() -> RUtils.multiadd(slots, circle));
+	    }
 	} else {
 	    for (RenderTree.Slot slot : slots)
 		slot.clear();
@@ -54,22 +65,45 @@ public class MSRad extends Sprite {
     }
     
     public void added(RenderTree.Slot slot) {
-	if(show)
-	    slot.add(fx);
-	if(slots.isEmpty())
+	if(show) {
+	    if(useRadii()) {
+		slot.add(circle);
+	    }
+	}
+	if(slots.isEmpty()) {
 	    current.add(this);
+	    if(!useRadii()) {overlay.add();}
+	}
 	slots.add(slot);
     }
     
     @Override
     public void gtick(Render g) {
-	fx.gtick(g);
+	circle.gtick(g);
     }
     
     public void removed(RenderTree.Slot slot) {
 	slots.remove(slot);
-	if(slots.isEmpty())
+	if(slots.isEmpty()) {
 	    current.remove(this);
+	    overlay.rem();
+	}
+    }
+    
+    private boolean useRadii() {
+	String resid = ((Gob)owner).resid();
+	if(resid == null || !CFG.SHOW_MINE_SUPPORT_AS_OVERLAY.get()) {return true;}
+	switch (resid) {
+	    case "gfx/terobjs/minesupport":
+	    case "gfx/terobjs/column":
+	    case "gfx/terobjs/trees/towercap":
+	    case "gfx/terobjs/map/naturalminesupport":
+	    case "gfx/terobjs/ladder":
+	    case "gfx/terobjs/minebeam":
+		return false;
+	}
+	
+	return true;
     }
 }
 

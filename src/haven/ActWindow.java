@@ -11,14 +11,14 @@ import haven.MenuGrid.Pagina;
 
 public class ActWindow extends GameUI.Hidewnd {
     private static final int WIDTH = 200;
-    
+
     private final ActList filtered;
     private final TextEntry filter;
     private final List<Pagina> all = new LinkedList<>();
     private final Pattern category;
     private int pagseq = 0;
     private boolean needfilter = false;
-    
+
     public ActWindow(String cap, String category) {
 	super(Coord.z, cap);
 	this.category = Pattern.compile(category);
@@ -28,20 +28,20 @@ public class ActWindow extends GameUI.Hidewnd {
 	    public void activate(String text) {
 		act(filtered.sel.pagina);
 	    }
-	    
+
 	    @Override
 	    protected void changed() {
 		super.changed();
 		needfilter();
 	    }
-	    
+
 	    @Override
-	    public boolean keydown(KeyEvent e) {
-		if(e.getKeyCode() == KeyEvent.VK_UP) {
+	    public boolean keydown(KeyDownEvent e) {
+		if(e.code == KeyEvent.VK_UP) {
 		    filtered.change(Math.max(filtered.selindex - 1, 0));
 		    filtered.showsel();
 		    return true;
-		} else if(e.getKeyCode() == KeyEvent.VK_DOWN) {
+		} else if(e.code == KeyEvent.VK_DOWN) {
 		    filtered.change((Math.min(filtered.selindex + 1, filtered.listitems() - 1)));
 		    filtered.showsel();
 		    return true;
@@ -60,21 +60,23 @@ public class ActWindow extends GameUI.Hidewnd {
 	filtered.bgcolor = new Color(0, 0, 0, 128);
 	pack();
     }
-    
+
     private void act(Pagina pagina) {
 	ui.gui.menu.use(pagina, false);
 	ActWindow.this.hide();
     }
-    
+
     @Override
     public void show() {
 	super.show();
+	pagseq = 0;
 	filter.settext("");
 	filtered.change(0);
 	filtered.showsel();
+	raise();
 	parent.setfocus(this);
     }
-    
+
     @Override
     public void lostfocus() {
 	super.lostfocus();
@@ -82,11 +84,11 @@ public class ActWindow extends GameUI.Hidewnd {
     }
     
     @Override
-    public boolean keydown(KeyEvent ev) {
-	return !ignoredKey(ev) && super.keydown(ev);
+    public boolean keydown(KeyDownEvent ev) {
+	return !ignoredKey(ev.awt) && super.keydown(ev);
     }
     
-    private static boolean ignoredKey(KeyEvent ev){
+    private static boolean ignoredKey(KeyEvent ev) {
 	int code = ev.getKeyCode();
 	int mods = ev.getModifiersEx();
 	//any modifier except SHIFT pressed alone is ignored, TAB is also ignored
@@ -100,7 +102,7 @@ public class ActWindow extends GameUI.Hidewnd {
     private void needfilter() {
 	needfilter = true;
     }
-    
+
     private void filter() {
 	needfilter = false;
 	String filter = this.filter.text().toLowerCase();
@@ -129,11 +131,11 @@ public class ActWindow extends GameUI.Hidewnd {
 	    filtered.showsel();
 	}
     }
-    
+
     @Override
     public void tick(double dt) {
 	super.tick(dt);
-	
+    
 	MenuGrid menu = ui.gui.menu;
 	synchronized (menu.paginae) {
 	    if(pagseq != menu.pagseq) {
@@ -144,7 +146,7 @@ public class ActWindow extends GameUI.Hidewnd {
 			    .filter(p -> category.matcher(Pagina.resname(p)).matches())
 			    .collect(Collectors.toList())
 		    );
-		    
+
 		    pagseq = menu.pagseq;
 		    needfilter();
 		}
@@ -154,10 +156,10 @@ public class ActWindow extends GameUI.Hidewnd {
 	    filter();
 	}
     }
-    
+
     public static class ItemComparator implements Comparator<ActList.ActItem> {
 	private final String filter;
-	
+    
 	public ItemComparator(String filter){
 	    this.filter = filter;
 	}

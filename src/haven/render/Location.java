@@ -181,4 +181,6 @@ public class Location extends Transform {
 		return(fin);
 	    }
 	};
+
+    public static final Location noscale = new Location(Transform.nullscale);
 }

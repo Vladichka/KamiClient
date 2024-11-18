@@ -111,7 +111,7 @@ public class LandSurvey extends Window {
 	    ByteBuffer buf = ret.push();
 	    Coord c = new Coord();
 	    float tz = LandSurvey.this.tz / gran;
-	    float tz2 = CFG.FLATTEN_TERRAIN.get() ? 0 : tz;
+	    float tz2 = CFG.FLAT_TERRAIN.get() ? 0 : tz;
 	    for(c.y = ul.y; c.y <= br.y; c.y++) {
 		for(c.x = ul.x; c.x <= br.x; c.x++) {
 		    float z = (float)map.getfz2(c);
@@ -210,7 +210,7 @@ public class LandSurvey extends Window {
 		s_ol = mv.drawadd(ol);
 	    }
 	    if(s_ol != null) {
-		float tz2 = CFG.FLATTEN_TERRAIN.get() ? 0 : tz;
+		float tz2 = CFG.FLAT_TERRAIN.get() ? 0 : tz;
 		s_ol.cstate(Pipe.Op.compose(olmat, Location.xlate(new Coord3f(ul.x * (float)tilesz.x, -ul.y * (float)tilesz.y, tz2))));
 	    }
 	}

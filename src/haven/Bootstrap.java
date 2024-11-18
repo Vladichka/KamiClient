@@ -42,7 +42,7 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
     public static boolean useinitauth = true;
     String hostname;
     int port;
-    Queue<Message> msgs = new LinkedList<Message>();
+    final Queue<Message> msgs = new LinkedList<Message>();
     String inituser = null;
     byte[] initcookie = null;
     byte[] inittoken = null;
@@ -63,7 +63,12 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 	this.hostname = hostname;
 	this.port = port;
     }
-
+    
+    @Override
+    public String title() {
+	return null;
+    }
+    
     public Bootstrap() {
 	this(defserv.get(), mainport.get());
 	if(useinitauth) {
@@ -113,11 +118,11 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 	return(Utils.byte2hex(Digest.hash(Digest.MD5, user.getBytes(Utils.utf8))));
     }
 
-    public static byte[] gettoken(String user, String hostname) {
+    public static byte[] gettoken2(String user, String hostname) {
 	return(getprefb("savedtoken-" + mangleuser(user), hostname, null, false));
     }
 
-    public static void rottokens(String user, String hostname, boolean creat, boolean rm) {
+    public static void rottokens2(String user, String hostname, boolean creat, boolean rm) {
 	List<String> names = new ArrayList<>(Utils.getprefsl("saved-tokens@" + hostname, new String[] {}));
 	creat = creat || (!rm && names.contains(user));
 	if(rm || creat)
@@ -127,10 +132,28 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 	Utils.setprefsl("saved-tokens@" + hostname, names);
     }
 
-    public static void settoken(String user, String hostname, byte[] token) {
+    public static void settoken2(String user, String hostname, byte[] token) {
 	String prefnm = user;
 	Utils.setpref("savedtoken-" + mangleuser(user) + "@" + hostname, (token == null) ? "" : Utils.byte2hex(token));
 	rottokens(user, hostname, token != null, true);
+    }
+    
+    public static byte[] gettoken(String user, String hostname) {
+	return AccountList.getToken(user, hostname);
+    }
+    
+    public static void rottokens(String user, String hostname, boolean creat, boolean rm) {
+	if(rm && !creat) {
+	    AccountList.removeToken(user, hostname);
+	}
+    }
+    
+    public static void settoken(String user, String hostname, byte[] token) {
+	if(token == null) {
+	    AccountList.removeToken(user, hostname);
+	} else {
+	    AccountList.setToken(user, hostname, token);
+	}
     }
 
     private Message getmsg() throws InterruptedException {
@@ -164,6 +187,7 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 	ui.newwidgetp(1, ($1, $2) -> new LoginScreen(hostname), 0, new Object[] {Coord.z});
 	String loginname = getpref("loginname", "");
 	boolean savepw = false;
+	String tokenhex;
 	String authserver = (authserv.get() == null) ? hostname : authserv.get();
 	int authport = Bootstrap.authport.get();
 	Session sess;
@@ -182,23 +206,28 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		authed: try(AuthClient auth = new AuthClient(authserver, authport)) {
 		    authaddr = auth.address();
 		    if(!Arrays.equals(inittoken, getprefb("lasttoken-" + mangleuser(inituser), hostname, null, false))) {
-			String authed = auth.trytoken(inituser, inittoken);
+			String authed = null;
+			try {
+			    authed = new AuthClient.TokenCred(inituser, inittoken).tryauth(auth);
+			} catch(AuthClient.Credentials.AuthException e) {
+			}
 			setpref("lasttoken-" + mangleuser(inituser), Utils.byte2hex(inittoken));
 			if(authed != null) {
 			    acctname = authed;
 			    cookie = auth.getcookie();
 			    settoken(authed, hostname, auth.gettoken());
+			    AccountList.storeAccount(authed, Utils.byte2hex(auth.gettoken()));
 			    break authed;
 			}
 		    }
 		    if((token = gettoken(inituser, hostname)) != null) {
-			String authed = auth.trytoken(inituser, token);
-			if(authed == null) {
-			    settoken(inituser, hostname, null);
-			} else {
+			try {
+			    String authed = new AuthClient.TokenCred(inituser, token).tryauth(auth);
 			    acctname = authed;
 			    cookie = auth.getcookie();
 			    break authed;
+			} catch(AuthClient.Credentials.AuthException e) {
+			    settoken(inituser, hostname, null);
 			}
 		    }
 		    ui.uimsg(1, "error", "Launcher login expired");
@@ -214,8 +243,8 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		    Message msg = getmsg();
 		    if(msg.id == 1) {
 			if(msg.name == "login") {
-			    creds = (AuthClient.Credentials)msg.args[0];
-			    savepw = (Boolean)msg.args[1];
+			    creds = (AuthClient.Credentials) msg.args[0];
+			    savepw = (Boolean) msg.args[1];
 			    loginname = creds.name();
 			    break;
 			}
@@ -235,6 +264,7 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		    if(savepw) {
 			byte[] ntoken = (creds instanceof AuthClient.TokenCred) ? ((AuthClient.TokenCred)creds).token : auth.gettoken();
 			settoken(acctname, hostname, ntoken);
+			AccountList.storeAccount(acctname, Utils.byte2hex(ntoken));
 		    }
 		} catch(UnknownHostException e) {
 		    ui.uimsg(1, "error", "Could not locate server");

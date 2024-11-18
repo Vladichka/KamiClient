@@ -35,32 +35,32 @@ public class WoundWnd extends Widget {
     public final Widget woundbox;
     public final WoundList wounds;
     public Wound.Info wound;
-    
+
     @RName("wounds")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
 	    return(new WoundWnd());
 	}
     }
-    
+
     public static class Wound {
 	public final int id, parentid;
 	public Indir<Resource> res;
 	public Object qdata;
 	public int level;
 	private String sortkey = "\uffff";
-	
+
 	private Wound(int id, Indir<Resource> res, Object qdata, int parentid) {
 	    this.id = id;
 	    this.res = res;
 	    this.qdata = qdata;
 	    this.parentid = parentid;
 	}
-	
+
 	public static class Box extends LoadingTextBox implements Info {
 	    public final int id;
 	    public final Indir<Resource> res;
-	    
+
 	    public Box(int id, Indir<Resource> res) {
 		super(Coord.z, "", ifnd);
 		bg = null;
@@ -68,11 +68,11 @@ public class WoundWnd extends Widget {
 		this.res = res;
 		settext(new Indir<String>() {public String get() {return(rendertext());}});
 	    }
-	    
+
 	    protected void added() {
 		resize(parent.sz);
 	    }
-	    
+
 	    public String rendertext() {
 		StringBuilder buf = new StringBuilder();
 		Resource res = this.res.get();
@@ -82,10 +82,10 @@ public class WoundWnd extends Widget {
 		buf.append(WoundTreatment.treatment(res));
 		return(buf.toString());
 	    }
-	    
+
 	    public int woundid() {return(id);}
 	}
-	
+
 	@RName("wound")
 	public static class $wound implements Factory {
 	    public Widget create(UI ui, Object[] args) {
@@ -98,7 +98,7 @@ public class WoundWnd extends Widget {
 	    public int woundid();
 	}
     }
-    
+
     public class WoundList extends SListBox<Wound, Widget> {
 	public List<Wound> wounds = new ArrayList<Wound>();
 	private boolean loading = false;
@@ -107,14 +107,14 @@ public class WoundWnd extends Widget {
 		return(a.sortkey.compareTo(b.sortkey));
 	    }
 	};
-	
+
 	private WoundList(Coord sz) {
 	    super(sz, attrf.height() + UI.scale(2));
 	}
-	
+
 	protected List<Wound> items() {return(wounds);}
 	protected Widget makeitem(Wound w, int idx, Coord sz) {return(new Item(sz, w));}
-	
+
 	private List<Wound> treesort(List<Wound> from, int pid, int level) {
 	    List<Wound> direct = new ArrayList<>(from.size());
 	    for(Wound w : from) {
@@ -131,7 +131,7 @@ public class WoundWnd extends Widget {
 	    }
 	    return(ret);
 	}
-	
+
 	public void tick(double dt) {
 	    if(loading) {
 		loading = false;
@@ -147,18 +147,18 @@ public class WoundWnd extends Widget {
 	    }
 	    super.tick(dt);
 	}
-	
+
 	public class Item extends Widget implements DTarget {
 	    public final Wound w;
 	    private Widget qd, nm;
 	    private Object dres, dqd;
-	    
+
 	    public Item(Coord sz, Wound w) {
 		super(sz);
 		this.w = w;
 		update();
 	    }
-	    
+
 	    private void update() {
 		if(qd != null) {qd.reqdestroy(); qd = null;}
 		if(nm != null) {nm.reqdestroy(); nm = null;}
@@ -172,48 +172,48 @@ public class WoundWnd extends Widget {
 		this.dqd = w.qdata;
 		this.dres = w.res;
 	    }
-	    
+
 	    public boolean drop(Coord cc, Coord ul) {
 		return(false);
 	    }
-	    
+
 	    public boolean iteminteract(Coord cc, Coord ul) {
 		WoundWnd.this.wdgmsg("wiact", w.id, ui.modflags());
 		return(true);
 	    }
-	    
+
 	    public void draw(GOut g) {
 		if(!Utils.eq(dres, w.res) || !Utils.eq(dqd, w.qdata))
 		    update();
 		super.draw(g);
 	    }
-	    
-	    public boolean mousedown(Coord c, int button) {
-		if(super.mousedown(c, button))
+
+	    public boolean mousedown(MouseDownEvent ev) {
+		if(ev.propagate(this) || super.mousedown(ev))
 		    return(true);
-		if(button == 1) {
+		if(ev.b == 1) {
 		    WoundWnd.this.wdgmsg("wsel", w.id);
 		    return(true);
-		} else if(button == 3) {
-		    WoundWnd.this.wdgmsg("wclick", w.id, button, ui.modflags());
+		} else if(ev.b == 3) {
+		    WoundWnd.this.wdgmsg("wclick", w.id, ev.b, ui.modflags());
 		    return(true);
 		}
 		return(false);
 	    }
 	}
-	
+
 	protected void drawslot(GOut g, Wound w, int idx, Area area) {
 	    super.drawslot(g, w, idx, area);
 	    if((wound != null) && (wound.woundid() == w.id))
 		drawsel(g, w, idx, area);
 	}
-	
+
 	protected boolean unselect(int button) {
 	    if(button == 1)
 		WoundWnd.this.wdgmsg("wsel", (Object)null);
 	    return(true);
 	}
-	
+
 	public Wound get(int id) {
 	    for(Wound w : wounds) {
 		if(w.id == id)
@@ -221,11 +221,11 @@ public class WoundWnd extends Widget {
 	    }
 	    return(null);
 	}
-	
+
 	public void add(Wound w) {
 	    wounds.add(w);
 	}
-	
+
 	public Wound remove(int id) {
 	    for(Iterator<Wound> i = wounds.iterator(); i.hasNext();) {
 		Wound w = i.next();
@@ -237,30 +237,30 @@ public class WoundWnd extends Widget {
 	    return(null);
 	}
     }
-    
+
     public WoundWnd() {
 	Widget prev;
-	
-	prev = add(CharWnd.settip(new Img(catf.render("Health & Wounds").tex()), "gfx/hud/chr/tips/wounds"), 0, 0);
+
+	prev = add(CharWnd.settip(new Img(catf.i10n_label("Health & Wounds").tex()), "gfx/hud/chr/tips/wounds"), 0, 0);
 	this.wounds = add(new WoundList(Coord.of(attrw, height)), prev.pos("bl").x(width + UI.scale(5)).add(wbox.btloff()));
 	Frame.around(this, Collections.singletonList(this.wounds));
 	woundbox = add(new Widget(new Coord(attrw, this.wounds.sz.y)) {
-	    public void draw(GOut g) {
-		g.chcolor(0, 0, 0, 128);
-		g.frect(Coord.z, sz);
-		g.chcolor();
-		super.draw(g);
-	    }
-	    
-	    public void cdestroy(Widget w) {
-		if(w == wound)
-		    wound = null;
-	    }
-	}, prev.pos("bl").adds(5, 0).add(wbox.btloff()));
+		public void draw(GOut g) {
+		    g.chcolor(0, 0, 0, 128);
+		    g.frect(Coord.z, sz);
+		    g.chcolor();
+		    super.draw(g);
+		}
+
+		public void cdestroy(Widget w) {
+		    if(w == wound)
+			wound = null;
+		}
+	    }, prev.pos("bl").adds(5, 0).add(wbox.btloff()));
 	Frame.around(this, Collections.singletonList(woundbox));
 	pack();
     }
-    
+
     public void addchild(Widget child, Object... args) {
 	String place = (args[0] instanceof String) ? (((String)args[0]).intern()) : null;
 	if(place == "wound") {
@@ -270,7 +270,7 @@ public class WoundWnd extends Widget {
 	    super.addchild(child, args);
 	}
     }
-    
+
     private void decwound(Object[] args, int a, int len) {
 	int id = Utils.iv(args[a]);
 	Indir<Resource> res = (args[a + 1] == null) ? null : ui.sess.getresv(args[a + 1]);
@@ -289,7 +289,7 @@ public class WoundWnd extends Widget {
 	    wounds.remove(id);
 	}
     }
-    
+
     public void uimsg(String nm, Object... args) {
 	if(nm == "wounds") {
 	    if(args.length > 0) {

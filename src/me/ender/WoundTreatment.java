@@ -28,8 +28,6 @@ public class WoundTreatment {
     
     public static String treatment(Resource wound) {
 	initTreatments();
-	if (TREAT_CFG == null)
-	    return "Treatments not loaded.";
 	String[] treatment = TREAT_CFG.getOrDefault(wound.name, null);
 	StringBuilder buf = new StringBuilder();
 	if(treatment != null && treatment.length > 0) {

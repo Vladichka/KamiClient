@@ -28,11 +28,12 @@ package haven;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.*;
+import java.util.Arrays;
 
 public interface MapSource {
     public int gettile(Coord tc);
     public double getfz(Coord tc);
+    default public double getfz2(Coord tc) {return getfz(tc);}
     public Tileset tileset(int t);
     public Tiler tiler(int t);
 
@@ -90,7 +91,7 @@ public interface MapSource {
 		if (CFG.PVP_MAP.get()) {
 		    rgb = getColor(m, t);
 		    if(tex != null && rgb == 0)
-		    	rgb = getDominantColor(tex, dColor, t);
+			rgb = getDominantColor(tex, dColor, t);
 		}
 		else
 		{
@@ -125,7 +126,7 @@ public interface MapSource {
 		}
 	    }
 	}
-	if (!CFG.PVP_MAP.get()) {
+	if (!CFG.PVP_MAP.get() && !CFG.REMOVE_BIOME_BORDER_FROM_MINIMAP.get())
 	    for(c.y = 0; c.y < sz.y; c.y++) {
 		for(c.x = 0; c.x < sz.x; c.x++) {
 		    int t = m.gettile(a.ul.add(c));
@@ -136,20 +137,19 @@ public interface MapSource {
 			buf.setRGB(c.x, c.y, Color.BLACK.getRGB());
 		}
 	    }
-	}
 	return(buf);
     }
     
-	public static int getDominantColor(BufferedImage image, int[] colors, int index)
+    public static int getDominantColor(BufferedImage image, int[] colors, int index)
+    {
+	if (colors[index] == -1)
 	{
-	    if (colors[index] == -1)
-	    {
-		colors[index] = findDominantColor(image, false, -1).getRGB();
-	    }
-	    return colors[index];
+	    colors[index] = findDominantColor(image, false, -1).getRGB();
 	}
-	
-	public static Color findDominantColor(BufferedImage paramBufferedImage, boolean getBoundaryColor, int boundThickness) {
+	return colors[index];
+    }
+    
+    public static Color findDominantColor(BufferedImage paramBufferedImage, boolean getBoundaryColor, int boundThickness) {
 	int margin = boundThickness;
 	int totRed = 0;
 	int totGreen = 0;

@@ -1,8 +1,11 @@
 package haven;
 
+import me.ender.ClientUtils;
 import me.ender.GobInfoOpts;
 import me.ender.GobInfoOpts.InfoPart;
+import me.ender.GobInfoOpts.TreeSubPart;
 import me.ender.Reflect;
+import me.ender.ResName;
 import me.ender.gob.GobTimerData;
 
 import java.awt.*;
@@ -10,6 +13,8 @@ import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import static me.ender.gob.GobContents.*;
 
 public class GeneralGobInfo extends GobInfo {
     private static final int TREE_START = 10;
@@ -39,6 +44,7 @@ public class GeneralGobInfo extends GobInfo {
     
     static {
 	POS.put("gfx/terobjs/smelter", 5);
+	POS.put("gfx/terobjs/fineryforge", 8);
 	POS.put("gfx/terobjs/barrel", 6);
 	POS.put("gfx/terobjs/iconsign", 5);
 	POS.put("gfx/terobjs/cheeserack", 17);
@@ -64,12 +70,14 @@ public class GeneralGobInfo extends GobInfo {
     
     @Override
     protected Tex render() {
-	if(gob == null || gob.getres() == null) {return null;}
+	String resid;
+	if(gob == null || (resid = gob.resid()) == null) {return null;}
 	
-	up(POS.getOrDefault(gob.resid(), 1));
+	up(POS.getOrDefault(resid, 1));
 	BufferedImage[] parts = new BufferedImage[]{
 	    growth(),
 	    health(),
+	    icons(),
 	    content(),
 	    quality(),
 	    timer.img(),
@@ -98,7 +106,7 @@ public class GeneralGobInfo extends GobInfo {
 	    if(GobInfoOpts.enabled(InfoPart.CHEESE_RACK) && res.startsWith("gfx/terobjs/cheeserack")) {
 		if(name.startsWith("gfx/terobjs/items/cheesetray-")) {
 		    name = name.substring(name.lastIndexOf("-") + 1);
-		    text = Utils.prettyResName(name);
+		    text = ClientUtils.prettyResName(name);
 		}
 	    }
 	    
@@ -162,20 +170,15 @@ public class GeneralGobInfo extends GobInfo {
 	    }
 	} else if(isSpriteKind(gob, "Tree")) {
 	    if(GobInfoOpts.disabled(InfoPart.TREE_GROWTH)) {return null;}
-	    Message data = getDrawableData(gob);
-	    if(data != null && !data.eom()) {
-		data.skip(1);
-		scalePercent = data.eom() ? -1 : data.uint8();
-		if(scalePercent < 100 && scalePercent >= 0) {
-		    int growth = scalePercent;
-		    if(gob.is(GobTag.TREE)) {
-			growth = (int) (TREE_MULT * (growth - TREE_START));
-		    } else if(gob.is(GobTag.BUSH)) {
-			growth = (int) (BUSH_MULT * (growth - BUSH_START));
-		    }
-		    Color c = Utils.blendcol(growth / 100.0, Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN);
-		    line = text(String.format("%d%%", growth), c);
-		}
+	    int growth = scalePercent = getTreeScale(gob);
+	    if(gob.is(GobTag.TREE)) {
+		growth = (int) (TREE_MULT * (growth - TREE_START));
+	    } else if(gob.is(GobTag.BUSH)) {
+		growth = (int) (BUSH_MULT * (growth - BUSH_START));
+	    }
+	    if(growth >= 0 && (growth < 100 || (CFG.DISPLAY_GOB_INFO_TREE_SHOW_BIG.get() && growth >= CFG.DISPLAY_GOB_INFO_TREE_SHOW_BIG_THRESHOLD.get()))) {
+		Color c = Utils.blendcol(growth / 100.0, Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN);
+		line = text(String.format("%d%%", growth), c);
 	    }
 	}
 	
@@ -183,6 +186,13 @@ public class GeneralGobInfo extends GobInfo {
 	    return line.img;
 	}
 	return null;
+    }
+    
+    private static int getTreeScale(Gob gob) {
+	Message data = getDrawableData(gob);
+	if(data == null || data.eom()) {return -1;}
+	data.skip(1);
+	return data.eom() ? -1 : data.uint8();
     }
     
     public float growthScale() {
@@ -193,26 +203,27 @@ public class GeneralGobInfo extends GobInfo {
     }
     
     public String contents() {
+	if(contents == null) {
+	    contents = getContents(true).orElse("");
+	}
 	return contents;
     }
     
-    private BufferedImage content() {
-	this.contents = null;
+    private Optional<String> getContents(boolean force) {
 	String res = gob.resid();
-	if(res == null) {return null;}
 	Optional<String> contents = Optional.empty();
+	if(res == null) {return contents;}
 	
 	if(res.startsWith("gfx/terobjs/barrel")) {
-	    if(GobInfoOpts.disabled(InfoPart.BARREL)) {return null;}
+	    if(!force && GobInfoOpts.disabled(InfoPart.BARREL)) {return contents;}
 	    contents = gob.ols.stream()
 		.map(Gob.Overlay::name)
-		.filter(name -> name.startsWith("gfx/terobjs/barrel-"))
-		.map(name -> name.substring(name.lastIndexOf("-") + 1))
-		.map(Utils::prettyResName)
+		.filter(name -> name.startsWith(ResName.BARREL_WITH_CONTENTS))
+		.map(ClientUtils::prettyResName)
 		.findAny();
-	 
+	    
 	} else if(res.startsWith("gfx/terobjs/iconsign")) {
-	    if(GobInfoOpts.disabled(InfoPart.DISPLAY_SIGN)) {return null;}
+	    if(!force && GobInfoOpts.disabled(InfoPart.DISPLAY_SIGN)) {return contents;}
 	    Message sdt = gob.sdtm();
 	    if(!sdt.eom()) {
 		int resid = sdt.uint16();
@@ -223,10 +234,17 @@ public class GeneralGobInfo extends GobInfo {
 		Session session = gob.context(Session.class);
 		Indir<Resource> cres = session.getres2(resid);
 		if(cres != null) {
-		    contents = Optional.of(Utils.prettyResName(cres));
+		    contents = Optional.of(ClientUtils.prettyResName(cres));
 		}
 	    }
 	}
+	
+	return contents;
+    }
+    
+    private BufferedImage content() {
+	this.contents = null;
+	Optional<String> contents = getContents(false);
 	
 	if(contents.isPresent()) {
 	    this.contents = contents.get();
@@ -247,6 +265,67 @@ public class GeneralGobInfo extends GobInfo {
 		.toArray(BufferedImage[]::new));
 	}
 	return null;
+    }
+    
+    private BufferedImage icons() {
+	Map<String, String> data = getData(gob);
+	if(data == null) {return null;}
+	BufferedImage[] parts = null;
+
+	//TODO: switch to using tags to detect leaves, seeds and growth status
+	if(isSpriteKind(gob, "Tree")) {
+	    int scale = getTreeScale(gob);
+
+	    if(GobInfoOpts.disabled(InfoPart.TREE_CONTENTS)
+		|| (CFG.DISPLAY_GOB_INFO_TREE_HIDE_GROWING_PARTS.get() && scale >= 0 && scale < 100)) {
+		return null;
+	    }
+	    
+	    int sdt = gob.sdt();
+	    boolean seed = (sdt & 1) != 1;
+	    boolean leaf = (sdt & 2) != 2;
+	    parts = new BufferedImage[]{
+		seed && GobInfoOpts.enabled(TreeSubPart.SEEDS) ? getIcon(data.get(SEED)) : null,
+		leaf && GobInfoOpts.enabled(TreeSubPart.LEAVES) ? getIcon(data.get(LEAF)) : null,
+		GobInfoOpts.enabled(TreeSubPart.BARK) ? getIcon(data.get(BARK)) : null,
+		GobInfoOpts.enabled(TreeSubPart.BOUGH) ? getIcon(data.get(BOUGH)) : null,
+	    };
+
+	} else if(CFG.SHOW_PROGRESS_COLOR.get()) { //should this be separate option?
+	    if(gob.is(GobTag.SMELTER)) {
+		parts = new BufferedImage[]{
+		    gob.is(GobTag.READY) ? getIcon(data.get(READY)) : null,
+		    gob.is(GobTag.IS_COLD) ? getIcon(data.get(COLD)) : null,
+		};
+	    }
+	}
+
+	if(parts == null) {return null;}
+	
+	for (BufferedImage part : parts) {
+	    if(part == null) {continue;}
+	    return ItemInfo.catimgs(1, parts);
+	}
+	return null;
+    }
+    
+    private static final Map<String, BufferedImage> iconCache = new HashMap<>();
+    
+    private static BufferedImage getIcon(String name) {
+	if(name == null) {return null;}
+	if(iconCache.containsKey(name)) {
+	    return iconCache.get(name);
+	}
+	BufferedImage img;
+	try {
+	    img = Resource.remote().loadwait(name).layer(Resource.imgc).img;
+	    img = PUtils.convolvedown(img, UI.scale(20, 20), CharWnd.iconfilter);
+	} catch (Exception e) {
+	    System.err.printf("Couldn't load content icon: '%s'%n", name);
+	    img = null;
+	}
+	iconCache.put(name, img);
+	return img;
     }
     
     private static Message getDrawableData(Gob gob) {

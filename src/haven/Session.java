@@ -37,7 +37,7 @@ import java.nio.*;
 import java.lang.ref.*;
 
 public class Session implements Resource.Resolver {
-    public static final int PVER = 28;
+    public static final int PVER = 29;
     
     public static final int MSG_SESS = 0;
     public static final int MSG_REL = 1;
@@ -144,10 +144,12 @@ public class Session implements Resource.Resolver {
 	    }
 	    
 	    public String toString() {
-		if(res == null) {
-		    return("<res:" + resid + ">");
-		} else {
+		if(res != null) {
 		    return("<" + res + ">");
+		} else if(resnm != null) {
+		    return("<!" + resnm + ":" + resver + ">");
+		} else {
+		    return("<res:" + resid + ">");
 		}
 	    }
 	    
@@ -239,6 +241,10 @@ public class Session implements Resource.Resolver {
 	return(getres(id, 0));
     }
     
+    public Indir<Resource> dynres(UID uid) {
+	return(Resource.remote().dynres(uid));
+    }
+    
     public Indir<Resource> getres2(int id) {
 	synchronized (rescache) {
 	    CachedRes ret = rescache.get(id);
@@ -267,11 +273,6 @@ public class Session implements Resource.Resolver {
 	return id;
     }
     
-
-    public Indir<Resource> dynres(UID uid) {
-	return(Resource.remote().dynres(uid));
-    }
-
     private void handlerel(PMessage msg) {
 	if((msg.type == RMessage.RMSG_NEWWDG) || (msg.type == RMessage.RMSG_WDGMSG) ||
 	    (msg.type == RMessage.RMSG_DSTWDG) || (msg.type == RMessage.RMSG_ADDWDG) ||
@@ -338,7 +339,7 @@ public class Session implements Resource.Resolver {
     };
     
     public Session(SocketAddress server, String username, byte[] cookie, Object... args) throws InterruptedException {
-	this.character = new CharacterInfo();
+	this.character = new CharacterInfo(this);
 	this.conn = new Connection(server, username);
 	this.username = username;
 	this.glob = new Glob(this);
@@ -351,6 +352,7 @@ public class Session implements Resource.Resolver {
     
     public void close() {
 	conn.close();
+	glob.oc.destroy();
     }
     
     public void queuemsg(PMessage pmsg) {

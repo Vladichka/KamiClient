@@ -1,6 +1,7 @@
 package auto;
 
 import haven.*;
+import haven.res.ui.tt.level.Level;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -8,9 +9,24 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class InvHelper {
+    public static Predicate<WItem> HAS_TEA = contains(ItemData.TEA);
+    public static Predicate<WItem> HAS_WATER = contains(ItemData.WATER);
+    
     
     private static List<WItem> items(Widget inv) {
 	return inv != null ? new ArrayList<>(inv.children(WItem.class)) : new LinkedList<>();
+    }
+    
+    static Optional<WItem> findFirstMatching(Predicate<WItem> what, Collection<Supplier<List<WItem>>> where) {
+	for (Supplier<List<WItem>> place : where) {
+	    Optional<WItem> w = place.get().stream()
+		.filter(what)
+		.findFirst();
+	    if(w.isPresent()) {
+		return w;
+	    }
+	}
+	return Optional.empty();
     }
     
     static Optional<WItem> findFirstThatContains(String what, Collection<Supplier<List<WItem>>> where) {
@@ -40,9 +56,26 @@ public class InvHelper {
 	return isDrinkContainer(item.item);
     }
     
-    static boolean isDrinkContainer(WItem item) {
+    public static boolean isDrinkContainer(WItem item) {
 	String resname = item.item.resname();
-	return resname.endsWith("/waterskin") || resname.endsWith("/waterflask") || resname.endsWith("/glassjug");
+	return resname.endsWith("/waterskin") || resname.endsWith("/waterflask") || resname.contains("/glassjug") || resname.contains("/kuksa");
+    }
+    
+    static boolean isBucket(ContainedItem item) {
+	return isBucket(item.item);
+    }
+    
+    public static boolean isBucket(WItem item) {
+	return item.item.resname().contains("/bucket");
+    }
+    
+    static boolean canBeFilledWith(ContainedItem item, String what) {
+	return canBeFilledWith(item.item, what);
+    }
+    
+    public static boolean canBeFilledWith(WItem item, String what) {
+	Level fullness = item.fullness.get();
+	return fullness == null || (item.contains.get().is(what) && fullness.cur != fullness.max);
     }
     
     static boolean isNotFull(ContainedItem item) {
@@ -50,8 +83,13 @@ public class InvHelper {
     }
     
     static boolean isNotFull(WItem item) {
-	Pair<Double, Double> fullness = item.fullness.get();
-	return fullness == null || !Objects.equals(fullness.a, fullness.b);
+	Level fullness = item.fullness.get();
+	return fullness == null || fullness.cur != fullness.max;
+    }
+    
+    public static boolean isEmpty(WItem item) {
+	Level fullness = item.fullness.get();
+	return fullness == null || fullness.cur == 0;
     }
     
     static Collection<WItem> unstacked(WItem stack) {
@@ -76,7 +114,7 @@ public class InvHelper {
 	    .findFirst();
     }
     
-    static Supplier<List<WItem>> INVENTORY(GameUI gui) {
+    public static Supplier<List<WItem>> INVENTORY(GameUI gui) {
 	return () -> items(gui.maininv);
     }
     
@@ -84,7 +122,7 @@ public class InvHelper {
 	return () -> items(gui.maininv).stream().map(w -> new InventoryItem(w, gui.maininv)).collect(Collectors.toList());
     }
     
-    static Supplier<List<WItem>> BELT(GameUI gui) {
+    public static Supplier<List<WItem>> BELT(GameUI gui) {
 	return () -> {
 	    Equipory e = gui.equipory;
 	    if(e != null) {
@@ -110,7 +148,7 @@ public class InvHelper {
 	};
     }
     
-    static Supplier<List<WItem>> HANDS(GameUI gui) {
+    public static Supplier<List<WItem>> HANDS(GameUI gui) {
 	return () -> {
 	    List<WItem> items = new LinkedList<>();
 	    if(gui.equipory != null) {
@@ -121,6 +159,57 @@ public class InvHelper {
 		slot = gui.equipory.slots[Equipory.SLOTS.HAND_RIGHT.idx];
 		if(slot != null) {
 		    items.add(slot);
+		}
+	    }
+	    return items;
+	};
+    }
+    
+    static Supplier<List<ContainedItem>> HANDS_CONTAINED(GameUI gui) {
+	return () -> {
+	    List<ContainedItem> items = new LinkedList<>();
+	    if(gui.equipory != null) {
+		WItem item = gui.equipory.slots[Equipory.SLOTS.HAND_LEFT.idx];
+		if(item != null) {
+		    items.add(new EquipItem(item, gui.equipory, Equipory.SLOTS.HAND_LEFT));
+		}
+		item = gui.equipory.slots[Equipory.SLOTS.HAND_RIGHT.idx];
+		if(item != null) {
+		    items.add(new EquipItem(item, gui.equipory, Equipory.SLOTS.HAND_RIGHT));
+		}
+	    }
+	    return items;
+	};
+    }
+    
+    public static Supplier<List<WItem>> POUCHES(GameUI gui) {
+	return () -> {
+	    List<WItem> items = new LinkedList<>();
+	    if(gui.equipory != null) {
+		WItem slot = gui.equipory.slots[Equipory.SLOTS.POUCH_LEFT.idx];
+		if(slot != null) {
+		    items.add(slot);
+		}
+		slot = gui.equipory.slots[Equipory.SLOTS.POUCH_RIGHT.idx];
+		if(slot != null) {
+		    items.add(slot);
+		}
+	    }
+	    return items;
+	};
+    }
+    
+    static Supplier<List<ContainedItem>> POUCHES_CONTAINED(GameUI gui) {
+	return () -> {
+	    List<ContainedItem> items = new LinkedList<>();
+	    if(gui.equipory != null) {
+		WItem item = gui.equipory.slots[Equipory.SLOTS.POUCH_LEFT.idx];
+		if(item != null) {
+		    items.add(new EquipItem(item, gui.equipory, Equipory.SLOTS.POUCH_LEFT));
+		}
+		item = gui.equipory.slots[Equipory.SLOTS.POUCH_RIGHT.idx];
+		if(item != null) {
+		    items.add(new EquipItem(item, gui.equipory, Equipory.SLOTS.POUCH_RIGHT));
 		}
 	    }
 	    return items;
@@ -191,5 +280,29 @@ public class InvHelper {
 	public void putBack() {
 	    belt.item.wdgmsg("itemact", 0);
 	}
+    }
+    
+    private static class EquipItem extends ContainedItem {
+	private final Equipory equipory;
+	private final Equipory.SLOTS slot;
+	
+	EquipItem(WItem item, Equipory equipory, Equipory.SLOTS slot) {
+	    super(item);
+	    this.equipory = equipory;
+	    this.slot = slot;
+	}
+	
+	@Override
+	public boolean containerDisposed() {
+	    return equipory.disposed();
+	}
+	
+	@Override
+	public void take() {
+	    item.item.wdgmsg("take", Coord.z);
+	}
+	
+	@Override
+	public void putBack() {equipory.wdgmsg("drop", slot.idx);}
     }
 }

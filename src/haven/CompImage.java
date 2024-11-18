@@ -33,62 +33,67 @@ import java.awt.image.BufferedImage;
 public class CompImage {
     public Coord sz;
     private final Collection<Placed> cont = new LinkedList<Placed>();
-
+    
     public interface Image {
 	public void draw(Graphics g, Coord c);
 	public Coord sz();
+	
+	public static final Image nil = new Image() {
+	    public void draw(Graphics g, Coord c) {}
+	    public Coord sz() {return(Coord.z);}
+	};
     }
-
+    
     private static class Placed {
 	Image img; Coord c;
 	Placed(Image img, Coord c) {this.img = img; this.c = c;}
     }
-
+    
     public CompImage() {
 	sz = Coord.z;
     }
-
+    
     public CompImage add(Image img, Coord c) {
 	cont.add(new Placed(img, c));
 	Coord imsz = img.sz();
 	sz = new Coord(Math.max(sz.x, c.x + imsz.x),
-		       Math.max(sz.y, c.y + imsz.y));
+	    Math.max(sz.y, c.y + imsz.y));
 	return(this);
     }
-
+    
     public static Image mk(final BufferedImage img) {
 	return(new Image() {
-		public void draw(Graphics g, Coord c) {
-		    g.drawImage(img, c.x, c.y, null);
-		}
-		public Coord sz() {return(PUtils.imgsz(img));}
-	    });
+	    public void draw(Graphics g, Coord c) {
+		g.drawImage(img, c.x, c.y, null);
+	    }
+	    public Coord sz() {return(PUtils.imgsz(img));}
+	});
     }
-
+    
     public CompImage add(final BufferedImage img, Coord c) {
 	add(mk(img), c);
 	return(this);
     }
-
+    
     public static Image mk(final CompImage img) {
 	return(new Image() {
-		public void draw(Graphics g, Coord c) {
-		    img.compose(g, c);
-		}
-		public Coord sz() {return(img.sz);}
-	    });
+	    public void draw(Graphics g, Coord c) {
+		img.compose(g, c);
+	    }
+	    public Coord sz() {return(img.sz);}
+	});
     }
-
+    
     public CompImage add(final CompImage img, Coord c) {
 	add(mk(img), c);
 	return(this);
     }
-
+    
     private void compose(Graphics on, Coord off) {
 	for(Placed pl : cont)
 	    pl.img.draw(on, pl.c.add(off));
     }
-
+    
     public BufferedImage compose() {
 	BufferedImage ret = TexI.mkbuf(sz);
 	Graphics g = ret.getGraphics();
@@ -96,7 +101,7 @@ public class CompImage {
 	g.dispose();
 	return(ret);
     }
-
+    
     public CompImage table(Coord base, Image[][] cells, Object cs, int rs, int[] cj) {
 	int[] _cs = new int[cells.length];
 	if(cs instanceof int[]) {
@@ -142,7 +147,7 @@ public class CompImage {
 	}
 	return(this);
     }
-
+    
     public static Image[][] transpose(Image[][] cells) {
 	int w = 0;
 	for(int r = 0; r < cells.length; r++)
@@ -156,7 +161,7 @@ public class CompImage {
 	}
 	return(ret);
     }
-
+    
     public static Image[][] transpose(Collection<Image[]> rows) {
 	return(transpose(rows.toArray(new Image[0][])));
     }

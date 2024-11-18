@@ -29,7 +29,6 @@ package haven;
 import haven.rx.CharterBook;
 
 import java.util.*;
-import java.awt.event.KeyEvent;
 import java.io.*;
 
 public class LoginScreen extends Widget {
@@ -57,22 +56,22 @@ public class LoginScreen extends Widget {
 	this.hostname = hostname;
 	setfocustab(true);
 	add(new Img(bg), Coord.z);
-	optbtn = adda(new Button(UI.scale(100), "Options"), pos("cbl").add(UI.scale(210, -10)), 0, 1);
+	optbtn = adda(new Button(UI.scale(100), "Options"), pos("cbl").add(10, -10), 0, 1);
 	optbtn.setgkey(GameUI.kb_opt);
 	switch(authmech.get()) {
-	    case "native":
-		login = new Credbox();
-		break;
-	    case "steam":
-		login = new Steambox();
-		break;
-	    default:
-		throw(new RuntimeException("Unknown authmech: " + authmech.get()));
+	case "native":
+	    login = new Credbox();
+	    accounts = add(new AccountList(10));
+	    adda(new StatusLabel(hostname, 0.5), bgc.x, bg.sz().y, 0.5, 1);
+	    break;
+	case "steam":
+	    login = new Steambox();
+	    break;
+	default:
+	    throw(new RuntimeException("Unknown authmech: " + authmech.get()));
 	}
-	adda(login, bgc.adds(0, 10), 0.5, 0.0).hide();
-	accounts = add(new AccountList(10), UI.scale(200,0));
-	adda(new StatusLabel(hostname, 0.5), bgc.x, bg.sz().y, 0.5, 1);
 	CharterBook.init();
+	adda(login, bgc.adds(0, 10), 0.5, 0.0).hide();
     }
     
     private void showChangeLog() {
@@ -101,7 +100,7 @@ public class LoginScreen extends Widget {
 	}
 	txt.setprog(0);
     }
-
+    
     public static final KeyBinding kb_savtoken = KeyBinding.get("login/savtoken", KeyMatch.forchar('R', KeyMatch.M));
     public static final KeyBinding kb_deltoken = KeyBinding.get("login/deltoken", KeyMatch.forchar('F', KeyMatch.M));
     public class Credbox extends Widget {
@@ -137,7 +136,7 @@ public class LoginScreen extends Widget {
 		changed();
 	    }
 
-	    public boolean keydown(KeyEvent ev) {
+	    public boolean keydown(KeyDownEvent ev) {
 		if(ConsoleHost.kb_histprev.key().match(ev)) {
 		    if(hpos < history.size() - 1) {
 			if(hpos < 0)
@@ -262,7 +261,7 @@ public class LoginScreen extends Widget {
 	    return(ret);
 	}
 
-	public boolean keydown(KeyEvent ev) {
+	public boolean keydown(KeyDownEvent ev) {
 	    if(key_act.match(ev)) {
 		enter();
 		return(true);
@@ -379,12 +378,13 @@ public class LoginScreen extends Widget {
 
     public void wdgmsg(Widget sender, String msg, Object... args) {
 	if(sender == accounts) {
-	    if("account".equals(msg)) {
+	    if("account".equals(msg) && login instanceof Credbox) {
+		Credbox creds = (Credbox) login;
 		String name = (String) args[0];
 		String token = (String) args[1];
-		((Credbox)login).user.settext2(name);
-		((Credbox)login).token = Utils.hex2byte(token);
-		((Credbox)login).enter();
+		creds.user.settext2(name);
+		creds.token = Utils.hex2byte(token);
+		creds.enter();
 	    }
 	    return;
 	}
@@ -418,11 +418,11 @@ public class LoginScreen extends Widget {
 	if(msg == "login") {
 	    mklogin();
 	} else if(msg == "error") {
-	    error((String)args[0]);
+	    error(L10N.msg((String)args[0]));
 	} else if(msg == "prg") {
 	    error(null);
 	    clear();
-	    progress((String)args[0]);
+	    progress(L10N.msg((String)args[0]));
 	} else {
 	    super.uimsg(msg, args);
 	}

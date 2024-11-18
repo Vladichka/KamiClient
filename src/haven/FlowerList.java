@@ -111,11 +111,11 @@ public class FlowerList extends WidgetList<FlowerList.Item> {
 	}
 
 	@Override
-	public boolean mousedown(Coord c, int button) {
-	    if(super.mousedown(c, button)) {
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(ev.propagate(this)) {
 		return true;
 	    }
-	    if(button != 1)
+	    if(ev.b != 1)
 		return (false);
 	    a = true;
 	    grab = ui.grabmouse(this);
@@ -123,14 +123,14 @@ public class FlowerList extends WidgetList<FlowerList.Item> {
 	}
 
 	@Override
-	public boolean mouseup(Coord c, int button) {
-	    if(a && button == 1) {
+	public boolean mouseup(MouseUpEvent ev) {
+	    if(a && ev.b == 1) {
 		a = false;
 		if(grab != null) {
 		    grab.remove();
 		    grab = null;
 		}
-		if(c.isect(new Coord(0, 0), sz))
+		if(ev.c.isect(new Coord(0, 0), sz))
 		    click();
 		return (true);
 	    }

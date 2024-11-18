@@ -34,8 +34,6 @@ import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
 
-import static haven.BAttrWnd.Constipations.*;
-import static haven.PUtils.*;
 import static haven.QualityList.SingleType.*;
 
 public class FoodInfo extends ItemInfo.Tip {
@@ -43,7 +41,6 @@ public class FoodInfo extends ItemInfo.Tip {
     public final Event[] evs;
     public final Effect[] efs;
     public final int[] types;
-    private final CharacterInfo.Constipation constipation;
     
     public FoodInfo(Owner owner, double end, double glut, double cons, Event[] evs, Effect[] efs, int[] types) {
 	super(owner);
@@ -53,17 +50,7 @@ public class FoodInfo extends ItemInfo.Tip {
 	this.evs = evs;
 	this.efs = efs;
 	this.types = types;
-	
-	CharacterInfo.Constipation constipation = null;
-	try {
-	    constipation = owner.context(Session.class).character.constipation;
-	    if(!constipation.hasRenderer(FoodInfo.class)) {
-		constipation.addRenderer(FoodInfo.class, FoodInfo::renderConstipation);
-	    }
-	} catch (NullPointerException | OwnerContext.NoContext ignore) {}
-	this.constipation = constipation;
     }
-    
     
     public FoodInfo(Owner owner, double end, double glut, Event[] evs, Effect[] efs, int[] types) {
 	this(owner, end, glut, 0, evs, efs, types);
@@ -92,7 +79,7 @@ public class FoodInfo extends ItemInfo.Tip {
     }
     
     public BufferedImage tipimg() {
-	String energy_hunger = glut != 0
+	String energy_hunger = glut != 0 
 	    ? Utils.odformat2(end / (10 * glut), 2)
 	    : end == 0 ? "0" : "∞";
 	
@@ -119,40 +106,9 @@ public class FoodInfo extends ItemInfo.Tip {
 		efi = catimgsh(5, efi, RichText.render(String.format("$i{($col[192,192,255]{%d%%} chance)}", (int)Math.round(efs[i].p * 100)), 0).img);
 	    imgs.add(efi);
 	}
-	if(CFG.DISPLAY_FOD_CATEGORIES.get() && types.length > 0 && constipation != null) {
-	    imgs.add(Text.render("Categories:").img);
-	    double effective = 1;
-	    for (int type : types) {
-		CharacterInfo.Constipation.Data c = constipation.get(type);
-		if(c!=null) {
-		    imgs.add(constipation.render(FoodInfo.class, c));
-		    effective = Math.min(effective, c.value);
-		}
-	    }
-	    Color col = color(effective);
-	    imgs.add(RichText.render(String.format("Effective: $col[%d,%d,%d]{%s%%}", col.getRed(), col.getGreen(), col.getBlue(), Utils.odformat2(100 * effective, 2)), 0).img);
-	}
-	String fep_hunger = glut != 0
-	    ? Utils.odformat2(fepSum / (100 * glut), 2)
-	    : fepSum == 0 ? "0" : "∞";
 	
-	imgs.add(RichText.render(String.format("FEP Sum: $col[128,255,0]{%s}, FEP/Hunger: $col[128,255,0]{%s}", Utils.odformat2(fepSum, 2), fep_hunger), 0).img);
+	ItemData.modifyFoodTooltip(owner, imgs, types, glut, fepSum);
 	return(catimgs(0, imgs.toArray(new BufferedImage[0])));
-    }
-    
-    private static BufferedImage renderConstipation(CharacterInfo.Constipation.Data data) {
-	int h = 14;
-	BufferedImage img = data.res.get().layer(Resource.imgc).img;
-	String nm = data.res.get().layer(Resource.tooltip).t;
-	Color col = color(data.value);
-	Text rnm = RichText.render(String.format("%s: $col[%d,%d,%d]{%s%%}", nm, col.getRed(), col.getGreen(), col.getBlue(), Utils.odformat2(100 * data.value, 2)), 0);
-	BufferedImage tip = TexI.mkbuf(new Coord(h + 5 + rnm.sz().x, h));
-	Graphics g = tip.getGraphics();
-	g.drawImage(convolvedown(img, new Coord(h, h), tflt), 0, 0, null);
-	g.drawImage(rnm.img, h + 5, ((h - rnm.sz().y) / 2) + 1, null);
-	g.dispose();
-	
-	return tip;
     }
     
     public static class Data implements ItemData.ITipData {

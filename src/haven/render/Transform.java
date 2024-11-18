@@ -150,6 +150,22 @@ public abstract class Transform extends State {
 	return(m.trim3(1).transpose().mul1(makexlate(new Matrix4f(), new Coord3f(-m.m[12], -m.m[13], -m.m[14]))));
     }
 
+    public static final Function<Matrix4f, Matrix4f> nullscale = new Function<Matrix4f, Matrix4f>() {
+	public Matrix4f apply(Matrix4f p) {
+	    if(p == Matrix4f.id)
+		return(p);
+	    
+	    Matrix4f r = new Matrix4f(p);
+	    r.norm(0,1,2);
+	    r.norm(4,5,6);
+	    r.norm(8,9,10);
+
+	    return(r);
+	}
+
+	public String toString() {return ("#nullscale");}
+    };
+
     public String toString() {
 	return(this.getClass().getName() + "(" + xf + ")");
     }

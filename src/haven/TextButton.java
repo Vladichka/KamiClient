@@ -73,17 +73,13 @@ public class TextButton extends SIWidget {
 	g.dispose();
     }
     
-    public boolean checkhit(Coord c) {
-	return c.isect(Coord.z, sz);
-    }
-    
     public void click(int button) {
 	if(action != null) {
 	    action.call(button);
 	}
     }
     
-    public boolean gkeytype(java.awt.event.KeyEvent ev) {
+    public boolean gkeytype(GlobKeyEvent ev) {
 	click(1);
 	return (true);
     }
@@ -95,8 +91,8 @@ public class TextButton extends SIWidget {
     }
     
     @Override
-    public boolean mousedown(Coord c, int button) {
-	if(!checkhit(c))
+    public boolean mousedown(MouseDownEvent ev) {
+	if(!checkhit(ev.c))
 	    return (false);
 	a = true;
 	d = ui.grabmouse(this);
@@ -106,20 +102,20 @@ public class TextButton extends SIWidget {
     }
     
     @Override
-    public boolean mouseup(Coord c, int button) {
+    public boolean mouseup(MouseUpEvent ev) {
 	if(d == null) {return (false);}
 	d.remove();
 	d = null;
-	mousemove(c);
-	if(checkhit(c)) {
+	mousemove(new MouseMoveEvent(ev.c));
+	if(checkhit(ev.c)) {
 	    unpress();
-	    click(button);
+	    click(ev.b);
 	}
 	return (true);
     }
     
-    public void mousemove(Coord c) {
-	boolean h = checkhit(c);
+    public void mousemove(MouseMoveEvent ev) {
+	boolean h = checkhit(ev.c);
 	boolean a = false;
 	if(d != null) {
 	    a = h;

@@ -26,6 +26,7 @@
 
 package haven;
 
+import java.util.*;
 import java.util.function.*;
 import java.io.*;
 
@@ -35,23 +36,27 @@ public abstract class RetryingInputStream extends InputStream {
     private long pos;
     private int retries;
     private IOException lasterr;
-
+    private Collection<Throwable> suppressed = new ArrayList<>();
+    
     protected InputStream create() throws IOException {
 	throw(new IOException("RetryingInputStream must override at least some version of create()"));
     }
-
+    
     protected InputStream create(long pos) throws IOException {
 	InputStream ret = create();
 	for(long s = 0; s < pos; s += ret.skip(pos - s));
 	return(ret);
     }
-
+    
     private static final double[] sleep = {0.0, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0};
     protected void retry(int retries, IOException lasterr) throws IOException {
 	if(lasterr instanceof FileNotFoundException)
 	    throw(lasterr);
 	if(retries >= sleep.length) {
-	    throw(new IOException("already retried " + retries + " times", lasterr));
+	    IOException exc = new IOException("already retried " + retries + " times", lasterr);
+	    for(Throwable t : suppressed)
+		exc.addSuppressed(t);
+	    throw(exc);
 	} else {
 	    try {
 		Thread.sleep((int)(sleep[retries] * 1000));
@@ -61,7 +66,7 @@ public abstract class RetryingInputStream extends InputStream {
 	    }
 	}
     }
-
+    
     private InputStream get() throws IOException {
 	if(cur == null) {
 	    int count = retries++;
@@ -77,10 +82,12 @@ public abstract class RetryingInputStream extends InputStream {
 	}
 	return(cur);
     }
-
+    
     private void failed(IOException err) throws IOException {
 	if(fatal)
 	    throw(err);
+	if(lasterr != null)
+	    suppressed.add(lasterr);
 	lasterr = err;
 	if(cur != null) {
 	    try {
@@ -89,7 +96,7 @@ public abstract class RetryingInputStream extends InputStream {
 	    cur = null;
 	}
     }
-
+    
     public void check() throws IOException {
 	while(true) {
 	    try {
@@ -100,7 +107,7 @@ public abstract class RetryingInputStream extends InputStream {
 	    }
 	}
     }
-
+    
     public long skip(long len) throws IOException {
 	if(eof)
 	    return(0);
@@ -113,7 +120,7 @@ public abstract class RetryingInputStream extends InputStream {
 	    return(0);
 	}
     }
-
+    
     public int read(byte[] buf, int off, int len) throws IOException {
 	if(eof)
 	    return(-1);
@@ -133,7 +140,7 @@ public abstract class RetryingInputStream extends InputStream {
 	}
 	return(ret);
     }
-
+    
     public int read() throws IOException {
 	if(eof)
 	    return(-1);
@@ -155,7 +162,7 @@ public abstract class RetryingInputStream extends InputStream {
 	}
 	return(ret);
     }
-
+    
     public void close() throws IOException {
 	if(cur != null) {
 	    cur.close();

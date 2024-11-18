@@ -43,8 +43,6 @@ public class CustomMarker extends Marker {
     
     @Override
     public void draw(GOut g, Coord c, Text tip, final float scale, final MapFile file) {
-	if (CFG.PVP_MAP.get() && !Utils.PVP_MODE_MARKERS.contains(res.name))
-	    return;
 	final Image img = image(res, color);
 	if(img != null && img.tex != null) {
 	    final Coord ul = c.sub(img.cc);
@@ -68,7 +66,7 @@ public class CustomMarker extends Marker {
 	Image image = cache.get(cacheId);
 	if(image == null) {
 	    try {
-		image = new Image(Resource.loadsaved(Resource.remote(), spec), col);
+		image = new Image(spec.loadsaved(), col);
 		cache.put(cacheId, image);
 	    } catch (Loading ignored) {}
 	}

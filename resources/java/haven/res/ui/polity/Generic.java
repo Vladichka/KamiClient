@@ -8,7 +8,7 @@ import static haven.BuddyWnd.width;
 @haven.FromResource(name = "ui/polity", version = 11)
 public class Generic extends Polity {
     private final int my;
-    
+
     public Generic(String name) {
 	super("Polity", name);
 	Widget prev = add(new Img(CharWnd.catf.i10n_label("Polity").tex()), 0, 0);
@@ -19,12 +19,12 @@ public class Generic extends Polity {
 	pack();
 	this.my = prev.pos("bl").adds(0, 10).y;
     }
-    
+
     public static Widget mkwidget(UI ui, Object[] args) {
 	String name = (String)args[0];
 	return(new Generic(name));
     }
-    
+
     public void addchild(Widget child, Object... args) {
 	if(args[0] instanceof String) {
 	    String p = (String)args[0];

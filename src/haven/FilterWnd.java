@@ -23,14 +23,14 @@ public class FilterWnd extends GameUI.Hidewnd {
     }
     
     @Override
-    public boolean keydown(KeyEvent ev) {
-	if(ev.getKeyCode() == KeyEvent.VK_ESCAPE) {
+    public boolean keydown(KeyDownEvent ev) {
+	if(ev.code == KeyEvent.VK_ESCAPE) {
 	    if(input.text().length() > 0) {
 		input.settext("");
 		return true;
 	    }
 	}
-	return !ignoredKey(ev) && super.keydown(ev);
+	return !ignoredKey(ev.awt) && super.keydown(ev);
     }
     
     private static boolean ignoredKey(KeyEvent ev){

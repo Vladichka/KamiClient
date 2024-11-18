@@ -36,7 +36,7 @@ public abstract class RichUText<T> implements Indir<Tex> {
     
     protected BufferedImage process(BufferedImage img) {return img;}
     
-    protected String text(T value) {return(String.valueOf(value));}
+    protected String text(T value) {return (value == null ? null : String.valueOf(value));}
     public abstract T value();
     
     public TexI get() {

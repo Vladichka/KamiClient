@@ -76,10 +76,10 @@ public class Radar {
 	$pentagon("gfx/hud/mmap/symbols/pentagon"),
 	$square("gfx/hud/mmap/symbols/square"),
 	$up("gfx/hud/mmap/symbols/up");
-	
+
 	public final Tex tex;
 	public static final Symbols DEFAULT = $circle;
-	
+
 	Symbols(String res) {
 	    tex = Resource.loadtex(res);
 	}

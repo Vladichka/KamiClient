@@ -3,6 +3,7 @@ package me.ender;
 import haven.*;
 import haven.rx.CharterBook;
 import haven.rx.Reactor;
+import me.ender.ui.CFGBox;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -10,8 +11,11 @@ import java.util.Set;
 
 public class WindowDetector {
     public static final String WND_STUDY = "Study";
+    public static final String WND_TABLE = "Table";
     public static final String WND_CHARACTER_SHEET = "Character Sheet";
     public static final String WND_SMELTER = "Ore Smelter";
+    public static final String WND_FINERY_FORGE = "Finery Forge";
+    public static final String WND_STACK_FURNACE = "Stack furnace";
     
     private static final Object lock = new Object();
     private static final Set<Window> toDetect = new HashSet<>();
@@ -57,7 +61,11 @@ public class WindowDetector {
     }
     
     private static void recognize(Window window) {
-	AnimalFarm.processCattleInfo(window);
+	if(isWindowType(window, WND_TABLE)) {
+	    extendTableWindow(window);
+	} else {
+	    AnimalFarm.processCattleInfo(window);
+	}
     }
     
     private static void untranslate(Widget wdg, Widget parent) {
@@ -122,5 +130,13 @@ public class WindowDetector {
     
     public static boolean isProspecting(String title) {
 	return "Prospecting".equals(title);
+    }
+    
+    private static void extendTableWindow(Window wnd) {
+	Button btn = wnd.getchild(Button.class);
+	if(btn == null) {return;}
+	
+	btn.c = wnd.add(new CFGBox("Preserve cutlery", CFG.PRESERVE_SYMBEL), btn.pos("ul"))
+	    .settip("Prevent eating from this table if some of the cutlery is almost broken").pos("bl");//.adds(0, 5);
     }
 }

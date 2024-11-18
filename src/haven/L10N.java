@@ -31,7 +31,9 @@ public class L10N {
 	INGREDIENT("ingredient"),
 	WINDOW("window", true),
 	LABEL("label", true),
-	FLOWER("flower", true);
+	FLOWER("flower", true),
+	BIOME("biome"),
+	MSG("msg");
     
 	public final String name;
 	public final boolean useMatch;
@@ -113,6 +115,14 @@ public class L10N {
     
     public static String tooltip(String text) {
 	return process(Bundle.TOOLTIP, text);
+    }
+    
+    public static String biome(String text) {
+	return process(Bundle.BIOME, text);
+    }
+    
+    public static String msg(String text) {
+	return process(Bundle.MSG, text);
     }
     
     public static String tooltip(String text, String def) {

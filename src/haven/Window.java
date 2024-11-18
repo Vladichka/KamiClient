@@ -37,10 +37,10 @@ import java.awt.image.BufferedImage;
 
 import static haven.PUtils.*;
 
-public class Window extends Widget implements DTarget {
+public class Window extends Widget {
     public static final Pipe.Op bgblend = FragColor.blend.nil;
     public static final Pipe.Op cblend  = FragColor.blend(new BlendMode(BlendMode.Function.ADD, BlendMode.Factor.SRC_ALPHA, BlendMode.Factor.INV_SRC_ALPHA,
-	BlendMode.Function.ADD, BlendMode.Factor.ONE, BlendMode.Factor.INV_SRC_ALPHA));
+									BlendMode.Function.ADD, BlendMode.Factor.ONE, BlendMode.Factor.INV_SRC_ALPHA));
     public static final Tex bg = Resource.loadtex("gfx/hud/wnd/lg/bg");
     public static final Tex bgl = Resource.loadtex("gfx/hud/wnd/lg/bgl");
     public static final Tex bgr = Resource.loadtex("gfx/hud/wnd/lg/bgr");
@@ -65,21 +65,21 @@ public class Window extends Widget implements DTarget {
     public static final Coord dsmrgn = UI.scale(9, 9);
     public static final BufferedImage ctex = Resource.loadsimg("gfx/hud/fonttex");
     public static final Text.Furnace cf = new Text.Imager(new PUtils.TexFurn(new Text.Foundry(Text.serif.deriveFont(Font.BOLD, UI.scale(16))).aa(true), ctex)) {
-	protected BufferedImage proc(Text text) {
-	    // return(rasterimg(blurmask2(text.img.getRaster(), 1, 1, Color.BLACK)));
-	    return(rasterimg(blurmask2(text.img.getRaster(), UI.rscale(0.75), UI.rscale(1.0), Color.BLACK)));
-	}
-    };
+	    protected BufferedImage proc(Text text) {
+		// return(rasterimg(blurmask2(text.img.getRaster(), 1, 1, Color.BLACK)));
+		return(rasterimg(blurmask2(text.img.getRaster(), UI.rscale(0.75), UI.rscale(1.0), Color.BLACK)));
+	    }
+	};
     public static final IBox wbox = new IBox("gfx/hud/wnd", "tl", "tr", "bl", "br", "extvl", "extvr", "extht", "exthb") {
-	final Coord co = UI.scale(3, 3), bo = UI.scale(2, 2);
-	
-	public Coord btloff() {return(super.btloff().sub(bo));}
-	public Coord ctloff() {return(super.ctloff().sub(co));}
-	public Coord bbroff() {return(super.bbroff().sub(bo));}
-	public Coord cbroff() {return(super.cbroff().sub(co));}
-	public Coord bisz() {return(super.bisz().sub(bo.mul(2)));}
-	public Coord cisz() {return(super.cisz().sub(co.mul(2)));}
-    };
+	    final Coord co = UI.scale(3, 3), bo = UI.scale(2, 2);
+
+	    public Coord btloff() {return(super.btloff().sub(bo));}
+	    public Coord ctloff() {return(super.ctloff().sub(co));}
+	    public Coord bbroff() {return(super.bbroff().sub(bo));}
+	    public Coord cbroff() {return(super.cbroff().sub(co));}
+	    public Coord bisz() {return(super.bisz().sub(bo.mul(2)));}
+	    public Coord cisz() {return(super.cisz().sub(co.mul(2)));}
+	};
     public static final BufferedImage[] cbtni = new BufferedImage[] {
 	Resource.loadsimg("gfx/hud/wnd/lg/cbtnu"),
 	Resource.loadsimg("gfx/hud/wnd/lg/cbtnd"),
@@ -89,7 +89,6 @@ public class Window extends Widget implements DTarget {
     public static final String ON_PACK = "pack";
     
     public Deco deco;
-    public boolean dt = false;
     public String cap;
     public TexRaw gbuf = null;
     private FragColor gout;
@@ -101,9 +100,11 @@ public class Window extends Widget implements DTarget {
     protected WidgetCfg cfg = null;
     public boolean justclose = false;
     public boolean skipInitPos = false;
+    public boolean skipSavePos = false;
+    private boolean closed = false;
     private String title;
     protected Text.Furnace rcf = cf;
-    
+
     @RName("wnd")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
@@ -121,32 +122,41 @@ public class Window extends Widget implements DTarget {
 	setfocusctl(true);
 	chdeco(defdeco ? makedeco() : deco);
     }
-    
+
     public Window(Coord sz, String cap, boolean lg, Deco deco) {
 	this(sz, cap, lg, deco, false);
     }
-    
+
     public Window(Coord sz, String cap, boolean lg) {
 	this(sz, cap, lg, null, true);
     }
-    
+
     public Window(Coord sz, String cap) {
 	this(sz, cap, false);
     }
-    
+
     protected Deco makedeco() {
 	return(new DefaultDeco(this.large));
     }
-    
+
     protected void added() {
 	super.added();
-	if(visible())
-	    parent.setfocus(this);
-	
+	if(shouldGrabFocusOnAdd()){
+	parent.setfocus(this);
+	}
+
 	initCfg();
 	initanim();
     }
     
+    private boolean shouldGrabFocusOnAdd() {
+	//If ContentsWindow grabs focus on add, then it steals focus from chat 
+	if(this instanceof GItem.ContentsWindow) {
+	    return false;
+	}
+	return visible();
+    }
+
     protected void initCfg() {
 	if(cfg != null && cfg.c != null) {
 	    if(!skipInitPos) {c = xlate(cfg.c, false);}
@@ -154,23 +164,25 @@ public class Window extends Widget implements DTarget {
 	    updateCfg();
 	}
     }
-    
+
     protected void updateCfg(){
 	setCfg();
 	storeCfg();
     }
-    
+
     protected void setCfg() {
+	if(skipSavePos) {return;}
 	if(cfg == null) {
 	    cfg = new WidgetCfg();
 	}
 	cfg.c = xlate(c, true);
     }
-    
+
     protected void storeCfg() {
+	if(skipSavePos) {return;}
 	WidgetCfg.set(cfgName(caption()), cfg);
     }
-    
+
     public void chcap(String cap) {
 	title = cap;
 	this.cap = L10N.window(cap);
@@ -193,7 +205,7 @@ public class Window extends Widget implements DTarget {
     public String caption() {
 	return title;
     }
-    
+
     public void chdeco(Deco deco) {
 	Coord psz, poff;
 	if(this.deco != null) {
@@ -214,32 +226,32 @@ public class Window extends Widget implements DTarget {
 	if(dm != null)
 	    this.doff = this.doff.sub(coff);
     }
-    
+
     public static abstract class Deco extends Widget {
 	public Deco() {
 	    z(-100);
 	}
-	
+
 	public abstract void iresize(Coord isz);
 	public abstract Area contarea();
     }
-    
+
     public abstract static class DragDeco extends Deco {
-	public boolean mousedown(Coord c, int button) {
-	    if(super.mousedown(c, button))
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(ev.propagate(this))
 		return(true);
-	    if(checkhit(c)) {
+	    if(checkhit(ev.c)) {
 		Window wnd = (Window)parent;
 		wnd.parent.setfocus(wnd);
 		wnd.raise();
-		if(button == 1)
-		    wnd.drag(c);
+		if(ev.b == 1)
+		    wnd.drag(ev.c);
 		return(true);
 	    }
-	    return(false);
+	    return(super.mousedown(ev));
 	}
     }
-    
+
     public static class DefaultDeco extends DragDeco {
 	public final boolean lg;
 	public final IButton cbtn;
@@ -248,7 +260,7 @@ public class Window extends Widget implements DTarget {
 	public Coord cptl = Coord.z, cpsz = Coord.z;
 	public int cmw;
 	public Text cap = null;
-	
+
 	public DefaultDeco(boolean lg) {
 	    this.lg = lg;
 	    cbtn = add(new IButton(cbtni[0], cbtni[1], cbtni[2])).action(this::tryClose);
@@ -262,15 +274,15 @@ public class Window extends Widget implements DTarget {
 		    wnd.close();
 		    return;
 		}
+		wnd.reqclose();
 	    }
-	    parent.wdgmsg("close");
 	}
-	
+
 	public DefaultDeco dragsize(boolean v) {
 	    this.dragsize = v;
 	    return(this);
 	}
-	
+
 	public void iresize(Coord isz) {
 	    Coord mrgn = lg ? dlmrgn : dsmrgn;
 	    Coord asz = isz;
@@ -281,15 +293,15 @@ public class Window extends Widget implements DTarget {
 	    aa = Area.sized(ca.ul.add(mrgn), asz);
 	    cbtn.c = Coord.of(sz.x - cbtn.sz.x, 0);
 	}
-	
+
 	public Area contarea() {
 	    return(aa);
 	}
-	
+
 	protected void cdraw(GOut g) {
 	    ((Window)parent).cdraw(g);
 	}
-	
+
 	protected void drawbg(GOut g) {
 	    g.usestate(bgblend);
 	    Coord bgc = new Coord();
@@ -305,7 +317,7 @@ public class Window extends Widget implements DTarget {
 	    for(bgc.y = ca.ul.y; bgc.y < ca.br.y; bgc.y += bgr.sz().y)
 		g.image(bgr, bgc, ca.ul, ca.br);
 	}
-	
+
 	protected void drawframe(GOut g) {
 	    Window wnd = (Window)parent;
 	    if((cap == null) || (cap.text != wnd.cap)) {
@@ -331,7 +343,7 @@ public class Window extends Widget implements DTarget {
 	    for(; mdo.x < cbr.x; mdo.x += tm.sz().x)
 		g.image(tm, mdo, Coord.z, cbr);
 	    g.image(tr, Coord.of(sz.x - tr.sz().x, 0));
-	    
+
 	    mdo = Coord.of(0, cl.sz().y);
 	    cbr = Coord.of(lm.sz().x, sz.y - bl.sz().y);
 	    if(cbr.y - mdo.y >= lb.sz().y) {
@@ -340,12 +352,12 @@ public class Window extends Widget implements DTarget {
 	    }
 	    for(; mdo.y < cbr.y; mdo.y += lm.sz().y)
 		g.image(lm, mdo, Coord.z, cbr);
-	    
+
 	    mdo = Coord.of(sz.x - rm.sz().x, tr.sz().y);
 	    cbr = Coord.of(sz.x, sz.y - br.sz().y);
 	    for(; mdo.y < cbr.y; mdo.y += rm.sz().y)
 		g.image(rm, mdo, Coord.z, cbr);
-	    
+
 	    g.image(bl, Coord.of(0, sz.y - bl.sz().y));
 	    mdo = Coord.of(bl.sz().x, sz.y - bm.sz().y);
 	    cbr = Coord.of(sz.x - br.sz().x, sz.y);
@@ -353,56 +365,56 @@ public class Window extends Widget implements DTarget {
 		g.image(bm, mdo, Coord.z, cbr);
 	    g.image(br, sz.sub(br.sz()));
 	}
-	
+
 	public void draw(GOut g) {
 	    drawbg(g);
 	    cdraw(g.reclip(aa.ul, aa.sz()));
 	    drawframe(g);
 	    super.draw(g);
 	}
-	
+
 	private UI.Grab szdrag;
 	private Coord szdragc;
-	public boolean mousedown(Coord c, int button) {
+	public boolean mousedown(MouseDownEvent ev) {
 	    if(dragsize) {
-		Coord cc = c.sub(ca.ul);
-		if((button == 1) && hitSizer(c)) {
+		Coord c = ev.c, cc = c.sub(ca.ul);
+		if((ev.b == 1) && hitSizer(c)) {
 		    szdrag = ui.grabmouse(this);
 		    szdragc = aa.sz().sub(c);
 		    return(true);
 		}
 	    }
-	    return(super.mousedown(c, button));
+	    return(super.mousedown(ev));
 	}
 	
 	protected boolean hitSizer(Coord c) {
 	    return (c.x < ca.br.x) && (c.y < ca.br.y) && (c.y >= ca.br.y - UI.scale(25) + (ca.br.x - c.x));
 	}
-	
-	public void mousemove(Coord c) {
+
+	public void mousemove(MouseMoveEvent ev) {
 	    if(szdrag != null)
-		((Window)parent).resize(c.add(szdragc));
-	    super.mousemove(c);
+		((Window)parent).resize(ev.c.add(szdragc));
+	    super.mousemove(ev);
 	}
-	
-	public boolean mouseup(Coord c, int button) {
-	    if((button == 1) && (szdrag != null)) {
+
+	public boolean mouseup(MouseUpEvent ev) {
+	    if((ev.b == 1) && (szdrag != null)) {
 		szdrag.remove();
 		szdrag = null;
 		return(true);
 	    }
-	    return(super.mouseup(c, button));
+	    return(super.mouseup(ev));
 	}
-	
+
 	public boolean checkhit(Coord c) {
 	    Coord cpc = c.sub(cptl);
 	    return(ca.contains(c) || (c.isect(cptl, cpsz) && (cm.back.getRaster().getSample(cpc.x % cm.back.getWidth(), cpc.y, 3) >= 128)));
 	}
     }
-    
+
     public void cdraw(GOut g) {
     }
-    
+
     public Pipe.Op gbasic() {
 	if((gbuf == null) || !Utils.eq(sz, gbuf.back.tex.sz())) {
 	    if(gbuf != null)
@@ -412,22 +424,22 @@ public class Window extends Widget implements DTarget {
 	    gout = new FragColor<>(gbuf.back.tex.image(0));
 	    Area garea = Area.sized(this.sz);
 	    gbasic = Pipe.Op.compose(gout, DepthBuffer.slot.nil, cblend,
-		new States.Viewport(garea), new Ortho2D(garea));
+				     new States.Viewport(garea), new Ortho2D(garea));
 	}
 	return(gbasic);
     }
-    
+
     protected void drawbuf(GOut g) {
 	super.draw(g);
     }
-    
+
     protected void drawfin(GOut g, Tex buf) {
 	if(anim != null)
 	    anim.draw(g, buf);
 	else
 	    g.image(buf, Coord.z);
     }
-    
+
     public void draw(GOut og) {
 	if(animst != "dest") {
 	    GOut g = new GOut(og.out, og.basicstate().prep(gbasic()), this.sz);
@@ -437,7 +449,7 @@ public class Window extends Widget implements DTarget {
 	if(gbuf != null)
 	    drawfin(og, gbuf);
     }
-    
+
     public Coord contentsz() {
 	Coord max = new Coord(0, 0);
 	for(Widget wdg = child; wdg != null; wdg = wdg.next) {
@@ -471,14 +483,14 @@ public class Window extends Widget implements DTarget {
 	    ((DecoX) deco).placetwdgs();
 	}
     }
-    
+
     public Area ca() {
 	if(deco == null)
 	    return(Area.sized(this.sz));
 	else
 	    return(deco.contarea());
     }
-    
+
     public Coord csz() {
 	return(ca().sz());
     }
@@ -495,28 +507,26 @@ public class Window extends Widget implements DTarget {
 	for(Widget ch = child; ch != null; ch = ch.next)
 	    ch.presize();
     }
-    
+
     public void resize(Coord sz) {
 	resize2(sz);
     }
-    
+
     @Deprecated
     public void decohide(boolean h) {
 	chdeco(h ? null : makedeco());
 	this.decohide = h;
     }
-    
+
     @Deprecated
     public boolean decohide() {
 	return(decohide);
     }
-    
+
     public void uimsg(String msg, Object... args) {
 	if(msg == "pack") {
 	    report(ON_PACK);
 	    pack();
-	} else if(msg == "dt") {
-	    dt = Utils.bv(args[0]);
 	} else if(msg == "cap") {
 	    String cap = (String)args[0];
 	    chcap(cap.equals("") ? null : cap);
@@ -526,7 +536,7 @@ public class Window extends Widget implements DTarget {
 	    super.uimsg(msg, args);
 	}
     }
-    
+
     public Coord xlate(Coord c, boolean in) {
 	if(deco == null)
 	    return(c);
@@ -535,55 +545,63 @@ public class Window extends Widget implements DTarget {
 	else
 	    return(c.sub(deco.contarea().ul));
     }
-    
+
     public void drag(Coord off) {
 	dm = ui.grabmouse(this);
 	doff = off;
     }
-    
+
     public boolean checkhit(Coord c) {
 	return((deco == null) || deco.checkhit(c));
     }
-    
-    public boolean mousedown(Coord c, int button) {
-	if(super.mousedown(c, button)) {
+
+    public boolean mousedown(MouseDownEvent ev) {
+	if(ev.propagate(this)) {
 	    parent.setfocus(this);
 	    raise();
 	    return(true);
 	}
-	return(false);
+	return(super.mousedown(ev));
     }
-    
-    public boolean mouseup(Coord c, int button) {
+
+    public boolean mouseup(MouseUpEvent ev) {
 	if(dm != null) {
 	    dm.remove();
 	    dm = null;
 	    updateCfg();
-	} else {
-	    super.mouseup(c, button);
+	    return(true);
 	}
-	return(true);
+	return(super.mouseup(ev));
     }
-    
-    public void mousemove(Coord c) {
-	if(dm != null) {
-	    this.c = this.c.add(c.add(doff.inv()));
-	} else {
-	    super.mousemove(c);
+
+    public void mousemove(MouseMoveEvent ev) {
+	super.mousemove(ev);
+	if(dm != null)
+	    move(this.c.add(ev.c.sub(doff)));
+    }
+
+    public boolean handle(Event ev) {
+	if(!ev.grabbed && (ev instanceof PointerEvent)) {
+	    if(deco != null) {
+		if(checkhit(((PointerEvent)ev).c)) {
+		    super.handle(ev);
+		    ev.propagate(this);
+		    return(true);
+		}
+	    } else {
+		super.handle(ev);
+		return(ev.propagate(this));
+	    }
 	}
-    }
-    
-    public boolean mousehover(Coord c, boolean hovering) {
-	super.mousehover(c, hovering);
-	return(hovering);
+	return(super.handle(ev));
     }
     
     public void close() {
 	ui.destroy(this);
     }
     
-    public boolean keydown(java.awt.event.KeyEvent ev) {
-	if(super.keydown(ev))
+    public boolean keydown(KeyDownEvent ev) {
+	if(ev.propagate(this))
 	    return(true);
 	if(key_esc.match(ev)) {
 	    if(justclose)
@@ -592,29 +610,7 @@ public class Window extends Widget implements DTarget {
 		reqclose();
 	    return(true);
 	}
-	return(false);
-    }
-    
-    public boolean drop(Coord cc, Coord ul) {
-	if(dt) {
-	    wdgmsg("drop", cc);
-	    return(true);
-	}
-	return(false);
-    }
-    
-    public boolean iteminteract(Coord cc, Coord ul) {
-	return(false);
-    }
-    
-    public Object tooltip(Coord c, Widget prev) {
-	if(!checkhit(c))
-	    return(super.tooltip(c, prev));
-	Object ret = super.tooltip(c, prev);
-	if(ret != null)
-	    return(ret);
-	else
-	    return("");
+	return(super.keydown(ev));
     }
     
     @Override
@@ -627,21 +623,21 @@ public class Window extends Widget implements DTarget {
 	Reactor.WINDOW.onNext(new Pair<>(this, event));
     }
     
-    
+
     public void reqclose() {
 	wdgmsg("close");
     }
-    
+
     public static interface Animation {
 	public boolean tick(double dt);
 	public void draw(GOut g, Tex tex);
     }
-    
+
     public static interface Transition<S extends Animation, H extends Animation> {
 	public S show(Window wnd, H hiding);
 	public H hide(Window wnd, S showing);
     }
-    
+
     private Transition<?, ?> trans = null;
     private Animation anim = null;
     private String animst = null;
@@ -662,7 +658,7 @@ public class Window extends Widget implements DTarget {
 	    }
 	}
     }
-    
+
     @SuppressWarnings("unchecked")
     private <H extends Animation> Animation show0(Transition<?, H> trans, Animation h) {
 	return(trans.show(this, (H)h));
@@ -671,17 +667,17 @@ public class Window extends Widget implements DTarget {
     private <S extends Animation> Animation hide0(Transition<S, ?> trans, Animation s) {
 	return(trans.hide(this, (S)s));
     }
-    
+
     public void settrans(Transition<?, ?> trans) {
 	if(this.anim != null)
 	    throw(new IllegalStateException(String.valueOf(this.anim)));
 	this.trans = trans;
     }
-    
+
     public boolean visible() {
 	return(visible && ((animst == null) || (animst == "show")));
     }
-    
+
     private void initanim() {
 	if(trans == null)
 	    trans = deftrans();
@@ -690,7 +686,7 @@ public class Window extends Widget implements DTarget {
 	    animst = "show";
 	}
     }
-    
+
     public void show() {
 	if(parent == null) {
 	    super.show();
@@ -710,7 +706,7 @@ public class Window extends Widget implements DTarget {
 	    throw(new AssertionError(animst));
 	}
     }
-    
+
     public void hide() {
 	if(parent == null) {
 	    super.hide();
@@ -729,7 +725,10 @@ public class Window extends Widget implements DTarget {
 	}
     }
     
+    public boolean closed() {return closed;}
+
     public void reqdestroy() {
+	closed = true;
 	if(parent == null) {
 	    super.reqdestroy();
 	    return;
@@ -747,26 +746,25 @@ public class Window extends Widget implements DTarget {
 	    throw(new AssertionError(animst));
 	}
     }
-    
+
     public static class NilAnim implements Animation {
 	public boolean tick(double dt) {return(true);}
 	public void draw(GOut g, Tex tex) {g.image(tex, Coord.z);}
     }
-    
+
     public static final Transition<?, ?> niltrans = new Transition<Animation, Animation>() {
-	public NilAnim show(Window wnd, Animation hide) {return(new NilAnim());}
-	public NilAnim hide(Window wnd, Animation show) {return(new NilAnim());}
-    };
-    
+	    public NilAnim show(Window wnd, Animation hide) {return(new NilAnim());}
+	    public NilAnim hide(Window wnd, Animation show) {return(new NilAnim());}
+	};
+
     public abstract static class NormAnim implements Animation {
 	public final double s;
 	public final boolean rev;
 	public double a = 0.0, na = 0.0;
-	
+
 	public NormAnim(double t, double fromn, boolean rev) {
 	    if (CFG.DISABLE_WINDOW_ANIMATION.get())
 		t = 0;
-	    
 	    this.s = 1.0 / t;
 	    this.na = fromn;
 	    this.rev = rev;
@@ -776,48 +774,50 @@ public class Window extends Widget implements DTarget {
 	    this(t, (from == null) ? (rev ? 1.0 : 0.0) : from.na, rev);
 	}
 	public NormAnim(double t) {this(t, 0.0, false);}
-	
+
 	public boolean tick(double dt) {
 	    a += dt;
 	    double na = Math.min(a * s, 1.0);
 	    stick(this.na = rev ? (1.0 - na) : na);
 	    return(na >= 1.0);
 	}
-	
+
 	public void stick(double a) {}
     }
-    
+
     public static class FadeAnim extends NormAnim {
 	public static final double minfac = 0.1;
-	public static double time = 0.1;
-	
-	public FadeAnim(boolean hide, FadeAnim from) {super(time, from, hide);}
-	
+	public static final double time = 0.1;
+
+	public FadeAnim(boolean hide, FadeAnim from) {
+	    super(time, from, hide);
+	}
+
 	public void draw(GOut g, Tex tex) {
 	    double na = Utils.smoothstep(this.na);
 	    g.chcolor(255, 255, 255, (int)(na * 255));
 	    Coord sz = tex.sz();
 	    double fac = minfac * (1.0 - na);
 	    g.image(tex, Coord.of((int)(sz.x * fac), (int)(sz.y * fac)),
-		Coord.of((int)(sz.x * (1.0 - (fac * 2))), (int)(sz.y * (1.0 - (fac * 2)))));
+		    Coord.of((int)(sz.x * (1.0 - (fac * 2))), (int)(sz.y * (1.0 - (fac * 2)))));
 	}
-	
+
 	public static final Transition<?, ?> trans = new Transition<FadeAnim, FadeAnim>() {
-	    public FadeAnim show(Window wnd, FadeAnim hide) {return(new FadeAnim(false, hide));}
-	    public FadeAnim hide(Window wnd, FadeAnim show) {return(new FadeAnim(true,  show));}
-	};
+		public FadeAnim show(Window wnd, FadeAnim hide) {return(new FadeAnim(false, hide));}
+		public FadeAnim hide(Window wnd, FadeAnim show) {return(new FadeAnim(true,  show));}
+	    };
     }
-    
+
     protected Transition<?, ?> deftrans() {
 	return(FadeAnim.trans);
     }
-    
+
     public static void main(String[] args) {
 	Window wnd = new Window(new Coord(300, 200), "Inventory", true);
 	new haven.rs.DrawBuffer(haven.rs.Context.getdefault().env(), new Coord(512, 512))
 	    .draw(g -> {
-		wnd.draw(g);
-		g.getimage(img -> Debug.dumpimage(img, args[0]));
+		    wnd.draw(g);
+		    g.getimage(img -> Debug.dumpimage(img, args[0]));
 	    });
     }
 }

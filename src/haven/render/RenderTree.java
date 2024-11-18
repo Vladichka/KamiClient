@@ -763,7 +763,7 @@ public class RenderTree implements RenderList.Adapter, Disposable {
 		    Inheritance pi = parent.istate();
 		    DepInfo ds = dstate();
 		    if (ds == null)
-			return(istate);
+			return(istate); // KamiClient NPE Check
 		    Pipe[] istates = new Pipe[Math.max(pi.gstates.length, ds.def.length)];
 		    boolean f = false;
 		    for(int i = 0; i < istates.length; i++) {

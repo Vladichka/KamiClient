@@ -37,9 +37,7 @@ import java.nio.file.*;
 import java.net.*;
 import java.lang.ref.*;
 import java.lang.reflect.*;
-import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -50,9 +48,6 @@ import java.util.function.*;
 import java.awt.Graphics;
 import java.awt.Color;
 import java.awt.image.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 
 public class Utils {
     public static final java.nio.charset.Charset utf8 = java.nio.charset.Charset.forName("UTF-8");
@@ -83,7 +78,7 @@ public class Utils {
 		}
 	    });
     }
-    
+
     public static URI uri(String uri) {
 	try {
 	    return(new URI(uri));
@@ -443,7 +438,7 @@ public class Utils {
     public static int iv(Object arg) {
 	return(((Number)arg).intValue());
     }
-    
+
     public static long uiv(Object arg) {
 	return(uint32(iv(arg)));
     }
@@ -1323,13 +1318,12 @@ public class Utils {
 			 ((x.getBlue()  * f2) + (y.getBlue()  * f1)) / 255,
 			 ((x.getAlpha() * f2) + (y.getAlpha() * f1)) / 255));
     }
-    
+
     public static Color colmul(Color a, Color b) {
 	return(new Color((a.getRed()  * b.getRed() ) / 255, (a.getGreen() * b.getGreen()) / 255,
-	    (a.getBlue() * b.getBlue()) / 255, (a.getAlpha() * b.getAlpha()) / 255));
+			 (a.getBlue() * b.getBlue()) / 255, (a.getAlpha() * b.getAlpha()) / 255));
     }
-    
-    
+
     public static Color blendcol(double a, Color... cols) {
 	a = clip(a, 0, 1);
 	if(cols.length > 2) {
@@ -1871,7 +1865,7 @@ public class Utils {
 	    return(Collections.unmodifiableMap(bk));
 	}
     }
-    
+
     public static class Range extends AbstractList<Integer> {
 	public final int min, max, step;
 
@@ -1884,7 +1878,7 @@ public class Utils {
 	public int size() {
 	    return(Math.max((max - min + step - 1) / step, 0));
 	}
-	
+
 	public Integer get(int idx) {
 	    int rv = min + (step * idx);
 	    if((rv < min) || (rv >= max))
@@ -1892,12 +1886,11 @@ public class Utils {
 	    return(rv);
 	}
     }
-    
+
     public static List<Integer> range(int min, int max, int step) {return(new Range(min, max, step));}
     public static List<Integer> range(int min, int max) {return(range(min, max, 1));}
     public static List<Integer> range(int max) {return(range(0, max));}
-    
-    
+
     public static <T> Indir<T> cache(Indir<T> src) {
 	return(new Indir<T>() {
 		private T val;
@@ -1909,6 +1902,23 @@ public class Utils {
 			has = true;
 		    }
 		    return(val);
+		}
+	    });
+    }
+
+    public static <V, R> Indir<R> transform(Supplier<? extends V> val, Function<? super V, ? extends R> xf) {
+	return(new Indir<R>() {
+		private V last;
+		private R res;
+		private boolean has = false;
+
+		public R get() {
+		    V v = val.get();
+		    if(!has || !Utils.eq(last, v)) {
+			res = xf.apply(v);
+			last = v;
+		    }
+		    return(res);
 		}
 	    });
     }
@@ -2227,7 +2237,7 @@ public class Utils {
 	    }
 	}
     }
-    
+
     @SuppressWarnings("unchecked")
     public static int compare(Object[] a, Object[] b) {
 	int i = 0;
@@ -2321,273 +2331,7 @@ public class Utils {
 	    }
 	}
     };
-
-    public static String timestamp() {
-	return new SimpleDateFormat("HH:mm").format(new Date());
-    }
-
-    public static String timestamp(String text) {
-	return String.format("[%s] %s", timestamp(), text);
-    }
-
-    public static String stream2str(InputStream is) {
-	StringBuilder buffer = new StringBuilder();
-	BufferedReader in = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-	String line;
-	boolean first = true;
-	try {
-	    while ((line = in.readLine()) != null) {
-		if(!first) {buffer.append("\n");}
-		buffer.append(line);
-		first = false;
-	    }
-	} catch (IOException ignored) {
-	}
-	return buffer.toString();
-    }
-
-    public static Color hex2color(String hex, Color def){
-	Color c = def;
-	if (hex != null) {
-	    try {
-		int col = (int) Long.parseLong(hex, 16);
-		boolean hasAlpha = (0xff000000 & col) != 0;
-		c = new Color(col, hasAlpha);
-	    } catch (Exception ignored) {}
-	}
-	return c;
-    }
-
-    public static String color2hex(Color col){
-	if(col != null){
-	    return Integer.toHexString(col.getRGB());
-	}
-	return null;
-    }
     
-    private static final DecimalFormat f2sfmt = new DecimalFormat("0");
-    
-    public static String f2s(double f) {return f2s(f, 2);}
-    
-    public static String f2s(double f, int precision) {
-	f2sfmt.setMaximumFractionDigits(precision);
-	return f2sfmt.format(f);
-    }
-
-    //Liang-Barsky algorithm
-    public static Pair<Coord, Coord> clipLine(Coord a, Coord b, Coord ul, Coord br) {
-	// Define the x/y clipping values for the border.
-	double edgeLeft = ul.x;
-	double edgeRight = br.x;
-	double edgeBottom = ul.y;
-	double edgeTop = br.y;
-	
-	// Define the start and end points of the line.
-	double x0src = a.x;
-	double y0src = a.y;
-	double x1src = b.x;
-	double y1src = b.y;
-	
-	double t0 = 0.0;
-	double t1 = 1.0;
-	double xdelta = x1src - x0src;
-	double ydelta = y1src - y0src;
-	double p = 0, q = 0, r;
-	
-	for (int edge = 0; edge < 4; edge++) {   // Traverse through left, right, bottom, top edges.
-	    if(edge == 0) {
-		p = -xdelta;
-		q = -(edgeLeft - x0src);
-	    }
-	    if(edge == 1) {
-		p = xdelta;
-		q = (edgeRight - x0src);
-	    }
-	    if(edge == 2) {
-		p = -ydelta;
-		q = -(edgeBottom - y0src);
-	    }
-	    if(edge == 3) {
-		p = ydelta;
-		q = (edgeTop - y0src);
-	    }
-	    if(p == 0 && q < 0) return null;   // Don't draw line at all. (parallel line outside)
-	    r = q / p;
-	    
-	    if(p < 0) {
-		if(r > t1) return null;         // Don't draw line at all.
-		else if(r > t0) t0 = r;         // Line is clipped!
-	    } else if(p > 0) {
-		if(r < t0) return null;      // Don't draw line at all.
-		else if(r < t1) t1 = r;      // Line is clipped!
-	    }
-	}
-	
-	return new Pair<>(
-	    new Coord((int) (x0src + t0 * xdelta), (int) (y0src + t0 * ydelta)),
-	    new Coord((int) (x0src + t1 * xdelta), (int) (y0src + t1 * ydelta))
-	);
-    }
-    
-    public static Optional<Coord2d> intersect(Pair<Coord2d, Coord2d> lineA, Pair<Coord2d, Coord2d> lineB) {
-	double a1 = lineA.b.y - lineA.a.y;
-	double b1 = lineA.a.x - lineA.b.x;
-	double c1 = a1 * lineA.a.x + b1 * lineA.a.y;
-	
-	double a2 = lineB.b.y - lineB.a.y;
-	double b2 = lineB.a.x - lineB.b.x;
-	double c2 = a2 * lineB.a.x + b2 * lineB.a.y;
-	
-	double delta = a1 * b2 - a2 * b1;
-	if(delta == 0) {
-	    return Optional.empty();
-	}
-	return Optional.of(new Coord2d((float) ((b2 * c1 - b1 * c2) / delta), (float) ((a1 * c2 - a2 * c1) / delta)));
-    }
-    
-    private static final Pattern RESID = Pattern.compile(".*\\[([^,]*),?.*]");
-    private static final Map<String, String> customNames = new HashMap<>();
-    private static boolean customNamesInit = false;
-    
-    public static String prettyResName(Indir<Resource> res) {
-	if(res == null) {return "???";}
-	try {
-	    return prettyResName(res.get());
-	} catch (Loading ignore) {}
-	if(res instanceof Resource.Named) {
-	    return prettyResName(((Resource.Named) res).name);
-	}
-	return "???";
-    }
-    
-    public static String prettyResName(Resource res) {
-	if(res == null) {return "???";}
-	Resource.Tooltip tt = res.layer(Resource.tooltip);
-	if(tt != null) {
-	    return tt.t;
-	} else {
-	    return prettyResName(res.name);
-	}
-    }
-    
-    public static String prettyResName(String resname) {
-	if(resname == null) {return "???";}
-	tryInitCustomNames();
-	if(customNames.containsKey(resname)) {
-	    return customNames.get(resname);
-	}
-	Matcher m = RESID.matcher(resname);
-	if(m.matches()) {
-	    resname = m.group(1);
-	}
-	int k = resname.lastIndexOf("/");
-	resname = resname.substring(k + 1);
-	resname = resname.substring(0, 1).toUpperCase() + resname.substring(1);
-	return resname;
-    }
-    
-    private static void tryInitCustomNames() {
-	if(customNamesInit) {return;}
-	customNamesInit = true;
-	try {
-	    Gson gson = new GsonBuilder().create();
-	    customNames.putAll(gson.fromJson(Config.loadJarFile("tile_names.json"), new TypeToken<Map<String, String>>() {
-	    }.getType()));
-	} catch (Exception ignored) {}
-    }
-    
-    public static Map<String, Integer> PVP_MAP = new HashMap<String, Integer>();
-    
-    public static void initPvpMap()
-    {
-	try {
-	    Gson gson = new GsonBuilder().create();
-	    PVP_MAP.putAll(gson.fromJson(Config.loadJarFile("pvp_map.json"), new TypeToken<Map<String, Integer>>() {
-	    }.getType()));
-	} catch (Exception ignored) {}
-    }
-    
-    public static List<String> PVP_MODE_MARKERS = new LinkedList<>();
-    
-    public static void initPvpModeMarkers()
-    {
-	try {
-	    Gson gson = new GsonBuilder().create();
-	    PVP_MODE_MARKERS.addAll(gson.fromJson(Config.loadJarFile("pvp_mode_markers.json"), new TypeToken<List<String>>() {
-	    }.getType()));
-	} catch (Exception ignored) {}
-    }
-    
-    public static boolean checkbit(int target, int index) {
-	return (target & (1 << index)) != 0;
-    }
-
-    public static int setbit(int target, int index, boolean value) {
-	if(value) {
-	    return target | (1 << index);
-	} else {
-	    return target & ~(1 << index);
-	}
-    }
-    
-    public static double round(double a, int order){
-	double o = Math.pow(10, order);
-	return Math.round(o * a) / o;
-    }
-    
-    @SuppressWarnings("unchecked")
-    public static <T extends Number> T num2value(Number n, Class<T> type) {
-	if(Integer.class.equals(type)) {
-	    return (T) new Integer(n.intValue());
-	} else if(Long.class.equals(type)) {
-	    return (T) new Long(n.longValue());
-	}
-	return (T) new Float(n.floatValue());
-    }
-    
-    @SafeVarargs
-    public static <T> Optional<T> chainOptionals(Supplier<Optional<T>>... items) {
-	return Arrays.stream(items).map(Supplier::get)
-	    .filter(Optional::isPresent)
-	    .map(Optional::get)
-	    .findFirst();
-    }
-    
-    static String[] units = {"s", "m", "h", "d"};
-    static int[] div = {60, 60, 24};
-    
-    public static String formatTimeLong(int time) {
-	int[] vals = new int[units.length];
-	vals[0] = time;
-	for (int i = 0; i < div.length; i++) {
-	    vals[i + 1] = vals[i] / div[i];
-	    vals[i] = vals[i] % div[i];
-	}
-	StringBuilder buf = new StringBuilder();
-	for (int i = units.length - 1; i >= 0; i--) {
-	    if(vals[i] > 0) {
-		if(buf.length() > 0) {
-		    buf.append(String.format(" %02d", vals[i]));
-		} else {
-		    buf.append(vals[i]);
-		}
-		buf.append(units[i]);
-	    }
-	}
-	return (buf.toString());
-    }
-    
-    public static String formatTimeShort(int time) {
-	if(time >= 60) {
-	    if(time > 3600) {
-		time = time / 60;
-	    }
-	    return String.format("%d:%02d", time / 60, time % 60);
-	} else {
-	    return String.format("%02d", time);
-	}
-    }
-
     static {
 	Console.setscmd("die", new Console.Command() {
 		public void run(Console cons, String[] args) {
@@ -2657,7 +2401,26 @@ public class Utils {
 	    });
     }
     
-    public static final List<String> WALLS_TO_RESIZE = Arrays.asList("gfx/terobjs/arch/palisadeseg", "gfx/terobjs/arch/palisadecp", "gfx/terobjs/arch/brickwallseg", "gfx/terobjs/arch/brickwallcp" );
+    
+    /* KamiClient Additions*/
+    public static Color hex2color(String hex, Color def){
+	Color c = def;
+	if (hex != null) {
+	    try {
+		int col = (int) Long.parseLong(hex, 16);
+		boolean hasAlpha = (0xff000000 & col) != 0;
+		c = new Color(col, hasAlpha);
+	    } catch (Exception ignored) {}
+	}
+	return c;
+    }
+    
+    public static String color2hex(Color col){
+	if(col != null){
+	    return Integer.toHexString(col.getRGB());
+	}
+	return null;
+    }
     
     public static String UTCTimestamp()
     {
@@ -2666,57 +2429,27 @@ public class Utils {
 	return now.format(format);
     }
     
-    public static final String[] CRITTERAURA_PATHS = {
-	"gfx/kritter/bayshrimp/bayshrimp",
-	"gfx/kritter/bogturtle/bogturtle",
-	"gfx/kritter/brimstonebutterfly/brimstonebutterfly",
-	"gfx/kritter/cavecentipede/cavecentipede",
-	"gfx/kritter/cavemoth/cavemoth",
-	"gfx/kritter/chicken/chick",
-	"gfx/kritter/chicken/chicken", // ND: This seems to be the model for wild chickens, both hens and roosters.
-	"gfx/kritter/chicken/hen", // ND: This might be pointless?
-	"gfx/kritter/chicken/rooster", // ND: This might be pointless?
-	"gfx/kritter/crab/crab",
-	"gfx/kritter/dragonfly/dragonfly",
-	"gfx/kritter/earthworm/earthworm",
-	"gfx/kritter/firefly/firefly",
-	"gfx/kritter/forestlizard/forestlizard",
-	"gfx/kritter/forestsnail/forestsnail",
-	"gfx/kritter/frog/frog",
-	"gfx/kritter/grasshopper/grasshopper",
-	"gfx/kritter/hedgehog/hedgehog",
-	"gfx/kritter/irrbloss/irrbloss",
-	"gfx/kritter/jellyfish/jellyfish",
-	"gfx/kritter/ladybug/ladybug",
-	"gfx/kritter/lobster/lobster",
-	"gfx/kritter/magpie/magpie",
-	"gfx/kritter/mallard/mallard", // ND: I haven't checked yet, but I assume it could be the same case as with the chickens
-	"gfx/kritter/mallard/mallard-f", // ND: This might be pointless?
-	"gfx/kritter/mallard/mallard-m", // ND: This might be pointless?
-	"gfx/kritter/mole/mole",
-	"gfx/kritter/monarchbutterfly/monarchbutterfly",
-	"gfx/kritter/moonmoth/moonmoth",
-	"gfx/kritter/opiumdragon/opiumdragon",
-	"gfx/kritter/ptarmigan/ptarmigan",
-	"gfx/kritter/quail/quail",
-	"gfx/kritter/rat/rat",
-	"gfx/kritter/rockdove/rockdove",
-	"gfx/kritter/sandflea/sandflea",
-	"gfx/kritter/seagull/seagull",
-	"gfx/kritter/silkmoth/silkmoth",
-	"gfx/kritter/springbumblebee/springbumblebee",
-	"gfx/kritter/squirrel/squirrel",
-	"gfx/kritter/stagbeetle/stagbeetle",
-	"gfx/kritter/stalagoomba/stalagoomba",
-	"gfx/kritter/toad/toad",
-	"gfx/kritter/waterstrider/waterstrider",
-	"gfx/kritter/woodgrouse/woodgrouse-f", // ND: Only female can be chased, males will fight you
-	"gfx/kritter/woodworm/woodworm",
-	"gfx/kritter/whirlingsnowflake/whirlingsnowflake",
-	"gfx/kritter/bullfinch/bullfinch",
-	
-	"gfx/terobjs/items/grub", // ND: lmao
-	"gfx/terobjs/items/hoppedcow",
-	"gfx/terobjs/items/mandrakespirited",
-    };
+    public static Map<String, Integer> PVP_MAP = new HashMap<String, Integer>();
+    
+    public static void initPvpMap()
+    {
+	try {
+	    Gson gson = new GsonBuilder().create();
+	    PVP_MAP.putAll(gson.fromJson(Config.loadJarFile("pvp_map.json"), new TypeToken<Map<String, Integer>>() {
+	    }.getType()));
+	} catch (Exception ignored) {}
+    }
+    
+    public static List<String> PVP_MODE_MARKERS = new LinkedList<>();
+    
+    public static void initPvpModeMarkers()
+    {
+	try {
+	    Gson gson = new GsonBuilder().create();
+	    PVP_MODE_MARKERS.addAll(gson.fromJson(Config.loadJarFile("pvp_mode_markers.json"), new TypeToken<List<String>>() {
+	    }.getType()));
+	} catch (Exception ignored) {}
+    }
+    
+    public static final List<String> WALLS_TO_RESIZE = Arrays.asList("gfx/terobjs/arch/palisadeseg", "gfx/terobjs/arch/palisadecp", "gfx/terobjs/arch/brickwallseg", "gfx/terobjs/arch/brickwallcp" );
 }

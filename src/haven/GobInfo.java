@@ -34,9 +34,8 @@ public abstract class GobInfo extends GAttrib implements RenderTree.Node, PView.
     public void draw(GOut g, Pipe state) {
 	synchronized (texLock) {
 	    if(enabled() && tex != null) {
-		Coord3f c3d = Homo3D.obj2view2(pos, state, Area.sized(g.sz()));
-		if(c3d == null) {return;}
-		Coord sc = c3d.round2();
+		Coord sc = Homo3D.obj2sc(pos, state, Area.sized(g.sz()));
+		if(sc == null) {return;}
 		if(sc.isect(Coord.z, g.sz())) {
 		    g.aimage(tex, sc, center.a, center.b);
 		}
@@ -45,9 +44,9 @@ public abstract class GobInfo extends GAttrib implements RenderTree.Node, PView.
     }
     
     protected abstract Tex render();
-    
+
     public void clean() {
-	synchronized(texLock) {
+        synchronized(texLock) {
 	    if(tex != null) {
 		tex.dispose();
 		tex = null;
@@ -56,7 +55,7 @@ public abstract class GobInfo extends GAttrib implements RenderTree.Node, PView.
     }
     
     public void dirty() {dirty = true;}
-    
+
     public void dispose() {
 	clean();
     }

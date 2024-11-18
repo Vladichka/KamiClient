@@ -66,13 +66,13 @@ public class MapWnd extends WindowX implements Console.Directory {
     public boolean domark = false;
     private int olalpha = 64;
     protected final Collection<Runnable> deferred = new LinkedList<>();
-    
+
     private final static Predicate<Marker> pmarkers = (m -> m instanceof PMarker);
     private final static Predicate<Marker> smarkers = (m -> m instanceof SMarker);
     private final static Predicate<Marker> custmarkers = (m -> m instanceof CustomMarker);
     private final static Comparator<ListMarker> namecmp = ((a, b) -> a.mark.nm.compareTo(b.mark.nm));
     private final static Comparator<ListMarker> typecmp = Comparator.comparing((ListMarker lm) -> lm.type).thenComparing(namecmp);
-    
+
     public static final KeyBinding kb_home = KeyBinding.get("mapwnd/home", KeyMatch.forcode(KeyEvent.VK_HOME, 0));
     public static final KeyBinding kb_mark = KeyBinding.get("mapwnd/mark", KeyMatch.nil);
     public static final KeyBinding kb_hmark = KeyBinding.get("mapwnd/hmark", KeyMatch.forcode(KeyEvent.VK_M, KeyMatch.C));
@@ -88,44 +88,44 @@ public class MapWnd extends WindowX implements Console.Directory {
 	recenter();
 	toolbar = add(new Widget(Coord.z));
 	toolbar.add(new Img(Resource.loadtex("gfx/hud/mmap/fgwdg")) {
-	    public boolean mousedown(Coord c, int button) {
-		if((button == 1) && checkhit(c)) {
-		    MapWnd.this.drag(parentpos(MapWnd.this, c));
-		    return(true);
+		public boolean mousedown(MouseDownEvent ev) {
+		    if((ev.b == 1) && checkhit(ev.c)) {
+			MapWnd.this.drag(parentpos(MapWnd.this, ev.c));
+			return(true);
+		    }
+		    return(super.mousedown(ev));
 		}
-		return(super.mousedown(c, button));
-	    }
-	}, Coord.z);
+	    }, Coord.z);
 	toolbar.add(new IButton("gfx/hud/mmap/home", "", "-d", "-h") {
-	    {settip("Follow"); setgkey(kb_home);}
-	    public void click() {
-		recenter();
-	    }
-	}, Coord.z);
+		{settip("Follow"); setgkey(kb_home);}
+		public void click() {
+		    recenter();
+		}
+	    }, Coord.z);
 	toolbar.add(new ICheckBox("gfx/hud/mmap/mark", "", "-d", "-h", "-dh"), Coord.z)
 	    .state(() -> domark).set(a -> domark = a)
 	    .settip("Add marker").setgkey(kb_mark);
 	toolbar.add(new ICheckBox("gfx/hud/mmap/hmark", "", "-d", "-h", "-dh"))
 	    .state(() -> Utils.eq(markcfg, MarkerConfig.hideall)).click(() -> {
-		if(Utils.eq(markcfg, MarkerConfig.hideall))
-		    markcfg = MarkerConfig.showall;
-		else if(Utils.eq(markcfg, MarkerConfig.showall) && (cmarkers != null))
-		    markcfg = cmarkers;
-		else
-		    markcfg = MarkerConfig.hideall;
-	    })
+		    if(Utils.eq(markcfg, MarkerConfig.hideall))
+			markcfg = MarkerConfig.showall;
+		    else if(Utils.eq(markcfg, MarkerConfig.showall) && (cmarkers != null))
+			markcfg = cmarkers;
+		    else
+			markcfg = MarkerConfig.hideall;
+		})
 	    .settip("Hide markers").setgkey(kb_hmark);
 	toolbar.add(new ICheckBox("gfx/hud/mmap/wnd", "", "-d", "-h", "-dh"))
 	    .state(this::compact).set(a -> {
-		compact(a);
-		Utils.setprefb("compact-map", a);
-	    })
+		    compact(a);
+		    Utils.setprefb("compact-map", a);
+		})
 	    .settip("Compact mode").setgkey(kb_compact);
 	toolbar.add(new ICheckBox("gfx/hud/mmap/prov", "", "-d", "-h", "-dh") {
-		public boolean mousewheel(Coord c, int amount) {
-		    if(!checkhit(c) || !ui.modshift || !a)
-			return(super.mousewheel(c, amount));
-		    olalpha = Utils.clip(olalpha + (amount * -32), 32, 256);
+		public boolean mousewheel(MouseWheelEvent ev) {
+		    if(!checkhit(ev.c) || !ui.modshift || !a)
+			return(super.mousewheel(ev));
+		    olalpha = Utils.clip(olalpha + (ev.a * -32), 32, 256);
 		    return(true);
 		}
 	    })
@@ -133,152 +133,158 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    .settip("Display provinces").setgkey(kb_prov);
 	toolbar.pack();
 	topbar = add(new Widget(Coord.z), Coord.z);
-	
+    
 	Widget btn;
-	btn = topbar.add(new ICheckBox("gfx/hud/mmap/view", "", "-d", "-h"))
+	btn = topbar.add(new ICheckBox("gfx/hud/mmap/view", "", "-d", "-h"), UI.scale(new Coord(4,4)))
 	    .state(CFG.MMAP_VIEW::get).set(CFG.MMAP_VIEW::set).settip("Display view distance");
-	
+    
 	btn = topbar.add(new ICheckBox("gfx/hud/mmap/grid", "", "-d", "-h"), btn.pos("ur"))
 	    .state(CFG.MMAP_GRID::get).set(CFG.MMAP_GRID::set).settip("Display grid");
-	
+    
 	btn = topbar.add(new ICheckBox("gfx/hud/mmap/pointer", "", "-d", "-h"), btn.pos("ur"))
 	    .state(CFG.MMAP_POINTER::get).set(CFG.MMAP_POINTER::set).settip("Display pointers");
-	
+    
 	btn = topbar.add(new ICheckBox("gfx/hud/mmap/tile-seek", "", "-d", "-h"), btn.pos("ur"))
 	    .changed(a -> toggleol(TileHighlight.TAG, a))
 	    .rclick(() -> {TileHighlight.toggle(ui);})
 	    .settip("Left-click to toggle tile highlight\nRight-click to open settings", true);
-	
-	btn = topbar.add(new ICheckBox("gfx/hud/mmap/marknames", "", "-d", "-h"), btn.pos("ur"))
+    
+	btn = topbar.add(new ICheckBox("gfx/hud/mmap/marknames", "", "-d", "-h"), UI.scale(new Coord(4,24)))
 	    .state(CFG.MMAP_SHOW_MARKER_NAMES::get)
 	    .set(CFG.MMAP_SHOW_MARKER_NAMES::set)
 	    .settip("Show marker names");
 	
-	btn = topbar.add(new ICheckBox("gfx/hud/mmap/pvpmode", "", "-d", "-h"), btn.pos("ur"))
+	btn = topbar.add(new ICheckBox("gfx/hud/mmap/partynames", "", "-d", "-h"), btn.pos("bl"))
+	    .state(CFG.MMAP_SHOW_PARTY_NAMES::get)
+	    .set(CFG.MMAP_SHOW_PARTY_NAMES::set)
+	    .rclick(() -> CFG.MMAP_SHOW_PARTY_NAMES_STYLE.set((CFG.MMAP_SHOW_PARTY_NAMES_STYLE.get() + 1) % 3))
+	    .settip("Show party names. Right-click to change name coloring");
+	
+	btn = topbar.add(new ICheckBox("gfx/hud/mmap/pvpmode", "", "-d", "-h"), btn.pos("bl"))
 	    .state(CFG.PVP_MAP::get)
 	    .set(CFG.PVP_MAP::set)
 	    .settip("Enable PVP Mode");
 	
-	btn = topbar.add(new ICheckBox("gfx/hud/mmap/view", "", "-d", "-h"), btn.pos("ur"))
+	btn = topbar.add(new ICheckBox("gfx/hud/mmap/heightmap", "", "-d", "-h"), btn.pos("bl"))
 	    .changed(a -> toggleol("heightmap", a))
-	    .settip("Enalbe Heightmap");
+	    .settip("Enable Heightmap");
 	
 	topbar.pack();
 	tool = add(new Toolbox2());;
 	compact(Utils.getprefb("compact-map", false));
 	resize(sz);
     }
-    
+
     public void toggleol(String tag, boolean a) {
 	if(a)
 	    overlays.add(tag);
 	else
 	    overlays.remove(tag);
     }
-    
+
     private class ViewFrame extends Frame {
 	Coord sc = Coord.z;
-	
+
 	ViewFrame() {
 	    super(Coord.z, true);
 	}
-	
+
 	public void resize(Coord sz) {
 	    super.resize(sz);
 	    sc = sz.sub(box.bisz()).add(box.btloff()).sub(sizer.sz());
 	}
-	
+
 	public void draw(GOut g) {
 	    super.draw(g);
 	    if(compact())
 		g.image(sizer, sc);
 	}
-	
+
 	private UI.Grab drag;
 	private Coord dragc;
-	public boolean mousedown(Coord c, int button) {
-	    Coord cc = c.sub(sc);
-	    if((button == 1) && compact() && (cc.x < sizer.sz().x) && (cc.y < sizer.sz().y) && (cc.y >= sizer.sz().y - UI.scale(25) + (sizer.sz().x - cc.x))) {
+	public boolean mousedown(MouseDownEvent ev) {
+	    Coord c = ev.c, cc = c.sub(sc);
+	    if((ev.b == 1) && compact() && (cc.x < sizer.sz().x) && (cc.y < sizer.sz().y) && (cc.y >= sizer.sz().y - UI.scale(25) + (sizer.sz().x - cc.x))) {
 		if(drag == null) {
 		    drag = ui.grabmouse(this);
 		    dragc = csz().sub(parentpos(MapWnd.this, c));
 		    return(true);
 		}
 	    }
-	    if((button == 1) && (checkhit(c) || ui.modshift)) {
+	    if((ev.b == 1) && (checkhit(c) || ui.modshift)) {
 		MapWnd.this.drag(parentpos(MapWnd.this, c));
 		return(true);
 	    }
-	    return(super.mousedown(c, button));
+	    return(super.mousedown(ev));
 	}
-	
-	public void mousemove(Coord c) {
+
+	public void mousemove(MouseMoveEvent ev) {
+	    super.mousemove(ev);
 	    if(drag != null) {
-		Coord nsz = parentpos(MapWnd.this, c).add(dragc);
+		Coord nsz = parentpos(MapWnd.this, ev.c).add(dragc);
 		nsz.x = Math.max(nsz.x, UI.scale(150));
 		nsz.y = Math.max(nsz.y, UI.scale(150));
 		MapWnd.this.resize(nsz);
 	    }
-	    super.mousemove(c);
 	}
-	
-	public boolean mouseup(Coord c, int button) {
-	    if((button == 1) && (drag != null)) {
+
+	public boolean mouseup(MouseUpEvent ev) {
+	    if((ev.b == 1) && (drag != null)) {
 		drag.remove();
 		drag = null;
 		return(true);
 	    }
-	    return(super.mouseup(c, button));
+	    return(super.mouseup(ev));
 	}
     }
-    
+
     private static final int btnw = UI.scale(95);
     public class Toolbox extends Widget {
 	public final MarkerList list;
 	private final Frame listf;
 	private final Button pmbtn, smbtn, nobtn, tobtn, mebtn, mibtn;
 	private TextEntry namesel;
-	
+
 	private Toolbox() {
 	    super(UI.scale(200, 200));
 	    listf = add(new Frame(UI.scale(new Coord(200, 200)), false), 0, 0);
 	    list = listf.add(new MarkerList(Coord.of(listf.inner().x, 0)), 0, 0);
 	    pmbtn = add(new Button(btnw, "Placed", false) {
-		public void click() {
-		    mflt = pmarkers;
-		    markerseq = -1;
-		}
-	    });
+		    public void click() {
+			mflt = pmarkers;
+			markerseq = -1;
+		    }
+		});
 	    smbtn = add(new Button(btnw, "Natural", false) {
-		public void click() {
-		    mflt = smarkers;
-		    markerseq = -1;
-		}
-	    });
+		    public void click() {
+			mflt = smarkers;
+			markerseq = -1;
+		    }
+		});
 	    nobtn = add(new Button(btnw, "By name", false) {
-		public void click() {
-		    mcmp = namecmp;
-		    markerseq = -1;
-		}
-	    });
+		    public void click() {
+			mcmp = namecmp;
+			markerseq = -1;
+		    }
+		});
 	    tobtn = add(new Button(btnw, "By type", false) {
-		public void click() {
-		    mcmp = typecmp;
-		    markerseq = -1;
-		}
-	    });
+		    public void click() {
+			mcmp = typecmp;
+			markerseq = -1;
+		    }
+		});
 	    mebtn = add(new Button(btnw, "Export...", false) {
-		public void click() {
-		    exportmap();
-		}
-	    });
+		    public void click() {
+			exportmap();
+		    }
+		});
 	    mibtn = add(new Button(btnw, "Import...", false) {
-		public void click() {
-		    importmap();
-		}
-	    });
+		    public void click() {
+			importmap();
+		    }
+		});
 	}
-	
+
 	public void resize(int h) {
 	    super.resize(new Coord(sz.x, h));
 	    listf.resize(listf.sz.x, sz.y - UI.scale(210));
@@ -302,15 +308,15 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    }
 	}
     }
-    
-    private class View extends MiniMap {
-	private double a = 0;
-	
+
+    private class View extends MiniMap implements CursorQuery.Handler {
+        private double a = 0;
+        
 	View(MapFile file) {
 	    super(file);
 	    big = true;
 	}
-	
+
 	public void drawgrid(GOut g, Coord ul, DisplayGrid disp) {
 	    super.drawgrid(g, ul, disp);
 	    for(String tag : overlays) {
@@ -335,11 +341,11 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    }
 	    g.chcolor();
 	}
-	
+
 	public boolean filter(DisplayMarker mark) {
 	    return(markcfg.filter(mark.m));
 	}
-	
+
 	public boolean clickmarker(DisplayMarker mark, Location loc, int button, boolean press) {
 	    if(button == 1) {
 		if(!compact() && !press && !domark) {
@@ -353,7 +359,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    }
 	    return(false);
 	}
-	
+
 	public boolean clickicon(DisplayIcon icon, Location loc, int button, boolean press) {
 	    if(!press && !domark) {
 		mvclick(mv, null, loc, icon.gob, button);
@@ -361,7 +367,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    }
 	    return(false);
 	}
-	
+
 	public boolean clickloc(Location loc, int button, boolean press) {
 	    if(domark && (button == 1) && !press) {
 		Marker nm = new PMarker(loc.seg.id, loc.tc, "New marker", BuddyWnd.gc[new Random().nextInt(BuddyWnd.gc.length)]);
@@ -376,36 +382,36 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    }
 	    return(false);
 	}
-	
-	public boolean mousedown(Coord c, int button) {
-	    if(domark && (button == 3)) {
+
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(domark && (ev.b == 3)) {
 		domark = false;
 		return(true);
 	    }
-	    super.mousedown(c, button);
+	    super.mousedown(ev);
 	    return(true);
 	}
-	
+
 	public void draw(GOut g) {
 	    g.chcolor(0, 0, 0, 128);
 	    g.frect(Coord.z, sz);
 	    g.chcolor();
 	    super.draw(g);
 	}
-	
-	public Resource getcurs(Coord c) {
+
+	public boolean getcurs(CursorQuery ev) {
 	    if(domark)
-		return(markcurs);
-	    return(super.getcurs(c));
+		return(ev.set(markcurs));
+	    return(false);
 	}
-	
+    
 	@Override
 	public void tick(double dt) {
 	    super.tick(dt);
 	    a = Math.sin(Math.PI * ((System.currentTimeMillis() % 1000) / 1000.0));
 	}
     }
-    
+
     public void tick(double dt) {
 	super.tick(dt);
 	synchronized(deferred) {
@@ -445,12 +451,12 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    }
 	}
     }
-    
+
     public static abstract class MarkerType implements Comparable<MarkerType> {
 	public static final int iconsz = UI.scale(20);
 	private static final HashedSet<MarkerType> types = new HashedSet<>(Hash.eq);
 	public abstract Tex icon();
-	
+
 	public static MarkerType of(Marker mark) {
 	    if(mark instanceof PMarker) {
 		return(types.intern(new PMarkerType(((PMarker)mark).color)));
@@ -463,20 +469,20 @@ public class MapWnd extends WindowX implements Console.Directory {
 		return(null);
 	    }
 	}
-	
+
 	public int compareTo(MarkerType that) {
 	    return(this.getClass().getName().compareTo(that.getClass().getName()));
 	}
     }
-    
+
     public static class PMarkerType extends MarkerType {
 	public final Color col;
 	private Tex icon = null;
-	
+
 	public PMarkerType(Color col) {
 	    this.col = col;
 	}
-	
+
 	public Tex icon() {
 	    if(icon == null) {
 		Resource.Image fg = MiniMap.DisplayMarker.flagfg, bg = MiniMap.DisplayMarker.flagbg;
@@ -491,18 +497,18 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    }
 	    return(icon);
 	}
-	
+
 	public boolean equals(PMarkerType that) {
 	    return(Utils.eq(this.col, that.col));
 	}
 	public boolean equals(Object that) {
 	    return((that instanceof PMarkerType) && equals((PMarkerType)that));
 	}
-	
+
 	public int hashCode() {
 	    return(col.hashCode());
 	}
-	
+
 	public int compareTo(PMarkerType that) {
 	    int a = Utils.index(BuddyWnd.gc, this.col), b = Utils.index(BuddyWnd.gc, that.col);
 	    if((a >= 0) && (b >= 0))
@@ -519,7 +525,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    return(super.compareTo(that));
 	}
     }
-    
+
     public static class SMarkerType extends MarkerType {
 	private Resource.Saved spec;
 	private Tex icon = null;
@@ -527,7 +533,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	public SMarkerType(Resource.Saved spec) {
 	    this.spec = spec;
 	}
-	
+
 	public Tex icon() {
 	    if(icon == null) {
 		BufferedImage img = spec.get().flayer(Resource.imgc).img;
@@ -535,7 +541,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    }
 	    return(icon);
 	}
-	
+
 	public boolean equals(SMarkerType that) {
 	    if(Utils.eq(this.spec.name, that.spec.name)) {
 		if(that.spec.ver > this.spec.ver) {
@@ -549,11 +555,11 @@ public class MapWnd extends WindowX implements Console.Directory {
 	public boolean equals(Object that) {
 	    return((that instanceof SMarkerType) && equals((SMarkerType)that));
 	}
-	
+
 	public int hashCode() {
 	    return(spec.name.hashCode());
 	}
-	
+
 	public int compareTo(SMarkerType that) {
 	    return(this.spec.name.compareTo(that.spec.name));
 	}
@@ -611,56 +617,56 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    return(super.compareTo(that));
 	}
     }
-    
+
     public static class MarkerConfig {
 	public static final MarkerConfig showall = new MarkerConfig();
 	public static final MarkerConfig hideall = new MarkerConfig().showsel(true);
 	public Set<MarkerType> sel = Collections.emptySet();
 	public boolean showsel = false;
-	
+
 	public MarkerConfig() {
 	}
-	
+
 	public MarkerConfig(MarkerConfig from) {
 	    this.sel = from.sel;
 	    this.showsel = from.showsel;
 	}
-	
+
 	public MarkerConfig showsel(boolean showsel) {
 	    MarkerConfig ret = new MarkerConfig(this);
 	    ret.showsel = showsel;
 	    return(ret);
 	}
-	
+
 	public MarkerConfig add(MarkerType type) {
 	    MarkerConfig ret = new MarkerConfig(this);
 	    ret.sel = new HashSet<>(ret.sel);
 	    ret.sel.add(type);
 	    return(ret);
 	}
-	
+
 	public MarkerConfig remove(MarkerType type) {
 	    MarkerConfig ret = new MarkerConfig(this);
 	    ret.sel = new HashSet<>(ret.sel);
 	    ret.sel.remove(type);
 	    return(ret);
 	}
-	
+
 	public MarkerConfig toggle(MarkerType type) {
 	    if(sel.contains(type))
 		return(remove(type));
 	    else
 		return(add(type));
 	}
-	
+
 	public boolean filter(MarkerType type) {
 	    return(sel.contains(type) != showsel);
 	}
-	
+
 	public boolean filter(Marker mark) {
 	    return(sel.isEmpty() ? showsel : filter(MarkerType.of(mark)));
 	}
-	
+
 	public boolean equals(MarkerConfig that) {
 	    return(Utils.eq(this.sel, that.sel) && (this.showsel == that.showsel));
 	}
@@ -668,67 +674,76 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    return((that instanceof MarkerConfig) && equals((MarkerConfig)that));
 	}
     }
-    
+
     public static class ListMarker {
 	public final Marker mark;
 	public MarkerType type;
-	
+
 	public ListMarker(Marker mark) {
 	    this.mark = mark;
 	    type = MarkerType.of(mark);
 	}
     }
-    
+
     public class MarkerList extends SSearchBox<ListMarker, Widget> {
 	public MarkerList(Coord sz) {
 	    super(sz, MarkerType.iconsz);
 	}
-	
+
 	public List<ListMarker> allitems() {return(markers);}
 	public boolean searchmatch(ListMarker lm, String txt) {return(lm.mark.nm.toLowerCase().indexOf(txt.toLowerCase()) >= 0);}
-	
+
+	public class Item extends IconText {
+	    public final ListMarker lm;
+
+	    public Item(Coord sz, ListMarker lm) {
+		super(sz);
+		this.lm = lm;
+	    }
+
+	    protected BufferedImage img() {throw(new RuntimeException());}
+	    protected String text() {return(lm.mark.nm);}
+	    protected boolean valid(String text) {return(Utils.eq(text, text()));}
+
+	    protected void drawicon(GOut g) {
+		try {
+		    Tex icon = lm.type.icon();
+		    if(icon == null) {return;}
+		    if(markcfg.filter(lm.type))
+			g.chcolor(255, 255, 255, 128);
+		    g.aimage(icon, Coord.of(sz.y / 2), 0.5, 0.5);
+		    g.chcolor();
+		} catch(Loading l) {
+		}
+	    }
+
+	    public boolean mousedown(MouseDownEvent ev) {
+		if(ev.c.x < sz.y) {
+		    toggletype(lm.type);
+		    return(true);
+		}
+		return(super.mousedown(ev));
+	    }
+	}
+
 	public Widget makeitem(ListMarker lm, int idx, Coord sz) {
 	    Widget ret = new ItemWidget<ListMarker>(this, sz, lm);
-	    ret.add(new IconText(sz) {
-		protected BufferedImage img() {throw(new RuntimeException());}
-		protected String text() {return(lm.mark.nm);}
-		protected boolean valid(String text) {return(Utils.eq(text, text()));}
-		
-		protected void drawicon(GOut g) {
-		    try {
-			Tex icon = lm.type.icon();
-			if(icon == null) {return;}
-			if(markcfg.filter(lm.type))
-			    g.chcolor(255, 255, 255, 128);
-			g.aimage(icon, Coord.of(sz.y / 2), 0.5, 0.5);
-			g.chcolor();
-		    } catch(Loading l) {
-		    }
-		}
-		
-		public boolean mousedown(Coord c, int button) {
-		    if(c.x < sz.y) {
-			toggletype(lm.type);
-			return(true);
-		    }
-		    return(super.mousedown(c, button));
-		}
-	    }, Coord.z);
+	    ret.add(new Item(sz, lm), Coord.z);
 	    return(ret);
 	}
-	
+    
 	private void toggletype(MarkerType type) {
 	    MarkerConfig nc = markcfg.toggle(type);
 	    markcfg = nc;
 	    cmarkers = nc.sel.isEmpty() ? null : nc;
 	}
-	
+
 	public void change(ListMarker lm) {
 	    change2(lm);
 	    if(lm != null)
 		view.center(new SpecLocator(lm.mark.seg, lm.mark.tc));
 	}
-	
+
 	public void change2(ListMarker lm) {
 	    this.sel = lm;
 	    change3(lm != null ? lm.mark : null);
@@ -749,18 +764,18 @@ public class MapWnd extends WindowX implements Console.Directory {
 		    mtrack = null;
 		}
 	    }
-	    
+
 	    if(mark != null) {
 		if(tool.namesel == null) {
 		    tool.namesel = tool.add(new TextEntry(UI.scale(200), "") {
-			{dshow = true;}
-			public void activate(String text) {
-			    mark.nm = text;
-			    view.file.update(mark);
-			    commit();
-			    change2(null);
-			}
-		    });
+			    {dshow = true;}
+			    public void activate(String text) {
+				mark.nm = text;
+				view.file.update(mark);
+				commit();
+				change2(null);
+			    }
+			});
 		}
 		tool.namesel.settext(mark.nm);
 		tool.namesel.buf.point(mark.nm.length());
@@ -768,11 +783,11 @@ public class MapWnd extends WindowX implements Console.Directory {
 		if(mark instanceof PMarker) {
 		    PMarker pm = (PMarker)mark;
 		    colsel = tool.add(new GroupSelector(Math.max(0, Utils.index(BuddyWnd.gc, pm.color))) {
-			public void changed(int group) {
-			    pm.color = BuddyWnd.gc[group];
-			    view.file.update(mark);
-			}
-		    });
+			    public void changed(int group) {
+				pm.color = BuddyWnd.gc[group];
+				view.file.update(mark);
+			    }
+			});
 		} else if(mark instanceof CustomMarker) {
 		    CustomMarker cm = (CustomMarker) mark;
 		    colsel = tool.add(new GroupSelector(Math.max(0, Utils.index(BuddyWnd.gc, cm.color))) {
@@ -804,7 +819,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    }
 	}
     }
-    
+
     public void resize(Coord sz) {
 	sz = sz.max(compact() ? UI.scale(150, 150) : UI.scale(350, 240));
 	super.resize(sz);
@@ -819,11 +834,11 @@ public class MapWnd extends WindowX implements Console.Directory {
 	view.resize(viewf.inner());
 	toolbar.c = viewf.c.add(0, viewf.sz.y - toolbar.sz.y).add(UI.scale(2), UI.scale(-2));
     }
-    
+
     private boolean compact() {
 	return(deco == null);
     }
-    
+
     public void compact(boolean a) {
 	tool.show(!a);
 	if(a)
@@ -833,11 +848,11 @@ public class MapWnd extends WindowX implements Console.Directory {
 	chdeco(a ? null : makedeco());
 	pack();
     }
-    
+
     public void recenter() {
 	view.follow(player);
     }
-    
+
     public void focus(Marker m) {
 	for(ListMarker lm : markers) {
 	    if(lm.mark == m) {
@@ -849,11 +864,11 @@ public class MapWnd extends WindowX implements Console.Directory {
 	tool.list.change2(null);
 	tool.list.change3(m);
     }
-    
+
     protected Deco makedeco() {
 	return(new DecoX(true).dragsize(true));
     }
-    
+
     public void markobj(long gobid, long oid, Indir<Resource> resid, String nm) {
 	synchronized(deferred) {
 	    deferred.add(new Runnable() {
@@ -909,56 +924,56 @@ public class MapWnd extends WindowX implements Console.Directory {
 		});
 	}
     }
-    
+
     public static class ExportWindow extends WindowX implements MapFile.ExportStatus {
 	private Thread th;
 	private volatile String prog = "Exporting map...";
-	
+
 	public ExportWindow() {
 	    super(UI.scale(new Coord(300, 65)), "Exporting map...", true);
 	    adda(new Button(UI.scale(100), "Cancel", false, this::cancel), csz().x / 2, UI.scale(40), 0.5, 0.0);
 	}
-	
+
 	public void run(Thread th) {
 	    (this.th = th).start();
 	}
-	
+
 	public void cdraw(GOut g) {
 	    g.text(prog, UI.scale(new Coord(10, 10)));
 	}
-	
+
 	public void cancel() {
 	    th.interrupt();
 	}
-	
+
 	public void tick(double dt) {
 	    if(!th.isAlive())
 		destroy();
 	}
-	
+
 	public void grid(int cs, int ns, int cg, int ng) {
 	    this.prog = String.format("Exporting map cut %,d/%,d in segment %,d/%,d", cg, ng, cs, ns);
 	}
-	
+
 	public void mark(int cm, int nm) {
 	    this.prog = String.format("Exporting marker", cm, nm);
 	}
     }
-    
+
     public static class ImportWindow extends WindowX {
 	private Thread th;
 	private volatile String prog = "Initializing";
 	private double sprog = -1;
-	
+
 	public ImportWindow() {
 	    super(UI.scale(new Coord(300, 65)), "Importing map...", true);
 	    adda(new Button(UI.scale(100), "Cancel", false, this::cancel), csz().x / 2, UI.scale(40), 0.5, 0.0);
 	}
-	
+
 	public void run(Thread th) {
 	    (this.th = th).start();
 	}
-	
+
 	public void cdraw(GOut g) {
 	    String prog = this.prog;
 	    if(sprog >= 0)
@@ -967,103 +982,103 @@ public class MapWnd extends WindowX implements Console.Directory {
 		prog = prog + "...";
 	    g.text(prog, UI.scale(new Coord(10, 10)));
 	}
-	
+
 	public void cancel() {
 	    th.interrupt();
 	}
-	
+
 	public void tick(double dt) {
 	    if(!th.isAlive())
 		destroy();
 	}
-	
+
 	public void prog(String prog) {
 	    this.prog = prog;
 	    this.sprog = -1;
 	}
-	
+
 	public void sprog(double sprog) {
 	    this.sprog = sprog;
 	}
     }
-    
+
     public void exportmap(Path path) {
 	GameUI gui = getparent(GameUI.class);
 	ExportWindow prog = new ExportWindow();
 	Thread th = new HackThread(() -> {
-	    boolean complete = false;
-	    try {
+		boolean complete = false;
 		try {
-		    try(OutputStream out = new BufferedOutputStream(Files.newOutputStream(path))) {
-			file.export(out, MapFile.ExportFilter.all, prog);
+		    try {
+			try(OutputStream out = new BufferedOutputStream(Files.newOutputStream(path))) {
+			    file.export(out, MapFile.ExportFilter.all, prog);
+			}
+			complete = true;
+		    } finally {
+			if(!complete)
+			    Files.deleteIfExists(path);
 		    }
-		    complete = true;
-		} finally {
-		    if(!complete)
-			Files.deleteIfExists(path);
+		} catch(IOException e) {
+		    e.printStackTrace(Debug.log);
+		    gui.error("Unexpected error occurred when exporting map.");
+		} catch(InterruptedException e) {
 		}
-	    } catch(IOException e) {
-		e.printStackTrace(Debug.log);
-		gui.error("Unexpected error occurred when exporting map.");
-	    } catch(InterruptedException e) {
-	    }
 	}, "Mapfile exporter");
 	prog.run(th);
 	gui.adda(prog, gui.sz.div(2), 0.5, 1.0);
     }
-    
+
     public void importmap(Path path) {
 	GameUI gui = getparent(GameUI.class);
 	ImportWindow prog = new ImportWindow();
 	Thread th = new HackThread(() -> {
-	    try {
-		try(SeekableByteChannel fp = Files.newByteChannel(path)) {
-		    long size = fp.size();
-		    class Updater extends CountingInputStream {
-			Updater(InputStream bk) {super(bk);}
-			
-			protected void update(long val) {
-			    super.update(val);
-			    prog.sprog((double)pos / (double)size);
+		try {
+		    try(SeekableByteChannel fp = Files.newByteChannel(path)) {
+			long size = fp.size();
+			class Updater extends CountingInputStream {
+			    Updater(InputStream bk) {super(bk);}
+
+			    protected void update(long val) {
+				super.update(val);
+				prog.sprog((double)pos / (double)size);
+			    }
 			}
+			prog.prog("Validating map data");
+			file.reimport(new Updater(new BufferedInputStream(Channels.newInputStream(fp))), MapFile.ImportFilter.readonly);
+			prog.prog("Importing map data");
+			fp.position(0);
+			file.reimport(new Updater(new BufferedInputStream(Channels.newInputStream(fp))), MapFile.ImportFilter.all);
 		    }
-		    prog.prog("Validating map data");
-		    file.reimport(new Updater(new BufferedInputStream(Channels.newInputStream(fp))), MapFile.ImportFilter.readonly);
-		    prog.prog("Importing map data");
-		    fp.position(0);
-		    file.reimport(new Updater(new BufferedInputStream(Channels.newInputStream(fp))), MapFile.ImportFilter.all);
+		} catch(InterruptedException e) {
+		} catch(Exception e) {
+		    e.printStackTrace(Debug.log);
+		    gui.error("Could not import map: " + e.getMessage());
 		}
-	    } catch(InterruptedException e) {
-	    } catch(Exception e) {
-		e.printStackTrace(Debug.log);
-		gui.error("Could not import map: " + e.getMessage());
-	    }
 	}, "Mapfile importer");
 	prog.run(th);
 	gui.adda(prog, gui.sz.div(2), 0.5, 1.0);
     }
-    
+
     public void exportmap() {
 	java.awt.EventQueue.invokeLater(() -> {
-	    JFileChooser fc = new JFileChooser();
-	    fc.setFileFilter(new FileNameExtensionFilter("Exported Haven map data", "hmap"));
-	    if(fc.showSaveDialog(null) != JFileChooser.APPROVE_OPTION)
-		return;
-	    Path path = fc.getSelectedFile().toPath();
-	    if(path.getFileName().toString().indexOf('.') < 0)
-		path = path.resolveSibling(path.getFileName() + ".hmap");
-	    exportmap(path);
-	});
+		JFileChooser fc = new JFileChooser();
+		fc.setFileFilter(new FileNameExtensionFilter("Exported Haven map data", "hmap"));
+		if(fc.showSaveDialog(null) != JFileChooser.APPROVE_OPTION)
+		    return;
+		Path path = fc.getSelectedFile().toPath();
+		if(path.getFileName().toString().indexOf('.') < 0)
+		    path = path.resolveSibling(path.getFileName() + ".hmap");
+		exportmap(path);
+	    });
     }
-    
+
     public void importmap() {
 	java.awt.EventQueue.invokeLater(() -> {
-	    JFileChooser fc = new JFileChooser();
-	    fc.setFileFilter(new FileNameExtensionFilter("Exported Haven map data", "hmap"));
-	    if(fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
-		return;
-	    importmap(fc.getSelectedFile().toPath());
-	});
+		JFileChooser fc = new JFileChooser();
+		fc.setFileFilter(new FileNameExtensionFilter("Exported Haven map data", "hmap"));
+		if(fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
+		    return;
+		importmap(fc.getSelectedFile().toPath());
+	    });
     }
     
     public Coord2d findMarkerPosition(String name) {
@@ -1223,21 +1238,21 @@ public class MapWnd extends WindowX implements Console.Directory {
     private Map<String, Console.Command> cmdmap = new TreeMap<String, Console.Command>();
     {
 	cmdmap.put("exportmap", new Console.Command() {
-	    public void run(Console cons, String[] args) {
-		if(args.length > 1)
-		    exportmap(Utils.path(args[1]));
-		else
-		    exportmap();
-	    }
-	});
+		public void run(Console cons, String[] args) {
+		    if(args.length > 1)
+			exportmap(Utils.path(args[1]));
+		    else
+			exportmap();
+		}
+	    });
 	cmdmap.put("importmap", new Console.Command() {
-	    public void run(Console cons, String[] args) {
-		if(args.length > 1)
-		    importmap(Utils.path(args[1]));
-		else
-		    importmap();
-	    }
-	});
+		public void run(Console cons, String[] args) {
+		    if(args.length > 1)
+			importmap(Utils.path(args[1]));
+		    else
+			importmap();
+		}
+	    });
     }
     public Map<String, Console.Command> findcmds() {
 	return(cmdmap);

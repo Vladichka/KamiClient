@@ -66,10 +66,10 @@ public class TravelWnd extends WindowX {
 	    super.draw(g);
 	}
 	
-	public boolean mousedown(Coord c, int button) {
-	    if(super.mousedown(c, button))
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(ev.propagate(this))
 		return (true);
-	    int sel = (c.y / itemh) + sb.val;
+	    int sel = (ev.c.y / itemh) + sb.val;
 	    synchronized (chrs) {
 		this.sel = (sel >= chrs.size()) ? null : chrs.get(sel);
 		txt.settext("");
@@ -77,8 +77,8 @@ public class TravelWnd extends WindowX {
 	    return (true);
 	}
 	
-	public boolean mousewheel(Coord c, int amount) {
-	    sb.ch(amount);
+	public boolean mousewheel(MouseWheelEvent ev) {
+	    sb.ch(ev.a);
 	    return (true);
 	}
 	

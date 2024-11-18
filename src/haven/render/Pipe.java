@@ -63,9 +63,9 @@ public interface Pipe {
 	    public boolean equals(Object o) {
 		if(o == this)
 		    return(true);
-		if(!(o instanceof Composed))
+		if(!(o instanceof Op.Composed))
 		    return(false);
-		return(Arrays.equals(ops, ((Composed)o).ops));
+		return(Arrays.equals(ops, ((Op.Composed)o).ops));
 	    }
 
 	    public int hashCode() {

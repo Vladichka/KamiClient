@@ -24,6 +24,10 @@ public class TabStrip<T> extends Widget {
 	if(callback != null) {callback.call(button.tag);}
     }
 
+    public Button<T> selected() {return selected;}
+    
+    public T selectedTag() {return selected.tag;}
+
     public int getSelectedButtonIndex() {
 	return buttons.indexOf(selected);
     }
@@ -176,8 +180,8 @@ public class TabStrip<T> extends Widget {
 	}
 
 	@Override
-	public boolean mousedown(Coord c, int button) {
-	    if(button == 1) {
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(ev.b == 1) {
 		click();
 		return true;
 	    }

@@ -16,7 +16,7 @@ public class CharterBook extends WindowX {
     private static boolean initialized = false;
     private static Pattern filter = Pattern.compile(String.format("%s \"(.*)\".", PREFIX));
     private static Map<String, List<String>> config;
-    private static List<String> names = Collections.emptyList();
+    private static List<String> names = Collections.emptyList(); // KamiClient we love some initialization right?
     private static Gson gson;
     
     public CharterBook(Coord sz, String cap, boolean lg) {

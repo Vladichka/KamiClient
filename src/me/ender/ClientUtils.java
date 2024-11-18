@@ -1,7 +1,6 @@
 package me.ender;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import haven.*;
 
@@ -10,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -50,7 +50,7 @@ public class ClientUtils {
     }
     
     public static String prettyResName(String resname) {
-	if(resname == null) {return "???";}
+	if(resname == null || resname.isEmpty()) {return "???";}
 	tryInitCustomNames();
 	if(customNames.containsKey(resname)) {
 	    return customNames.get(resname);
@@ -62,7 +62,6 @@ public class ClientUtils {
 	}
 	int k = resname.lastIndexOf("/");
 	resname = resname.substring(k + 1);
-	resname = resname.substring(0, 1).toUpperCase() + resname.substring(1);
 	
 	//handle logs
 	if(fullname.contains("terobjs/trees/") && resname.endsWith("log")) {
@@ -71,12 +70,19 @@ public class ClientUtils {
 		resname = resname.substring(0, resname.length() - 4) + " Tree";
 	    }
 	    resname += " Log";
+	} else if(fullname.startsWith(ResName.BARREL_WITH_CONTENTS)) {
+	    resname = fullname.substring(fullname.lastIndexOf("-") + 1);
+	} else if(fullname.contains(ResName.STOCKPILE)) {
+	    k = resname.lastIndexOf(ResName.STOCKPILE);
+	    resname = resname.substring(k + 11) + " Stockpile";
 	}
 	
 	//handle flour
 	if(resname.endsWith("flour")) {
 	    resname = resname.substring(0, resname.length() - 5) + " Flour";
 	}
+
+	resname = resname.substring(0, 1).toUpperCase() + resname.substring(1);
 	
 	return resname;
     }
@@ -86,7 +92,7 @@ public class ClientUtils {
 	customNamesInit = true;
 	try {
 	    Gson gson = new GsonBuilder().create();
-	    customNames.putAll(gson.fromJson(Config.loadJarFile("tile_names.json"), new TypeToken<Map<String, String>>() {
+	    customNames.putAll(gson.fromJson(Config.loadJarFile("res_names.json"), new TypeToken<Map<String, String>>() {
 	    }.getType()));
 	} catch (Exception ignored) {}
     }
@@ -127,9 +133,33 @@ public class ClientUtils {
 	return c;
     }
     
+    public static int clamp(int value, int min, int max) {
+	return Math.max(Math.min(max, value), min);
+    }
+    
+    public static int str2cc(String value) {
+	return clamp(str2int(value), 0, 255);
+    }
+    
+    public static int str2int(String value) {
+	int result = 0;
+	if(value != null) {
+	    try {
+		result = Integer.parseInt(value);
+	    } catch (Exception ignored) {}
+	}
+	return result;
+    }
+    
     public static String color2hex(Color col) {
+	return color2hex(col, true);
+    }
+    
+    public static String color2hex(Color col, boolean hasAlpha) {
 	if(col != null) {
-	    return Integer.toHexString(col.getRGB());
+	    int rgb = col.getRGB();
+	    if(!hasAlpha) {rgb = rgb & 0xffffff;}
+	    return Integer.toHexString(rgb);
 	}
 	return null;
     }
@@ -229,11 +259,11 @@ public class ClientUtils {
     @SuppressWarnings("unchecked")
     public static <T extends Number> T num2value(Number n, Class<T> type) {
 	if(Integer.class.equals(type)) {
-	    return (T) new Integer(n.intValue());
+	    return (T) (Integer) (n.intValue());
 	} else if(Long.class.equals(type)) {
-	    return (T) new Long(n.longValue());
+	    return (T) (Long) (n.longValue());
 	}
-	return (T) new Float(n.floatValue());
+	return (T) (Float) (n.floatValue());
     }
     
     @SafeVarargs
@@ -271,5 +301,16 @@ public class ClientUtils {
 	} else {
 	    return String.format("%02d", time);
 	}
+    }
+    
+    public static class ColorSerializer implements JsonSerializer<Color> {
+	@Override
+	public JsonElement serialize(Color color, Type type, JsonSerializationContext serializer) {
+	    return new JsonPrimitive(color2hex(color));
+	}
+    }
+    
+    public static Coord getScreenCenter(UI ui) {
+	return ui.root.sz.div(2);
     }
 }

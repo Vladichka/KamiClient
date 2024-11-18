@@ -337,7 +337,7 @@ public class MapMesh implements RenderTree.Node, Disposable {
 		Coord gc = c.add(ul);
 		long ns = rnd.nextLong();
 		mc.tiler(mc.gettile(gc)).lay(m, rnd, c, gc);
-		if (CFG.ENABLE_BIOME_TRANSITION.get())
+		if (!CFG.NO_TILE_TRANSITION.get())
 		    dotrans(m, rnd, c, gc);
 		rnd.setSeed(ns);
 	    }

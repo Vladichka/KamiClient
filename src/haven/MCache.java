@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.function.*;
 import java.lang.ref.*;
 import haven.render.*;
+import me.ender.minimap.Minesweeper;
 
 /* XXX: This whole file is a bit of a mess and could use a bit of a
  * rewrite some rainy day. Synchronization especially is quite hairy. */
@@ -52,7 +53,7 @@ public class MCache implements MapSource {
     Map<Coord, Request> req = new HashMap<Coord, Request>();
     Map<Coord, Grid> grids = new HashMap<Coord, Grid>();
     Session sess;
-    Set<Overlay> ols = new HashSet<Overlay>();
+    final Set<Overlay> ols = new HashSet<Overlay>();
     public int olseq = 0, chseq = 0;
     public long lastupdate = 0;
     Map<Integer, Defrag> fragbufs = new TreeMap<Integer, Defrag>();
@@ -235,17 +236,22 @@ public class MCache implements MapSource {
     public class Overlay {
 	private Area a;
 	private OverlayInfo id;
+	private Function<Coord, Boolean> mask;
 
 	public Overlay(Area a, OverlayInfo id) {
 	    this.a = a;
 	    this.id = id;
-	    ols.add(this);
-	    olseq++;
+	    synchronized (ols) {
+		ols.add(this);
+		olseq++;
+	    }
 	}
 
 	public void destroy() {
-	    ols.remove(this);
-	    olseq++;
+	    synchronized (ols) {
+		ols.remove(this);
+		olseq++;
+	    }
 	}
 
 	public void update(Area a) {
@@ -254,6 +260,10 @@ public class MCache implements MapSource {
 		this.a = a;
 	    }
 	}
+	
+	public void mask(Function<Coord, Boolean> mask) {this.mask = mask;}
+	
+	public boolean mask(Coord c) {return mask == null || Boolean.TRUE.equals(mask.apply(c));}
     }
 
     private void cktileid(int id) {
@@ -591,7 +601,7 @@ public class MCache implements MapSource {
 	    }
 	}
 	
-	public void invalidate() {
+	private void invalidate() {
 	    for(int y = 0; y < cutn.y; y++) {
 		for(int x = 0; x < cutn.x; x++) {
 		    geticut(Coord.of(x, y)).invalidate();
@@ -795,16 +805,17 @@ public class MCache implements MapSource {
 
     public MCache(Session sess) {
 	this.sess = sess;
-	CFG.Observer<Boolean> change = cfg -> {
-	    synchronized (this.grids) {
-		for (Grid g : this.grids.values()) {
-		    g.invalidate();
-		}
-	    }
-	};
-	CFG.FLATTEN_TERRAIN.observe(change);
-	CFG.ENABLE_BIOME_TRANSITION.observe((change));
-	CFG.ENABLE_TERRAIN_BLEND.observe((change));
+	CFG.NO_TILE_TRANSITION.observe(this::resetMap);
+	CFG.FLAT_TERRAIN.observe(this::resetMap);
+	CFG.DISPLAY_RIDGE_BOX.observe(this::resetMap);
+	CFG.COLOR_RIDGE_BOX.observe(this::resetMap);
+	CFG.COLORIZE_DEEP_WATER.observe(this::resetMap);
+    }
+    
+    private void resetMap(CFG<?> cfg) {
+	synchronized (MCache.this) {
+	    trimall();
+	}
     }
 
     public void ctick(double dt) {
@@ -868,6 +879,17 @@ public class MCache implements MapSource {
 	    return(ret);
 	}
     }
+    
+    public Grid getgrid(long id) {
+	synchronized (grids) {
+	    for (Grid grid : grids.values()) {
+		if(grid.id == id) {
+		    return grid;
+		}
+	    }
+	}
+	return null;
+    }
 
     public Grid getgridt(Coord tc) {
 	return(getgrid(tc.div(cmaps)));
@@ -877,15 +899,12 @@ public class MCache implements MapSource {
 	Grid g = getgridt(tc);
 	return(g.gettile(tc.sub(g.ul)));
     }
-    
-    public double getfz2(Coord tc) {
-	Grid g = getgridt(tc);
-	return(g.getz(tc.sub(g.ul)));
+
+    public double getfz(Coord tc) {
+	return CFG.FLAT_TERRAIN.get() ? 0 : getfz2(tc);
     }
     
-    public double getfz(Coord tc) {
-	if (((Boolean)CFG.FLATTEN_TERRAIN.get()).booleanValue())
-	    return 0.0D;
+    public double getfz2(Coord tc) {
 	Grid g = getgridt(tc);
 	return(g.getz(tc.sub(g.ul)));
     }
@@ -900,14 +919,10 @@ public class MCache implements MapSource {
     }
 
     public double getcz(Coord2d pc) {
-	if (((Boolean)CFG.FLATTEN_TERRAIN.get()).booleanValue())
-	    return 0.0F;
 	return(getcz(pc.x, pc.y));
     }
 
     public float getcz(float px, float py) {
-	if (((Boolean)CFG.FLATTEN_TERRAIN.get()).booleanValue())
-	    return 0.0F;
 	return((float)getcz((double)px, (double)py));
     }
 
@@ -916,8 +931,6 @@ public class MCache implements MapSource {
     }
 
     public Coord3f getzp(Coord2d pc) {
-	if (((Boolean)CFG.FLATTEN_TERRAIN.get()).booleanValue())
-	    return(Coord3f.of((float)pc.x, (float)pc.y, 0.0F));
 	return(Coord3f.of((float)pc.x, (float)pc.y, (float)getcz(pc)));
     }
 
@@ -928,8 +941,6 @@ public class MCache implements MapSource {
 	};
 
     public double getz(SurfaceID id, Coord tc) {
-	if (((Boolean)CFG.FLATTEN_TERRAIN.get()).booleanValue())
-	    return 0.0F;
 	Grid g = getgridt(tc);
 	MapMesh cut = g.getcut(tc.sub(g.ul).div(cutsz));
 	Tiler t = tiler(g.gettile(tc.sub(g.ul)));
@@ -946,8 +957,6 @@ public class MCache implements MapSource {
     }
 
     public Coord3f getzp(SurfaceID id, Coord2d pc) {
-	if (((Boolean)CFG.FLATTEN_TERRAIN.get()).booleanValue())
-	    return(Coord3f.of((float)pc.x, (float)pc.y, 0.0F));
 	return(Coord3f.of((float)pc.x, (float)pc.y, (float)getz(id, pc)));
     }
 
@@ -971,9 +980,11 @@ public class MCache implements MapSource {
 		    ret.add(id);
 	    }
 	}
-	for(Overlay lol : ols) {
-	    if((lol.a.overlap(a) != null) && !ret.contains(lol.id))
-		ret.add(lol.id);
+	synchronized (ols) {
+	    for (Overlay lol : ols) {
+		if((lol.a.overlap(a) != null) && !ret.contains(lol.id))
+		    ret.add(lol.id);
+	    }
 	}
 	return(ret);
     }
@@ -993,13 +1004,15 @@ public class MCache implements MapSource {
 		    buf[a.ri(tc)] = gbuf[(tc.x - gt.ul.x) + ((tc.y - gt.ul.y) * cmaps.x)];
 	    }
 	}
-	for(Overlay lol : ols) {
-	    if(lol.id != id)
-		continue;
-	    Area la = lol.a.overlap(a);
-	    if(la != null) {
-		for(Coord lc : la)
-		    buf[a.ri(lc)] = true;
+	synchronized (ols) {
+	    for (Overlay lol : ols) {
+		if(lol.id != id)
+		    continue;
+		Area la = lol.a.overlap(a);
+		if(la != null) {
+		    for (Coord lc : la)
+			if(lol.mask(lc)) {buf[a.ri(lc)] = true;}
+		}
 	    }
 	}
     }
@@ -1033,10 +1046,8 @@ public class MCache implements MapSource {
 	    synchronized(req) {
 		if(req.containsKey(c)) {
 		    g = grids.get(c);
-		    if(g == null) {
+		    if(g == null)
 			grids.put(c, g = new Grid(c));
-			//cached = null;
-		    }
 		    g.fill(msg);
 		    req.remove(c);
 		    olseq++;
@@ -1137,13 +1148,14 @@ public class MCache implements MapSource {
 		grids.clear();
 		req.clear();
 		MapDumper.newSession();
-		//cached = null;
 	    }
 	    gridwait.wnotify();
 	}
+	Minesweeper.trim(sess, null);
     }
 
     public void trim(Coord ul, Coord lr) {
+	List<Long> removed = new LinkedList<>();
 	synchronized(grids) {
 	    synchronized(req) {
 		for(Iterator<Map.Entry<Coord, Grid>> i = grids.entrySet().iterator(); i.hasNext();) {
@@ -1151,6 +1163,7 @@ public class MCache implements MapSource {
 		    Coord gc = e.getKey();
 		    Grid g = e.getValue();
 		    if((gc.x < ul.x) || (gc.y < ul.y) || (gc.x > lr.x) || (gc.y > lr.y)) {
+			removed.add(g.id);
 			g.dispose();
 			i.remove();
 		    }
@@ -1160,10 +1173,10 @@ public class MCache implements MapSource {
 		    if((gc.x < ul.x) || (gc.y < ul.y) || (gc.x > lr.x) || (gc.y > lr.y))
 			i.remove();
 		}
-		//cached = null;
 	    }
 	    gridwait.wnotify();
 	}
+	Minesweeper.trim(sess, removed);
     }
 
     public void request(Coord gc) {

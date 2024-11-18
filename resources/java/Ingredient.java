@@ -7,17 +7,17 @@ import haven.res.lib.tspec.Spec;
 public class Ingredient extends ItemInfo.Tip {
     public final String name;
     public final Double val;
-    
+
     public Ingredient(Owner owner, String name, Double val) {
 	super(owner);
 	this.name = name;
 	this.val = val;
     }
-    
+
     public Ingredient(Owner owner, String name) {
 	this(owner, name, null);
     }
-    
+
     public static class Fac implements InfoFactory {
 	public ItemInfo build(Owner owner, Raw raw, Object... args) {
 	    int a = 1;
@@ -40,12 +40,12 @@ public class Ingredient extends ItemInfo.Tip {
 	    return(new Ingredient(owner, name, val));
 	}
     }
-    
+
     public static class Line extends Tip {
 	final List<Ingredient> all = new ArrayList<>();
-	
+
 	Line() {super(null);}
-	
+
 	public BufferedImage tipimg() {
 	    StringBuilder buf = new StringBuilder();
 	    all.sort(Comparator.comparing(a -> a.name));
@@ -65,11 +65,11 @@ public class Ingredient extends ItemInfo.Tip {
 	}
     }
     public static final Layout.ID<Line> id = Line::new;
-    
+
     public void prepare(Layout l) {
 	l.intern(id).all.add(this);
     }
-    
+
     public String descr() {
 	if(val == null)
 	    return L10N.ingredient(name);

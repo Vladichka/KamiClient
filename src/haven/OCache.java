@@ -27,6 +27,7 @@
 package haven;
 
 import java.util.*;
+import java.util.List;
 import java.util.function.Consumer;
 import java.lang.annotation.*;
 import java.lang.reflect.*;
@@ -65,6 +66,7 @@ public class OCache implements Iterable<Gob> {
     private Glob glob;
     private final Collection<ChangeCallback> cbs = new WeakList<ChangeCallback>();
     public final PathVisualizer paths = new PathVisualizer();
+    private final List<Disposable> disposables = new LinkedList<>();
 
     public interface ChangeCallback {
 	public void added(Gob ob);
@@ -73,16 +75,53 @@ public class OCache implements Iterable<Gob> {
 
     public OCache(Glob glob) {
 	this.glob = glob;
+	
 	callback(Gob.CHANGED);
-	CFG.DISPLAY_GOB_HITBOX.observe(cfg -> gobAction(Gob::hitboxUpdated));
-	CFG.DISPLAY_GOB_HITBOX_TOP.observe(cfg -> gobAction(Gob::hitboxUpdated));
-	CFG.HIDE_TREES.observe(cfg -> gobAction(Gob::visibilityUpdated));
-	CFG.SKIP_HIDING_RADAR_TREES.observe(cfg -> gobAction(Gob::visibilityUpdated));
-	CFG.DISPLAY_GOB_INFO.observe(cfg -> gobAction(Gob::infoUpdated));
-	CFG.DISPLAY_GOB_INFO_DISABLED_PARTS.observe(cfg -> gobAction(Gob::infoUpdated));
-	CFG.DISPLAY_GOB_INFO_SHORT.observe(cfg -> gobAction(Gob::infoUpdated));
-	CFG.SHOW_CONTAINER_FULLNESS.observe(cfg -> gobAction(Gob::infoUpdated));
-	CFG.SHOW_PROGRESS_COLOR.observe(cfg -> gobAction(Gob::infoUpdated));
+	disposables.add(CFG.DISPLAY_GOB_HITBOX.observe(cfg -> gobAction(Gob::hitboxUpdated)));
+	disposables.add(CFG.DISPLAY_GOB_HITBOX_TOP.observe(cfg -> gobAction(Gob::hitboxUpdated)));
+	disposables.add(CFG.DISPLAY_GOB_HITBOX_FILLED.observe(cfg -> gobAction(Gob::hitboxUpdated)));
+	disposables.add(CFG.COLOR_HBOX_FILLED.observe(cfg -> gobAction(Gob::hitboxUpdated)));
+	disposables.add(CFG.COLOR_HBOX_SOLID.observe(cfg -> gobAction(Gob::hitboxUpdated)));
+	disposables.add(CFG.COLOR_HBOX_PASSABLE.observe(cfg -> gobAction(Gob::hitboxUpdated)));
+	disposables.add(CFG.HIDE_TREES.observe(cfg -> gobAction(Gob::visibilityUpdated)));
+	disposables.add(CFG.SKIP_HIDING_RADAR_TREES.observe(cfg -> gobAction(Gob::visibilityUpdated)));
+	disposables.add(CFG.DISPLAY_GOB_INFO.observe(cfg -> gobAction(Gob::infoUpdated)));
+	disposables.add(CFG.DISPLAY_GOB_INFO_DISABLED_PARTS.observe(cfg -> gobAction(Gob::infoUpdated)));
+	disposables.add(CFG.DISPLAY_GOB_INFO_TREE_ENABLED_PARTS.observe(cfg -> gobAction(Gob::infoUpdated)));
+	disposables.add(CFG.DISPLAY_GOB_INFO_TREE_HIDE_GROWING_PARTS.observe(cfg -> gobAction(Gob::infoUpdated)));
+	disposables.add(CFG.DISPLAY_GOB_INFO_TREE_SHOW_BIG.observe(cfg -> gobAction(Gob::infoUpdated)));
+	disposables.add(CFG.DISPLAY_GOB_INFO_TREE_SHOW_BIG_THRESHOLD.observe(cfg -> gobAction(Gob::infoUpdated)));
+	disposables.add(CFG.DISPLAY_GOB_INFO_SHORT.observe(cfg -> gobAction(Gob::infoUpdated)));
+	disposables.add(CFG.HIGHLIGHT_PARTY_IN_COMBAT.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.HIGHLIGHT_SELF_IN_COMBAT.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.HIGHLIGHT_ENEMY_IN_COMBAT.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.FLAT_TERRAIN.observe(cfg -> gobAction(Gob::markerUpdated)));
+	disposables.add(CFG.DISPLAY_AURA_SPEED_BUFF.observe(cfg -> gobAction(Gob::markerUpdated)));
+	disposables.add(CFG.DISPLAY_AURA_RABBIT.observe(cfg -> gobAction(Gob::markerUpdated)));
+	disposables.add(CFG.DISPLAY_AURA_CRITTERS.observe(cfg -> gobAction(Gob::markerUpdated)));
+	disposables.add(CFG.MARK_PARTY_IN_COMBAT.observe(cfg -> gobAction(Gob::markerUpdated)));
+	disposables.add(CFG.MARK_SELF_IN_COMBAT.observe(cfg -> gobAction(Gob::markerUpdated)));
+	disposables.add(CFG.MARK_ENEMY_IN_COMBAT.observe(cfg -> gobAction(Gob::markerUpdated)));
+	disposables.add(CFG.SHOW_CONTAINER_FULLNESS.observe(cfg -> gobAction(Gob::infoUpdated)));
+	disposables.add(CFG.SHOW_PROGRESS_COLOR.observe(cfg -> gobAction(Gob::infoUpdated)));
+	
+	disposables.add(CFG.COLOR_GOB_READY.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.COLOR_GOB_FULL.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.COLOR_GOB_EMPTY.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.COLOR_GOB_PARTY.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.COLOR_GOB_LEADER.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.COLOR_GOB_SELF.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.COLOR_GOB_IN_COMBAT.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.COLOR_GOB_COMBAT_TARGET.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.COLOR_GOB_SPEED_BUFF.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.COLOR_GOB_RABBIT.observe(cfg -> gobAction(Gob::colorUpdated)));
+	disposables.add(CFG.COLOR_GOB_CRITTERS.observe(cfg -> gobAction(Gob::colorUpdated)));
+    }
+    
+    public void destroy() {
+	disposables.forEach(Disposable::dispose);
+	disposables.clear();
+	cbs.clear();
     }
     
     public void gobAction(Consumer<Gob> action) {

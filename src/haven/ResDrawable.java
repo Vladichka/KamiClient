@@ -37,7 +37,7 @@ public class ResDrawable extends Drawable implements EquipTarget {
     public final Sprite spr;
     MessageBuf sdt;
     private String resid;
-    
+
     public ResDrawable(Gob gob, Indir<Resource> res, Message sdt, boolean old) {
 	super(gob);
 	this.res = res;
@@ -48,37 +48,37 @@ public class ResDrawable extends Drawable implements EquipTarget {
 	    spr.age();
 	resid = makeResId();
     }
-    
+
     public ResDrawable(Gob gob, Indir<Resource> res, Message sdt) {
 	this(gob, res, sdt, false);
     }
-    
+
     public ResDrawable(Gob gob, Resource res) {
 	this(gob, res.indir(), MessageBuf.nil);
     }
-    
+
     public void ctick(double dt) {
 	spr.tick(dt);
     }
-    
+
     public void gtick(Render g) {
 	spr.gtick(g);
     }
-    
+
     public void added(RenderTree.Slot slot) {
 	slot.add(spr);
 	super.added(slot);
     }
-    
+
     public void dispose() {
 	if(spr != null)
 	    spr.dispose();
     }
-    
+
     public Resource getres() {
 	return(rres);
     }
-    
+
     @Override
     public Indir<Resource> getires() {
 	return res;
@@ -127,7 +127,7 @@ public class ResDrawable extends Drawable implements EquipTarget {
 	}
 	return(super.placer());
     }
-    
+
     public Supplier<? extends Pipe.Op> eqpoint(String nm, Message dat) {
 	if(spr instanceof EquipTarget) {
 	    Supplier<? extends Pipe.Op> ret = ((EquipTarget)spr).eqpoint(nm, dat);
@@ -139,7 +139,7 @@ public class ResDrawable extends Drawable implements EquipTarget {
 	    return(bo.from(null));
 	return(null);
     }
-    
+
     @OCache.DeltaType(OCache.OD_RES)
     public static class $cres implements OCache.Delta {
 	public void apply(Gob g, OCache.AttrDelta msg) {

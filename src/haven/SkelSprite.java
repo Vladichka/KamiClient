@@ -262,6 +262,7 @@ public class SkelSprite extends Sprite implements Sprite.CUpd, EquipTarget, Spri
 	int fl = sdt.eom() ? 0xffff0000 : decnum(sdt);
 	update(fl);
     }
+    
     public void added(RenderTree.Slot slot) {
 	parts(slot);
 	slots.add(slot);

@@ -108,6 +108,10 @@ public class Reflect {
 	return obj != null && obj.getClass().getName().equals(clazz);
     }
 
+    public static boolean like(Object obj, String clazz) {
+	return obj != null && obj.getClass().getName().contains(clazz);
+    }
+
     //Note that version with types should be used if arguments contain primitive types
     public static Object invoke(Object o, String method, Object... args) {
 	Class[] types = new Class[args.length];

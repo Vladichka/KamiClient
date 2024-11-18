@@ -299,7 +299,7 @@ public class MappingClient {
 		ArrayList<JSONObject> loadedMarkers = new ArrayList<>();
 		if (markers.isEmpty())
 		    return;
-	    
+		
 		System.out.println("processing " + markers.size() + " markers");
 		for (int i = 0; i < markers.size(); i++) {
 		    try {
@@ -335,7 +335,7 @@ public class MappingClient {
 			return;
 		    }
 		}
-	 
+		
 		System.out.println("scheduling upload for " + loadedMarkers.size() + " markers");
 		try {
 		    scheduler.execute(new MarkerUpdate(new JSONArray(loadedMarkers.toArray())));
