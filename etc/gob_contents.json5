@@ -47,5 +47,6 @@
   "gfx/terobjs/trees/wartybirch": {Bark: "gfx/invobjs/bark-birch"},
   "gfx/terobjs/trees/willow": {Bark: "gfx/invobjs/bark-willow"},
   "gfx/terobjs/trees/yew": {Bough: "gfx/invobjs/small/bough-yew"},
-  "tag/smelter": {"Ready":  "gfx/invobjs/bar-lead", Cold: "gfx/hud/gob/cold"}
+  "tag/smelter": {"Ready":  "gfx/invobjs/bar-lead", Cold: "gfx/hud/gob/cold"},
+  "gfx/terobjs/chickencoop": {"Water":  "gfx/invobjs/water", Food: "gfx/invobjs/straw"}
 }

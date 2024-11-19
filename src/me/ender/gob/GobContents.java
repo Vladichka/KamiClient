@@ -22,6 +22,9 @@ public class GobContents {
     public static final String READY = "Ready";
     public static final String COLD = "Cold";
     
+    public static final String WATER = "Water";
+    public static final String FOOD = "Food";
+    
     static {
 	final Gson gson = new Gson();
 	try {

@@ -291,6 +291,14 @@ public class GeneralGobInfo extends GobInfo {
 		GobInfoOpts.enabled(TreeSubPart.BOUGH) ? getIcon(data.get(BOUGH)) : null,
 	    };
 
+	} else if (gob.is(GobTag.COOP)) {
+	    int sdt = gob.sdt();
+	    boolean water = (sdt & 0b0001) != 0;
+	    boolean food = (sdt & 0b0000_0010) != 0;
+	    parts = new BufferedImage[]{
+		!food && GobInfoOpts.enabled(InfoPart.COOPS)  ? getIcon(data.get(FOOD), true) : null,
+		!water && GobInfoOpts.enabled(InfoPart.COOPS)  ? getIcon(data.get(WATER), true) : null,
+	    };
 	} else if(CFG.SHOW_PROGRESS_COLOR.get()) { //should this be separate option?
 	    if(gob.is(GobTag.SMELTER)) {
 		parts = new BufferedImage[]{
@@ -312,14 +320,18 @@ public class GeneralGobInfo extends GobInfo {
     private static final Map<String, BufferedImage> iconCache = new HashMap<>();
     
     private static BufferedImage getIcon(String name) {
+	return getIcon(name, false);
+    }
+    private static BufferedImage getIcon(String name, boolean big) {
 	if(name == null) {return null;}
 	if(iconCache.containsKey(name)) {
 	    return iconCache.get(name);
 	}
+	Coord sz = big ? UI.scale(40,40) : UI.scale(20,20);
 	BufferedImage img;
 	try {
 	    img = Resource.remote().loadwait(name).layer(Resource.imgc).img;
-	    img = PUtils.convolvedown(img, UI.scale(20, 20), CharWnd.iconfilter);
+	    img = PUtils.convolvedown(img, sz, CharWnd.iconfilter);
 	} catch (Exception e) {
 	    System.err.printf("Couldn't load content icon: '%s'%n", name);
 	    img = null;
