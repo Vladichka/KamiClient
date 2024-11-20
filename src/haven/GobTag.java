@@ -25,7 +25,7 @@ public enum GobTag {
     
     HAS_WATER, DRINKING,
     
-    COOP,
+    COOP, TROUGH, GARDENPOT,
     
     PLAYER, ME, FRIEND, FOE, PARTY, LEADER, IN_COMBAT, COMBAT_TARGET, AGGRO_TARGET,
     KO, DEAD, EMPTY, READY, FULL, IS_COLD,
@@ -291,8 +291,12 @@ public enum GobTag {
                 tags.add(GEM);
             } else if(name.endsWith("/wheelbarrow") || name.endsWith("/plow")) {
                 tags.add(PUSHED);
-            } else if(name.contains("chickencoop")) {
+            } else if(name.contains("coop")) {
                 tags.add(COOP);
+            } else if (name.endsWith("/trough")) {
+                tags.add(TROUGH);
+            } else if (name.endsWith("/gardenpot")) {
+                tags.add(GARDENPOT);
             }
             if(ofType(name, VEHICLES)) {
                 tags.add(VEHICLE);

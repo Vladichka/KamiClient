@@ -24,6 +24,9 @@ public class GobContents {
     
     public static final String WATER = "Water";
     public static final String FOOD = "Food";
+    public static final String FLOWER = "Flower";
+    public static final String NOT_PLANTED = "NotPlanted";
+    public static final String SOIL = "Soil";
     
     static {
 	final Gson gson = new Gson();

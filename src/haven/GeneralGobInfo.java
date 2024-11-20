@@ -299,6 +299,24 @@ public class GeneralGobInfo extends GobInfo {
 		!food && GobInfoOpts.enabled(InfoPart.COOPS)  ? getIcon(data.get(FOOD), true) : null,
 		!water && GobInfoOpts.enabled(InfoPart.COOPS)  ? getIcon(data.get(WATER), true) : null,
 	    };
+	} else if (gob.is(GobTag.TROUGH)) {
+	    int sdt = gob.sdt();
+	    boolean food = (sdt & 0b0001) != 0;
+	    parts = new BufferedImage[]{
+		!food && GobInfoOpts.enabled(InfoPart.TROUGH)  ? getIcon(data.get(FOOD), true) : null
+	    };
+	} else if (gob.is(GobTag.GARDENPOT)) {
+	    int sdt = gob.sdt();
+	    boolean water = (sdt & 0b0001) != 0;
+	    boolean soil = (sdt & 0b0000_0010) != 0;
+	    boolean flower = (gob.ols.size() > 2);
+	    boolean noFlowerPlanted = (gob.ols.size() == 1);
+	    parts = new BufferedImage[]{
+		!water && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(WATER)) : null,
+		!soil && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(SOIL)) : null,
+		flower && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(FLOWER)) : null,
+		water && soil && noFlowerPlanted && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(NOT_PLANTED)) : null
+	    };
 	} else if(CFG.SHOW_PROGRESS_COLOR.get()) { //should this be separate option?
 	    if(gob.is(GobTag.SMELTER)) {
 		parts = new BufferedImage[]{
