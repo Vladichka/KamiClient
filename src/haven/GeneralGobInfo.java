@@ -309,8 +309,8 @@ public class GeneralGobInfo extends GobInfo {
 	    int sdt = gob.sdt();
 	    boolean water = (sdt & 0b0001) != 0;
 	    boolean soil = (sdt & 0b0000_0010) != 0;
-	    boolean flower = (gob.ols.size() > 2);
-	    boolean noFlowerPlanted = (gob.ols.size() == 1);
+	    boolean flower = (CountOlsForPots(gob) > 1);
+	    boolean noFlowerPlanted = (CountOlsForPots(gob) == 0);
 	    parts = new BufferedImage[]{
 		!water && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(WATER)) : null,
 		!soil && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(SOIL)) : null,
@@ -333,6 +333,17 @@ public class GeneralGobInfo extends GobInfo {
 	    return ItemInfo.catimgs(1, parts);
 	}
 	return null;
+    }
+    
+    private static int CountOlsForPots(Gob gob)
+    {
+	int c = 0;
+	for(Gob.Overlay ol: gob.ols)
+	{
+	    if (ol.id > 0)
+		c++;
+	}
+	return c;
     }
     
     private static final Map<String, BufferedImage> iconCache = new HashMap<>();
