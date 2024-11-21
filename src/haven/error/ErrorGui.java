@@ -130,7 +130,7 @@ public abstract class ErrorGui extends JDialog implements ErrorStatus {
 	java.io.StringWriter w = new java.io.StringWriter();
 	t.printStackTrace(new java.io.PrintWriter(w));
 	final String tr = w.toString();
-	Config.saveFile("logs\\error_" + haven.Utils.UTCTimestamp() + ".log", tr);
+	Config.saveFile(java.nio.file.Paths.get("logs","error_" + haven.Utils.UTCTimestamp() + ".log").toString(), tr);
 	SwingUtilities.invokeLater(new Runnable() {
 		public void run() {
 		    closebtn.setEnabled(false);
