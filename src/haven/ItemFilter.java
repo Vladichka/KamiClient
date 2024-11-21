@@ -83,16 +83,16 @@ public class ItemFilter {
 	"$font[monospaced,13]{  armor:h>5    }will find items providing more than 5 hard armor.\n";
     
     public static final String HELP_SYMBEL = "$size[20]{$b{Symbel search}}\n" +
-	    "$font[monospaced,16]{symb:[type][sign][value]}\n" +
-	    "Will highlight items that have symbel values defined by $font[monospaced,13]{[type]} in quantity described by $font[monospaced,13]{[sign]} and $font[monospaced,13]{[value]}.\n" +
-	    "Use $font[monospaced,13]{fep} type to denote fep bonus.\n" +
-	    "Use $font[monospaced,13]{hunger} type to denote hunger modifier.\n" +
-	    "$font[monospaced,13]{[type]} can be entered partially.\n" +
-	    "$size[16]{\nExamples:}\n" +
-	    "$font[monospaced,13]{  symb:          }will find all symbel items.\n" +
-	    "$font[monospaced,13]{  symb:fep>2     }will find items with more than 2% fep bonus.\n" +
-	    "$font[monospaced,13]{  symb:hunger<3  }will find items with less than 3% hunger reduction.\n" +
-	    "$font[monospaced,13]{  symb:h=5       }will find items with exactly 5% hunger reduction.\n";
+	"$font[monospaced,16]{symb:[type][sign][value]}\n" +
+	"Will highlight items that have symbel values defined by $font[monospaced,13]{[type]} in quantity described by $font[monospaced,13]{[sign]} and $font[monospaced,13]{[value]}.\n" +
+	"Use $font[monospaced,13]{fep} type to denote fep bonus.\n" +
+	"Use $font[monospaced,13]{hunger} type to denote hunger modifier.\n" +
+	"$font[monospaced,13]{[type]} can be entered partially.\n" +
+	"$size[16]{\nExamples:}\n" +
+	"$font[monospaced,13]{  symb:          }will find all symbel items.\n" +
+	"$font[monospaced,13]{  symb:fep>2     }will find items with more than 2% fep bonus.\n" +
+	"$font[monospaced,13]{  symb:hunger<3  }will find items with less than 3% hunger reduction.\n" +
+	"$font[monospaced,13]{  symb:h=5       }will find items with exactly 5% hunger reduction.\n";
     
     public static final String HELP_ATTR = "$size[20]{$b{Attribute search}}\n" +
 	"$font[monospaced,16]{attr:[type][sign][value]}\n" +
@@ -114,27 +114,20 @@ public class ItemFilter {
     public static final String[] FILTER_HELP = {HELP_SIMPLE, HELP_FULL_TEXT, HELP_CONTENT, HELP_QUALITY, HELP_CURIO, HELP_FEP, HELP_ARMOR, HELP_SYMBEL, HELP_ATTR, HELP_INPUTS};
     
     public boolean matches(List<ItemInfo> info) {
+	if(info == null || info.isEmpty()) {return false;}
 	for (ItemInfo item : info) {
 	    if(match(item)) {return true;}
 	}
 	return match(QualityList.make(info));
-
+	
     }
     
-    final public boolean matches(ItemData data, Session sess) {
-	return data != null && matches(data.iteminfo(sess));
+    final public boolean matches(MenuGrid.Pagina pagina) {
+	return matches(pagina.button().info());
     }
-
-    final public boolean matches(MenuGrid.Pagina pagina, Session sess) {
-	List<ItemInfo> infos = pagina.button().info();
-	if(infos == null || infos.isEmpty()) {
-	    return matches(ItemData.get(pagina), sess);
-	}
-	return matches(infos);
-    }
-
+    
     protected boolean match(ItemInfo item) { return false; }
-
+    
     public static ItemFilter create(String query) {
 	Compound result = new Compound();
 	Matcher m = q.matcher(query);
@@ -144,20 +137,20 @@ public class ItemFilter {
 	    String sign = m.group(3);
 	    String value = m.group(4);
 	    String opt = m.group(5);
-
+	    
 	    if(text == null) {
 		text = "";
 	    } else {
 		text = text.toLowerCase();
 	    }
-
+	    
 	    ItemFilter filter = null;
 	    if(sign != null && tag == null) {
 		switch (text) {
 		    case "energy":
 		    case "nrg":
-		        tag = text = "energy";
-		        break;
+			tag = text = "energy";
+			break;
 		    case "hunger":
 		    case "hng":
 			tag = text = "hunger";
@@ -173,9 +166,9 @@ public class ItemFilter {
 			text = "single";
 			break;
 		    case "armor":
-		        tag = text;
-		        text = "all";
-		        break;
+			tag = text;
+			text = "all";
+			break;
 		}
 	    }
 	    if(tag == null) {
@@ -242,7 +235,7 @@ public class ItemFilter {
     
     public static class Compound extends ItemFilter {
 	List<ItemFilter> filters = new LinkedList<>();
-
+	
 	@Override
 	public boolean matches(List<ItemInfo> info) {
 	    if(filters.isEmpty()) {return false;}
@@ -251,12 +244,12 @@ public class ItemFilter {
 	    }
 	    return true;
 	}
-
+	
 	public void add(ItemFilter filter) {
 	    filters.add(filter);
 	}
     }
-
+    
     private static class Complex extends ItemFilter {
 	protected final String text;
 	protected final Sign sign;
@@ -264,7 +257,7 @@ public class ItemFilter {
 	protected float value;
 	protected final boolean all;
 	protected final boolean any;
-
+	
 	public Complex(String text, String sign, String value, String opts) {
 	    this.text = text.toLowerCase();
 	    this.sign = getSign(sign);
@@ -274,11 +267,11 @@ public class ItemFilter {
 		tmp = Float.parseFloat(value);
 	    } catch (Exception ignored) {}
 	    this.value = tmp;
-
+	    
 	    all = text.equals("*") || text.equals("all");
 	    any = text.equals("any");
 	}
-    
+	
 	protected boolean test(double actual) {
 	    return test(actual, value);
 	}
@@ -297,7 +290,7 @@ public class ItemFilter {
 		    return actual != 0;
 	    }
 	}
-
+	
 	protected Sign getSign(String sign) {
 	    if(sign == null) {
 		return getDefaultSign();
@@ -317,19 +310,19 @@ public class ItemFilter {
 		    return getDefaultSign();
 	    }
 	}
-
+	
 	protected Sign getDefaultSign() {
 	    return Sign.DEFAULT;
 	}
-
+	
 	public enum Sign {GREATER, LESS, EQUAL, GREQUAL, WAVE, DEFAULT}
     }
-
+    
     private static class Has extends Complex {
 	public Has(String text, String sign, String value, String opts) {
 	    super(text, sign, value, opts);
 	}
-
+	
 	@Override
 	public boolean matches(List<ItemInfo> infos) {
 	    ItemData.Content content = ItemInfo.getContent(infos);
@@ -338,7 +331,7 @@ public class ItemFilter {
 	    }
 	    return match(QualityList.make(infos));
 	}
-
+	
 	@Override
 	protected Sign getDefaultSign() {
 	    return Sign.GREQUAL;
@@ -349,20 +342,20 @@ public class ItemFilter {
 	    return name != null ? name.str.text : null;
 	}
     }
-
+    
     public static class Text extends ItemFilter {
 	private String text;
 	private final boolean full;
-
+	
 	public Text(String text, boolean full) {
 	    this.full = full;
 	    this.text = text.toLowerCase();
 	}
-
+	
 	public void update(String text) {
 	    this.text = text.toLowerCase();
 	}
-
+	
 	@Override
 	protected boolean match(ItemInfo item) {
 	    if(text != null && !text.isEmpty()) {
@@ -377,14 +370,14 @@ public class ItemFilter {
 		    }
 		}
 	    }
-
+	    
 	    return false;
 	}
     }
-
+    
     private static class XP extends Complex {
 	public XP(String text, String sign, String value, String opt) {super(text, sign, value, opt);}
-
+	
 	@Override
 	protected boolean match(ItemInfo item) {
 	    if(item instanceof Curiosity) {
@@ -401,39 +394,39 @@ public class ItemFilter {
 	    }
 	    return false;
 	}
-
-
+	
+	
 	@Override
 	protected Sign getDefaultSign() {
 	    return Sign.GREQUAL;
 	}
     }
-
+    
     private static class Q extends Complex {
 	public Q(String text, String sign, String value, String opts) { super(text, sign, value, opts); }
-
+	
 	@Override
 	protected boolean match(ItemInfo item) {
 	    if(!(item instanceof QualityList)) {return false;}
 	    QualityList quality = (QualityList) item;
 	    if(quality.isEmpty()) {return false;}
-
+	    
 	    SingleType type = null;
 	    if(text != null && !text.isEmpty()) {
 		type = getTextType(text);
 	    }
-
+	    
 	    if(type == null) {
 		type = getGenericType();
 	    }
-
+	    
 	    if(type == null) {
 		return test(quality.single().value);
 	    } else {
 		return test(quality.single(type).value);
 	    }
 	}
-    
+	
 	@Override
 	public boolean matches(List<ItemInfo> info) {
 	    QualityList q = ItemInfo.getContent(info).q;
@@ -442,12 +435,12 @@ public class ItemFilter {
 	    }
 	    return super.matches(info);
 	}
-    
+	
 	@Override
 	protected Sign getDefaultSign() {
 	    return Sign.EQUAL;
 	}
-    
+	
 	private SingleType getTextType(String text) {
 	    SingleType[] types = SingleType.values();
 	    for (SingleType type : types) {
@@ -457,7 +450,7 @@ public class ItemFilter {
 	    }
 	    return null;
 	}
-
+	
 	private SingleType getGenericType() {
 	    switch (opts) {
 		case GREATER:
@@ -472,12 +465,12 @@ public class ItemFilter {
 	    }
 	}
     }
-
+    
     private static class FEP extends Complex {
 	public FEP(String text, String sign, String value, String opts) {
 	    super(text, sign, value, opts);
 	}
-
+	
 	@Override
 	protected boolean match(ItemInfo item) {
 	    if(item instanceof FoodInfo) {
@@ -492,16 +485,16 @@ public class ItemFilter {
 		    return true;
 		}
 	    }
-
+	    
 	    return false;
 	}
     }
-
+    
     private static class Food extends Complex {
 	public Food(String text, String sign, String value, String opts) {
 	    super(text, sign, value, opts);
 	}
-
+	
 	@Override
 	protected boolean match(ItemInfo item) {
 	    if(item instanceof FoodInfo) {
