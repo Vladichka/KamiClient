@@ -60,7 +60,7 @@ public class LoginScreen extends Widget {
 	optbtn = adda(new Button(UI.scale(100), "Options"), pos("cbl").add(10, -10), 0, 1);
 	optbtn.setgkey(GameUI.kb_opt);
 	if(HttpStatus.mond.get() != null)
-	    adda(new StatusLabel(HttpStatus.mond.get(), 1.0), sz.x - UI.scale(10), UI.scale(10), 1.0, 0.0);
+	    adda(new StatusLabel(HttpStatus.mond.get(), 0.5), bgc.x, bg.sz().y-UI.scale(5), 0.5, 1);
 	switch(authmech.get()) {
 	case "native":
 	    login = new Credbox();
