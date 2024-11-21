@@ -36,17 +36,17 @@ public class HttpStatus extends HackThread {
     public String status;
     public int users;
     private boolean quit = false;
-    
+
     public HttpStatus(URI src) {
 	super("Server status updater");
 	setDaemon(true);
 	this.src = src;
     }
-    
+
     public HttpStatus() {
 	this(mond.get());
     }
-    
+
     private void handle(String... words) {
 	if(words.length < 1) {
 	    synchronized(this) {
@@ -72,12 +72,12 @@ public class HttpStatus extends HackThread {
 	    }
 	}
     }
-    
+
     private void handle(byte[] buf, int off, int len) {
 	String[] words = Utils.splitwords(new String(buf, off, len, Utils.utf8));
 	handle(words);
     }
-    
+
     private static final int[] delays = {1, 2, 5, 10, 60};
     private InputStream cur = null;
     public void run() {
@@ -137,7 +137,7 @@ public class HttpStatus extends HackThread {
 	    }
 	}
     }
-    
+
     public void quit() {
 	synchronized(this) {
 	    quit = true;

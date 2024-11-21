@@ -320,13 +320,13 @@ public class LoginScreen extends Widget {
     public static class StatusLabel extends Widget {
 	public final HttpStatus stat;
 	public final double ax;
-	
+
 	public StatusLabel(URI svc, double ax) {
 	    super(new Coord(UI.scale(150), Text.std.height() * 2));
 	    this.stat = new HttpStatus(svc);
 	    this.ax = ax;
 	}
-	
+
 	private Text[] lines = new Text[2];
 	public void draw(GOut g) {
 	    int x = (int)Math.round(sz.x * ax);
