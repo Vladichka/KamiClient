@@ -1156,6 +1156,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    invwnd.hide();
 	    maininv = maininvext.inv;
 	    maininv.enableDrops();
+	    maininv.enableSort();
 	    add(invwnd, Utils.getprefc("wndc-inv", new Coord(100, 100)));
 	} else if(place == "equ") {
 	    equwnd = new Hidewnd(Coord.z, "Equipment");
@@ -1237,6 +1238,11 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		    }
 		});
 	} else if(place == "misc") {
+	    if (child instanceof Window)
+	    {
+		if ((child).lchild instanceof ExtInventory)
+		    ((ExtInventory)child.lchild).inv.enableSort();
+	    }
 	    Coord c;
 	    int a = 1;
 	    if(args[a] instanceof Coord) {

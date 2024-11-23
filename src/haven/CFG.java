@@ -181,6 +181,10 @@ public class CFG<T> {
     public static final CFG<Integer> DISPLAY_SCALE_TREES = new CFG<>("display.scale.trees", 100);
     public static final CFG<Integer> DISPLAY_SCALE_BUSHES = new CFG<>("display.scale.bushes", 100);
     
+    public static final CFG<Integer> QUALITY_SORT = new CFG<>("ui.sort.quality", 0);
+    public static final CFG<Integer> NAME_SORT = new CFG<>("ui.sort.name", 2);
+    public static final CFG<Integer> RESNAME_SORT = new CFG<>("ui.sort.resname", 2);
+    
     private static final String CONFIG_JSON = "config.json";
     private static final Map<Object, Object> cfg;
     private static final Map<String, Object> cache = new HashMap<>();
