@@ -1,3 +1,14 @@
+$size[14]{$u{update on 23.11.2024:}
+  * Short form: massive merge with Ender and all the loftar code
+  * Inventory proxies have now a little handle at the right side for easier dragging
+  * Inventory sorting from Ard implemented
+  * Option to remove biome border on minimap (black outline)
+  * Made sure client runs fine on linux
+  * Added overlay for coops, troughs and gardenpots
+    Whenever gardenpots need soil or water, it will displayed accordingly.
+    If nothing is planted, it will show an empty pot.
+    If they are ready to be harvested, it will show a flower symbol.
+
 $size[14]{$u{update on 16.11.2024:}
   * fixed bugs
   * fixed steam launch
