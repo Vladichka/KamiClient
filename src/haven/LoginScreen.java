@@ -33,13 +33,13 @@ import java.net.URI;
 import java.io.*;
 
 public class LoginScreen extends Widget {
-    public static final Config.Variable<String> authmech = Config.Variable.prop("haven.authmech", "native");
+    public static Config.Variable<String> authmech = Config.Variable.prop("haven.authmech", "native");
     public static final Text.Foundry
 	textf = new Text.Foundry(Text.sans, 16).aa(true),
 	textfs = new Text.Foundry(Text.sans, 14).aa(true);
     public static final Tex bg = Resource.loadtex("gfx/loginscr_kami");
     public static final Position bgc = new Position(UI.scale(680, 460));
-    public final Widget login;
+    public Widget login;
     public final String hostname;
     private Text error, progress;
     private Button optbtn;
