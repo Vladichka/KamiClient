@@ -37,14 +37,14 @@ public class KeyBinder {
 	gson = (new GsonBuilder()).setPrettyPrinting().create();
 	String json = Config.loadFile(CONFIG_JSON);
 	Map<Action, KeyBind> tmpGeneralCFG = null;
-    
+	
 	try {
 	    ConfigBean configBean = gson.fromJson(json, ConfigBean.class);
 	    tmpGeneralCFG = configBean.general;
 	    Fightsess.updateKeybinds(configBean.combat);
 	    Reactor.event(COMBAT_KEYS_UPDATED);
 	} catch (Exception ignore) {}
-    
+	
 	if(tmpGeneralCFG == null) {
 	    try {
 		Type type = new TypeToken<Map<Action, KeyBind>>() {
@@ -52,13 +52,13 @@ public class KeyBinder {
 		tmpGeneralCFG = gson.fromJson(json, type);
 	    } catch (Exception ignored) {}
 	}
-    
+	
 	if(tmpGeneralCFG == null) {
 	    tmpGeneralCFG = new HashMap<>();
 	}
 	binds = tmpGeneralCFG;
 	binds.forEach((action, keyBind) -> keyBind.action = action);
-	order = Arrays.asList(Action.values());
+	order = new ArrayList<>();
 	defaults();
     }
     
@@ -78,26 +78,36 @@ public class KeyBinder {
 	add(KeyEvent.VK_3, CTRL,  ACT_BELT);
 	add(ACT_POUCH_0);
 	add(ACT_POUCH_1);
-    	add(KeyEvent.VK_D, ALT,   ACT_DRINK);
-    	add(ACT_REFILL_DRINKS);
+	add(KeyEvent.VK_Q, ALT,   BOT_PICK_ALL_HERBS);
+	add(KeyEvent.VK_D, ALT,   ACT_DRINK);
+	add(ACT_REFILL_DRINKS);
+	add(KeyEvent.VK_W, ALT,   BOT_OPEN_GATE);
+	add(KeyEvent.VK_Q, CTRL,  BOT_MOUNT_HORSE);
 	add(KeyEvent.VK_C, ALT,   OPEN_QUICK_CRAFT);
 	add(KeyEvent.VK_B, ALT,   OPEN_QUICK_BUILD);
 	add(KeyEvent.VK_A, ALT,   OPEN_QUICK_ACTION);
 	add(KeyEvent.VK_X, ALT,   OPEN_CRAFT_DB);
-    	add(OPEN_QUEST_HELP);
+	add(OPEN_ALCHEMY_DB);
+	add(OPEN_QUEST_HELP);
 	add(KeyEvent.VK_H, ALT,   TOGGLE_CURSOR);
 	add(KeyEvent.VK_S, ALT,   TOGGLE_STUDY);
 	add(KeyEvent.VK_F, ALT,   FILTER);
+	add(SORT_INVENTORY);
+	add(TOGGLE_INSPECT);
+	add(TOGGLE_HIDE_TREES);
 	add(KeyEvent.VK_I, ALT,   TOGGLE_GOB_INFO);
 	add(KeyEvent.VK_H, CTRL,  TOGGLE_GOB_HITBOX);
 	add(KeyEvent.VK_R, ALT,   TOGGLE_GOB_RADIUS);
 	add(KeyEvent.VK_Z, CTRL,  TOGGLE_TILE_CENTERING);
-	add(KeyEvent.VK_Q, ALT,   BOT_PICK_ALL_HERBS);
-	add(KeyEvent.VK_W, ALT,   BOT_OPEN_GATE);
-	add(KeyEvent.VK_Q, CTRL,  BOT_MOUNT_HORSE);
+	
+	add(TOGGLE_PEACE);
 	add(AGGRO_ONE_PVE);
 	add(AGGRO_ONE_PVP);
 	add(AGGRO_ALL);
+	
+	add(EQUIP_BOW);
+	add(EQUIP_SPEAR);
+	add(EQUIP_SWORD_N_BOARD);
 	
 	//Camera controls
 	add(KeyEvent.VK_ADD, NONE, CAM_ZOOM_IN);
@@ -111,10 +121,6 @@ public class KeyBinder {
 	add(KeyEvent.VK_UP, CTRL, CAM_SNAP_NORTH);
 	add(KeyEvent.VK_DOWN, CTRL, CAM_SNAP_SOUTH);
 	add(KeyEvent.VK_HOME, NONE, CAM_RESET);
-	
-	add(TOGGLE_HIDE_TREES);
-	add(TOGGLE_INSPECT);
-	add(TOGGLE_PEACE);
     }
     
     private static synchronized void store() {
@@ -145,6 +151,7 @@ public class KeyBinder {
 	if(!binds.containsKey(action)) {
 	    binds.put(action, bind);
 	}
+	if(!order.contains(action)) {order.add(action);}
 	return action;
     }
     
@@ -159,7 +166,7 @@ public class KeyBinder {
     public static KeyBind get(Action action) {
 	return binds.get(action);
     }
-
+    
     public static KeyBind get(final GlobKeyEvent e) {
 	return binds.values().stream().filter(b -> b.match(e)).findFirst().orElse(EMPTY);
     }
@@ -181,7 +188,7 @@ public class KeyBinder {
 	    }
 	}
 	binds.put(to.action, to);
-        store();
+	store();
 	return conflicts;
     }
     
@@ -233,7 +240,7 @@ public class KeyBinder {
 	private final int code;
 	private final int mods;
 	transient private Action action;
-    
+	
 	public KeyBind(int code, int mods) {
 	    this(code, mods, null);
 	}
@@ -243,7 +250,7 @@ public class KeyBinder {
 	    this.mods = mods;
 	    this.action = action;
 	}
-    
+	
 	public boolean match(KeyEvent e) {
 	    return match(e.getKeyCode(), getAWTModFlags(e.getModifiersEx()), 0);
 	}
@@ -259,7 +266,7 @@ public class KeyBinder {
 	public boolean match(int code, int mods, int modign) {
 	    return !isEmpty() && code == this.code && ((mods & MODS & ~modign) == (this.mods & ~modign));
 	}
-
+	
 	public boolean execute(UI ui) {
 	    boolean canRun = ui.gui != null && action != null;
 	    if(canRun) { action.run(ui.gui); }
@@ -269,7 +276,7 @@ public class KeyBinder {
 	public String shortcut() {
 	    return shortcut(false);
 	}
-    
+	
 	public String shortcut(boolean shortened) {
 	    if(isEmpty()) {return shortened ? "" : "<UNBOUND>";}
 	    String key = KeyEvent.getKeyText(code);
@@ -284,11 +291,11 @@ public class KeyBinder {
 	    }
 	    return key;
 	}
-    
+	
 	public boolean isEmpty() {
 	    return code == 0 && mods == 0;
 	}
-    
+	
 	@Override
 	public boolean equals(Object obj) {
 	    if(obj instanceof KeyBind) {
@@ -297,7 +304,7 @@ public class KeyBinder {
 	    }
 	    return super.equals(obj);
 	}
- 
+	
 	@Override
 	public String toString() {
 	    return shortcut();
@@ -338,32 +345,32 @@ public class KeyBinder {
     }
     
     public static class ShortcutWidget extends Widget implements ShortcutSelectorWdg.Result {
-    
+	
 	private final Button btn;
 	private KeyBind keyBind;
 	private final Action2<KeyBind, KeyBind> update;
-    
+	
 	public ShortcutWidget(KeyBind bind, Action2<KeyBind, KeyBind> update) {
 	    this(bind, update, bind.action != null ? bind.action.name : "<EMPTY ACTION>");
 	}
- 
+	
 	public ShortcutWidget(KeyBind bind, Action2<KeyBind, KeyBind> update, String label) {
 	    btn = add(new Button(UI.scale(75), bind.shortcut()) {
-		  @Override
-		  protected boolean i10n() { return false; }
-	    
-		  @Override
-		  public void click() {
-		      ui.root.add(new ShortcutSelectorWdg(keyBind, ShortcutWidget.this), ui.mc.sub(50, 20));
-		  }
-    
-		  @Override
-		  public boolean mouseup(MouseUpEvent ev) {
-		      //FIXME: a little hack, because WidgetList does not pass correct click coordinates if scrolled
-		      return super.mouseup(new MouseUpEvent(ev, Coord.z));
-		  }
-	      },
-	    UI.scale(225), 0);
+			  @Override
+			  protected boolean i10n() { return false; }
+			  
+			  @Override
+			  public void click() {
+			      ui.root.add(new ShortcutSelectorWdg(keyBind, ShortcutWidget.this), ui.mc.sub(50, 20));
+			  }
+			  
+			  @Override
+			  public boolean mouseup(MouseUpEvent ev) {
+			      //FIXME: a little hack, because WidgetList does not pass correct click coordinates if scrolled
+			      return super.mouseup(new MouseUpEvent(ev, Coord.z));
+			  }
+		      },
+		UI.scale(225), 0);
 	    this.keyBind = bind;
 	    this.update = update;
 	    if(bind.action != null && bind.action.description != null) {
@@ -374,13 +381,13 @@ public class KeyBinder {
 	    sz = UI.scale(300, 24);
 	    add(new Label(label), UI.scale(5, 5));
 	}
-    
+	
 	@Override
 	public void keyBindChanged(KeyBind from, KeyBind to) {
 	    update.call(from, to);
 	    update(to);
 	}
-    
+	
 	public void update(KeyBind to) {
 	    keyBind = to;
 	    btn.change(keyBind.shortcut());
@@ -394,7 +401,7 @@ public class KeyBinder {
 	private final KeyBind bind;
 	private final Result listener;
 	private final Tex label;
-    
+	
 	private UI.Grab keygrab;
 	private UI.Grab mousegrab;
 	
@@ -404,7 +411,7 @@ public class KeyBinder {
 	    label = RichText.render("Press any key...\nOr DELETE to unbind", 0).tex();
 	    sz = label.sz().add(PAD.mul(2));
 	}
-    
+	
 	@Override
 	public boolean keydown(KeyDownEvent ev) {
 	    int code = ev.code;
@@ -422,7 +429,7 @@ public class KeyBinder {
 	    }
 	    return true;
 	}
-    
+	
 	@Override
 	protected void attach(UI ui) {
 	    super.attach(ui);

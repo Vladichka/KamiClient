@@ -68,7 +68,7 @@ public class GobIconCategoryList extends Listbox<GobIconCategoryList.GobCategory
 	return (super.mousedown(ev));
     }
     
-    enum GobCategory {
+    public enum GobCategory {
 	ALL("all"),
 	ANIMALS("kritters"),
 	HERBS("herbs"),
@@ -169,9 +169,9 @@ public class GobIconCategoryList extends Listbox<GobIconCategoryList.GobCategory
 	    "gfx/invobjs/granite",
 	    "gfx/invobjs/graywacke",
 	    "gfx/invobjs/greenschist",
+	    "gfx/invobjs/halite",
 	    "gfx/invobjs/hornblende",
 	    "gfx/invobjs/jasper",
-	    "gfx/invobjs/korund",
 	    "gfx/invobjs/jasper",
 	    "gfx/invobjs/kyanite",
 	    "gfx/invobjs/limestone",
@@ -236,6 +236,14 @@ public class GobIconCategoryList extends Listbox<GobIconCategoryList.GobCategory
 		return GobCategory.BUSHES;
 	    }
 	    return GobCategory.OTHER;
+	}
+	
+	public static boolean isOre(String res) {
+	    return Arrays.stream(ORE_PATHS).anyMatch(res::contains);
+	}
+	
+	public static boolean isRock(String res) {
+	    return Arrays.stream(ROCK_PATHS).anyMatch(res::contains);
 	}
 	
 	public boolean enabled() {

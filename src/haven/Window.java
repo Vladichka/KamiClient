@@ -466,10 +466,11 @@ public class Window extends Widget {
 	return(max);
     }
     
-    public void addtwdg(Widget wdg) {
-	if(deco != null && deco instanceof DecoX){
+    public <T extends Widget> T addtwdg(T wdg) {
+	if(deco != null && deco instanceof DecoX) {
 	    ((DecoX) deco).addtwdg(wdg);
 	}
+	return wdg;
     }
     
     public void remtwdg(Widget wdg) {

@@ -89,7 +89,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    ob.dispose();
 	}
     };
-
+    
     public static class Overlay implements RenderTree.Node {
 	public final int id;
 	public final Gob gob;
@@ -98,29 +98,29 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	public boolean delign = false, old = false;
 	private Collection<RenderTree.Slot> slots = null;
 	private boolean added = false;
-
+	
 	public Overlay(Gob gob, int id, Sprite.Mill<?> sm) {
 	    this.gob = gob;
 	    this.id = id;
 	    this.sm = sm;
 	    this.spr = null;
 	}
-
+	
 	public Overlay(Gob gob, Sprite.Mill<?> sm) {
 	    this(gob, -1, sm);
 	}
-
+	
 	public Overlay(Gob gob, int id, Indir<Resource> res, Message sdt) {
 	    this(gob, id, owner -> Sprite.create(owner, res.get(), sdt));
 	}
-
+	
 	public Overlay(Gob gob, Sprite spr) {
 	    this.gob = gob;
 	    this.id = -1;
 	    this.sm = null;
 	    this.spr = spr;
 	}
-
+	
 	private void init() {
 	    if(spr == null) {
 		spr = sm.create(gob);
@@ -132,7 +132,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    if(slots == null)
 		RUtils.multiadd(gob.slots, this);
 	}
-
+	
 	private void add0() {
 	    if(added)
 		throw(new IllegalStateException());
@@ -140,7 +140,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		gob.setupmods.add((SetupMod)spr);
 	    added = true;
 	}
-
+	
 	private void remove0() {
 	    if(!added)
 		throw(new IllegalStateException());
@@ -152,7 +152,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		gob.setupmods.remove(spr);
 	    added = false;
 	}
-
+	
 	public void remove(boolean async) {
 	    if(async) {
 		gob.defer(() -> remove(false));
@@ -163,27 +163,27 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    removed();
 	    gob.overlaysUpdated();
 	}
-
+	
 	public void remove() {
 	    remove(true);
 	}
-
+	
 	protected void removed() {
 	}
-
+	
 	public boolean tick(double dt) {
 	    if(spr == null)
 		return(false);
 	    return(spr.tick(dt));
 	}
-
+	
 	public void added(RenderTree.Slot slot) {
 	    slot.add(spr);
 	    if(slots == null)
 		slots = new ArrayList<>(1);
 	    slots.add(slot);
 	}
-
+	
 	public void removed(RenderTree.Slot slot) {
 	    if(slots != null)
 		slots.remove(slot);
@@ -204,7 +204,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     private static class CustomColor implements SetupMod {
 	Pipe.Op op = null;
 	Color c = null;
-
+	
 	void color(Color c) {
 	    if(Objects.equals(c, this.c)) {
 		return;
@@ -217,18 +217,18 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    }
 	    this.c = c;
 	}
-    
+	
 	@Override
 	public Pipe.Op gobstate() {
 	    return op;
 	}
     }
-
+    
     public static interface SetupMod {
 	public default Pipe.Op gobstate() {return(null);}
 	public default Pipe.Op placestate() {return(null);}
     }
-
+    
     public static interface Placer {
 	/* XXX: *Quite* arguably, the distinction between getc and
 	 * getr should be abolished and a single transform matrix
@@ -237,34 +237,34 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	public Coord3f getc(Coord2d rc, double ra);
 	public Matrix4f getr(Coord2d rc, double ra);
     }
-
+    
     public static interface Placing {
 	public Placer placer();
     }
-
+    
     public static class DefaultPlace implements Placer {
 	public final MCache map;
 	public final MCache.SurfaceID surf;
-
+	
 	public DefaultPlace(MCache map, MCache.SurfaceID surf) {
 	    this.map = map;
 	    this.surf = surf;
 	}
-
+	
 	public Coord3f getc(Coord2d rc, double ra) {
 	    return(map.getzp(surf, rc));
 	}
-
+	
 	public Matrix4f getr(Coord2d rc, double ra) {
 	    return(Transform.makerot(new Matrix4f(), Coord3f.zu, -(float)ra));
 	}
     }
-
+    
     public static class InclinePlace extends DefaultPlace {
 	public InclinePlace(MCache map, MCache.SurfaceID surf) {
 	    super(map, surf);
 	}
-
+	
 	public Matrix4f getr(Coord2d rc, double ra) {
 	    Matrix4f ret = super.getr(rc, ra);
 	    Coord3f norm = map.getnorm(surf, rc);
@@ -278,27 +278,27 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    return(ret);
 	}
     }
-
+    
     public static class BasePlace extends DefaultPlace {
 	public final Coord2d[][] obst;
 	private Coord2d cc;
 	private double ca;
 	private int seq = -1;
 	private float z;
-
+	
 	public BasePlace(MCache map, MCache.SurfaceID surf, Coord2d[][] obst) {
 	    super(map, surf);
 	    this.obst = obst;
 	}
-
+	
 	public BasePlace(MCache map, MCache.SurfaceID surf, Resource res, String id) {
 	    this(map, surf, res.flayer(Resource.obst, id).p);
 	}
-
+	
 	public BasePlace(MCache map, MCache.SurfaceID surf, Resource res) {
 	    this(map, surf, res, "");
 	}
-
+	
 	private float getz(Coord2d rc, double ra) {
 	    Coord2d[][] no = this.obst, ro = new Coord2d[no.length][];
 	    {
@@ -322,7 +322,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    }
 	    return(ret);
 	}
-
+	
 	public Coord3f getc(Coord2d rc, double ra) {
 	    int mseq = map.chseq;
 	    if((mseq != this.seq) || !Utils.eq(rc, cc) || (ra != ca)) {
@@ -334,7 +334,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    return(Coord3f.of((float)rc.x, (float)rc.y, this.z));
 	}
     }
-
+    
     public static class LinePlace extends DefaultPlace {
 	public final double max, min;
 	public final Coord2d k;
@@ -343,7 +343,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private int seq = -1;
 	private Coord2d cc;
 	private double ca;
-
+	
 	public LinePlace(MCache map, MCache.SurfaceID surf, Coord2d[][] points, Coord2d k) {
 	    super(map, surf);
 	    Line2d l = Line2d.from(Coord2d.z, k);
@@ -365,15 +365,15 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    this.max = max;
 	    this.min = min;
 	}
-
+	
 	public LinePlace(MCache map, MCache.SurfaceID surf, Resource res, String id, Coord2d k) {
 	    this(map, surf, res.flayer(Resource.obst, id).p, k);
 	}
-
+	
 	public LinePlace(MCache map, MCache.SurfaceID surf, Resource res, Coord2d k) {
 	    this(map, surf, res, "", k);
 	}
-
+	
 	private void recalc(Coord2d rc, double ra) {
 	    Coord2d rk = k.rot(ra);
 	    double maxz = map.getz(surf, rc.add(rk.mul(max)));
@@ -386,7 +386,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    c = Coord3f.of((float)rc.x, (float)rc.y, (float)minz + (dz * (float)(-min / (max - min))));
 	    r = Transform.makerot(new Matrix4f(), rax, sin, cos).mul(super.getr(rc, ra));
 	}
-
+	
 	private void check(Coord2d rc, double ra) {
 	    int mseq = map.chseq;
 	    if((mseq != this.seq) || !Utils.eq(rc, cc) || (ra != ca)) {
@@ -396,18 +396,18 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		this.ca = ra;
 	    }
 	}
-
+	
 	public Coord3f getc(Coord2d rc, double ra) {
 	    check(rc, ra);
 	    return(c);
 	}
-
+	
 	public Matrix4f getr(Coord2d rc, double ra) {
 	    check(rc, ra);
 	    return(r);
 	}
     }
-
+    
     public static class PlanePlace extends DefaultPlace {
 	public final Coord2d[] points;
 	private Coord3f c;
@@ -415,7 +415,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private int seq = -1;
 	private Coord2d cc;
 	private double ca;
-
+	
 	public static Coord2d[] flatten(Coord2d[][] points) {
 	    int n = 0;
 	    for(int i = 0; i < points.length; i++)
@@ -425,24 +425,24 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		System.arraycopy(points[i], 0, ret, o, points[i].length);
 	    return(ret);
 	}
-
+	
 	public PlanePlace(MCache map, MCache.SurfaceID surf, Coord2d[] points) {
 	    super(map, surf);
 	    this.points = points;
 	}
-
+	
 	public PlanePlace(MCache map, MCache.SurfaceID surf, Coord2d[][] points) {
 	    this(map, surf, flatten(points));
 	}
-
+	
 	public PlanePlace(MCache map, MCache.SurfaceID surf, Resource res, String id) {
 	    this(map, surf, res.flayer(Resource.obst, id).p);
 	}
-
+	
 	public PlanePlace(MCache map, MCache.SurfaceID surf, Resource res) {
 	    this(map, surf, res, "");
 	}
-
+	
 	private void recalc(Coord2d rc, double ra) {
 	    double s = Math.sin(ra), c = Math.cos(ra);
 	    Coord3f[] pp = new Coord3f[points.length];
@@ -483,7 +483,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		this.r = incl.mul(this.r);
 	    }
 	}
-
+	
 	private void check(Coord2d rc, double ra) {
 	    int mseq = map.chseq;
 	    if((mseq != this.seq) || !Utils.eq(rc, cc) || (ra != ca)) {
@@ -493,17 +493,17 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		this.ca = ra;
 	    }
 	}
-
+	
 	public Coord3f getc(Coord2d rc, double ra) {
 	    check(rc, ra);
 	    return(this.c);
 	}
-
+	
 	public Matrix4f getr(Coord2d rc, double ra) {
 	    return(this.r);
 	}
     }
-
+    
     public Gob(Glob glob, Coord2d c, long id) {
 	this.glob = glob;
 	this.rc = c;
@@ -520,7 +520,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	updwait(this::drawableUpdated, waiting -> {});
 	GobCombatInfo.check(this);
     }
-
+    
     public Gob(Glob glob, Coord2d c) {
 	this(glob, c, -1);
     }
@@ -553,7 +553,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	updstate();
 	if(virtual && ols.isEmpty() && (getattr(Drawable.class) == null))
 	    glob.oc.remove(this);
-    
+	
 	if(isMe == null) {
 	    isMe();
 	    if(isMe != null) {
@@ -571,7 +571,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	updateState();
     }
-
+    
     public void gtick(Render g) {
 	Drawable d = getattr(Drawable.class);
 	if(d != null)
@@ -581,11 +581,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		ol.spr.gtick(g);
 	}
     }
-
+    
     void removed() {
 	removed = true;
     }
-
+    
     private void deferred() {
 	while(true) {
 	    Runnable task;
@@ -608,7 +608,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    }
 	}
     }
-
+    
     public void defer(Runnable task) {
 	synchronized(deferred) {
 	    deferred.add(task);
@@ -616,7 +616,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		deferral = glob.loader.defer(this::deferred, null);
 	}
     }
-
+    
     public static int olidcmp(int a, int b) {
 	/* This assumes that overlay IDs are 31 bits. This is indeed
 	 * the case, but should arguably be considered more like a
@@ -629,7 +629,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	else
 	    return(0);
     }
-
+    
     public void addol(Overlay ol, boolean async) {
 	if(async) {
 	    defer(() -> addol(ol, false));
@@ -659,7 +659,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	@SuppressWarnings("unchecked") S ret = (S)ol.spr;
 	return(ret);
     }
-
+    
     public Overlay findol(int id) {
 	for(Overlay ol : ols) {
 	    if(ol.id == id)
@@ -667,7 +667,14 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	return(null);
     }
-
+    
+    public <T extends Sprite> T findsprol(Class<T> cl) {
+	for(Overlay ol : ols) {
+	    if(cl.isInstance(ol.spr)) {return cl.cast(ol.spr);}
+	}
+	return(null);
+    }
+    
     private void overlayAdded(Overlay item) {
 	try {
 	    Sprite spr = item.spr;
@@ -678,7 +685,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		    if(sdt != null && res.name.equals("gfx/fx/floatimg")) {
 			processDmg(sdt.clone());
 		    } else if(res.name.equals("gfx/fx/dowse")) {
-		        ProspectingWnd.overlay(this, item);
+			ProspectingWnd.overlay(this, item);
 		    }
 //		    System.out.printf("overlayAdded: '%s'%n", res.name);
 		}
@@ -776,7 +783,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    a.dispose();
 	}
     }
-
+    
     public void move(Coord2d c, double a) {
 	Moving m = getattr(Moving.class);
 	if(m != null)
@@ -811,7 +818,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	return false;
     }
-
+    
     /**returns whether icon for this gob is visible on radar, if there's no icon in config returns null*/
     public Boolean isOnRadar() {
 	GobIcon icon = getattr(GobIcon.class);
@@ -834,7 +841,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	return false;
     }
-
+    
     public Placer placer() {
 	Drawable d = getattr(Drawable.class);
 	if(d != null) {
@@ -844,7 +851,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	return(glob.map.mapplace);
     }
-
+    
     public Coord3f getc() {
 	Moving m = getattr(Moving.class);
 	Coord3f ret = (m != null) ? m.getc() : getrc();
@@ -853,16 +860,16 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    ret = ret.add(df.off);
 	return(ret);
     }
-
+    
     public Coord3f getrc() {
 	return(placer().getc(rc, a));
     }
-
+    
     protected Pipe.Op getmapstate(Coord3f pc) {
 	Tiler tile = glob.map.tiler(glob.map.gettile(new Coord2d(pc).floor(MCache.tilesz)));
 	return(tile.drawstate(glob, pc));
     }
-
+    
     private Class<? extends GAttrib> attrclass(Class<? extends GAttrib> cl) {
 	while(true) {
 	    Class<?> p = cl.getSuperclass();
@@ -871,7 +878,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    cl = p.asSubclass(GAttrib.class);
 	}
     }
-
+    
     public <C extends GAttrib> C getattr(Class<C> c) {
 	synchronized (attr) {
 	    GAttrib attr = this.attr.get(attrclass(c));
@@ -880,7 +887,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    return (c.cast(attr));
 	}
     }
-
+    
     private void setattr(Class<? extends GAttrib> ac, GAttrib a) {
 	GAttrib prev;
 	synchronized (attr) {
@@ -924,18 +931,18 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	if(ac == Moving.class) {updateMovingInfo(a, prev);}
     }
-
+    
     public void setattr(GAttrib a) {
 	setattr(attrclass(a.getClass()), a);
     }
-
+    
     public void delattr(Class<? extends GAttrib> c) {
 	Class<? extends GAttrib> ac = attrclass(c);
 	GAttrib attr = this.attr.get(ac);
 	if(c.isInstance(attr))
 	    setattr(attrclass(c), null);
     }
-
+    
     public Supplier<? extends Pipe.Op> eqpoint(String nm, Message dat) {
 	for(GAttrib attr : this.attr.values()) {
 	    if(attr instanceof EquipTarget) {
@@ -946,14 +953,14 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	return(null);
     }
-
+    
     public static class GobClick extends Clickable {
 	public final Gob gob;
-
+	
 	public GobClick(Gob gob) {
 	    this.gob = gob;
 	}
-
+	
 	public Object[] clickargs(ClickData cd) {
 	    Object[] ret = {0, (int)gob.id, gob.rc.floor(OCache.posres), 0, -1};
 	    boolean simpleClick = false;
@@ -973,12 +980,12 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    }
 	    return(ret);
 	}
-
+	
 	public String toString() {
 	    return(String.format("#<gob-click %s>", gob));
 	}
     }
-
+    
     protected void obstate(Pipe buf) {
     }
     
@@ -995,10 +1002,10 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	
 	return false;
     }
-
+    
     private class GobState implements Pipe.Op {
 	final Pipe.Op mods;
-
+	
 	private GobState() {
 	    if(setupmods.isEmpty()) {
 		this.mods = null;
@@ -1012,7 +1019,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		this.mods = (n > 0) ? Pipe.Op.compose(mods) : null;
 	    }
 	}
-
+	
 	public void apply(Pipe buf) {
 	    if(!virtual)
 		buf.prep(new GobClick(Gob.this));
@@ -1021,7 +1028,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    if(mods != null)
 		buf.prep(mods);
 	}
-
+	
 	public boolean equals(GobState that) {
 	    return(Utils.eq(this.mods, that.mods));
 	}
@@ -1035,7 +1042,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    curstate = new GobState();
 	return(curstate);
     }
-
+    
     private void updstate() {
 	GobState nst;
 	try {
@@ -1052,7 +1059,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    }
 	}
     }
-
+    
     public void added(RenderTree.Slot slot) {
 	slot.ostate(curstate());
 	for(Overlay ol : ols) {
@@ -1066,11 +1073,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	slots.add(slot);
     }
-
+    
     public void removed(RenderTree.Slot slot) {
 	slots.remove(slot);
     }
-
+    
     private Waitable.Queue updwait = null;
     void updated() {
 	synchronized(this) {
@@ -1079,7 +1086,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		updwait.wnotify();
 	}
     }
-
+    
     public void updwait(Runnable callback, Consumer<Waitable.Waiting> reg) {
 	/* Caller should probably synchronize on this already for a
 	 * call like this to even be meaningful, but just in case. */
@@ -1089,11 +1096,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    reg.accept(updwait.add(callback));
 	}
     }
-
+    
     public static class DataLoading extends Loading {
 	public final transient Gob gob;
 	public final int updseq;
-
+	
 	/* It would be assumed that the caller has synchronized on gob
 	 * while creating this exception. */
 	public DataLoading(Gob gob, String message) {
@@ -1101,7 +1108,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    this.gob = gob;
 	    this.updseq = gob.updateseq;
 	}
-
+	
 	public void waitfor(Runnable callback, Consumer<Waitable.Waiting> reg) {
 	    synchronized(gob) {
 		if(gob.updateseq != this.updseq) {
@@ -1113,11 +1120,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    }
 	}
     }
-
+    
     public Random mkrandoom() {
 	return(Utils.mkrandoom(id));
     }
-
+    
     @Deprecated
     public Resource getres() {
 	Drawable d = drawable;
@@ -1125,7 +1132,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    return(d.getres());
 	return(null);
     }
-
+    
     public String resid() {
 	Drawable d = drawable;
 	if(d != null)
@@ -1145,6 +1152,15 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	return info;
     }
     
+    public float hp() {
+	GobHealth health = getattr(GobHealth.class);
+	
+	if(health == null) {
+	    return 1.0f;
+	}
+	return health.hp;
+    }
+    
     private static final ClassResolver<Gob> ctxr = new ClassResolver<Gob>()
 	.add(Gob.class, g -> g)
 	.add(Glob.class, g -> g.glob)
@@ -1154,7 +1170,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	.add(Session.class, g -> g.glob.sess);
     public <T> T context(Class<T> cl) {return(ctxr.context(cl, this));}
     public <T> Optional<T> contextopt(Class<T> cl) {return Optional.ofNullable(context(cl));}
-
+    
     /* Because generic functions are too nice a thing for Java. */
     public double getv() {
 	Moving m = getattr(Moving.class);
@@ -1162,7 +1178,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    return(0);
 	return(m.getv());
     }
-
+    
     public Collection<Location.Chain> getloc() {
 	Collection<Location.Chain> ret = new ArrayList<>(slots.size());
 	for(RenderTree.Slot slot : slots) {
@@ -1172,7 +1188,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	return(ret);
     }
-
+    
     public class Placed implements RenderTree.Node, TickList.Ticking, TickList.TickNode {
 	/* XXX: Using a COW list is far from an ideal solution. It
 	 * should work for the specific case of flavobjs (which are
@@ -1182,14 +1198,14 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	 * is in fact more general. */
 	private final Collection<RenderTree.Slot> slots = new java.util.concurrent.CopyOnWriteArrayList<>();
 	private Placement cur;
-
+	
 	private Placed() {}
-
+	
 	private class Placement implements Pipe.Op {
 	    final Pipe.Op flw, tilestate, mods;
 	    final Coord3f oc, rc;
 	    final Matrix4f rot;
-
+	    
 	    Placement() {
 		try {
 		    Following flw = Gob.this.getattr(Following.class);
@@ -1223,15 +1239,15 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		    }
 		} catch(Loading bl) {
 		    throw(new Loading(bl) {
-			    public String getMessage() {return(bl.getMessage());}
-
-			    public void waitfor(Runnable callback, Consumer<Waitable.Waiting> reg) {
-				Waitable.or(callback, reg, bl, Gob.this::updwait);
-			    }
-			});
+			public String getMessage() {return(bl.getMessage());}
+			
+			public void waitfor(Runnable callback, Consumer<Waitable.Waiting> reg) {
+			    Waitable.or(callback, reg, bl, Gob.this::updwait);
+			}
+		    });
 		}
 	    }
-
+	    
 	    public boolean equals(Placement that) {
 		if(this.flw != null) {
 		    if(!Utils.eq(this.flw, that.flw))
@@ -1246,11 +1262,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		    return(false);
 		return(true);
 	    }
-
+	    
 	    public boolean equals(Object o) {
 		return((o instanceof Placement) && equals((Placement)o));
 	    }
-
+	    
 	    Pipe.Op gndst = null;
 	    public void apply(Pipe buf) {
 		if(this.flw != null) {
@@ -1258,7 +1274,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		} else {
 		    if(gndst == null)
 			gndst = Pipe.Op.compose(new Location(Transform.makexlate(new Matrix4f(), this.rc), "gobx"),
-						new Location(rot, "gob"));
+			    new Location(rot, "gob"));
 		    gndst.apply(buf);
 		}
 		if(tilestate != null)
@@ -1267,11 +1283,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		    mods.apply(buf);
 	    }
 	}
-
+	
 	public Pipe.Op placement() {
 	    return(new Placement());
 	}
-
+	
 	public void autotick(double dt) {
 	    synchronized(Gob.this) {
 		Placement np;
@@ -1284,33 +1300,33 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		    update(np);
 	    }
 	}
-
+	
 	private void update(Placement np) {
 	    for(RenderTree.Slot slot : slots)
 		slot.ostate(np);
 	    this.cur = np;
 	}
-
+	
 	public void added(RenderTree.Slot slot) {
 	    slot.ostate(curplace());
 	    slot.add(Gob.this);
 	    slots.add(slot);
 	}
-
+	
 	public void removed(RenderTree.Slot slot) {
 	    slots.remove(slot);
 	}
-
+	
 	public Pipe.Op curplace() {
 	    if(cur == null)
 		cur = new Placement();
 	    return(cur);
 	}
-
+	
 	public Coord3f getc() {
 	    return((this.cur != null) ? this.cur.oc : null);
 	}
-
+	
 	public TickList.Ticking ticker() {return(this);}
     }
     
@@ -1381,7 +1397,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    if(needHide) {
 		tag(GobTag.HIDDEN);
 	    } else {
-	        untag(GobTag.HIDDEN);
+		untag(GobTag.HIDDEN);
 	    }
 	    return changed;
 	}
@@ -1467,10 +1483,10 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     
     //Useful for getting stage information or model type
     public int sdt() {
-        Drawable d = drawable;
-        if(d instanceof ResDrawable) {
+	Drawable d = drawable;
+	if(d instanceof ResDrawable) {
 	    ResDrawable dw = (ResDrawable) d;
-		return dw.sdtnum();
+	    return dw.sdtnum();
 	}
 	return 0;
     }
@@ -1485,8 +1501,13 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     }
     
     public void setQuality(int q) {
-        info.setQ(q);
-        status.update(StatusType.info);
+	info.setQ(q);
+	status.update(StatusType.info);
+    }
+    
+    public void setTaken(int v) {
+	info.setTaken(v);
+	status.update(StatusType.info);
     }
     
     public void poseUpdated() {status.update(StatusType.pose);}
@@ -1528,18 +1549,18 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if(updateseq == 0 || !status.updated()) {return;}
 	StatusUpdates status = this.status;
 	this.status = new StatusUpdates();
-    
+	
 	if(status.updated(StatusType.drawable, StatusType.kin, StatusType.id, StatusType.pose, StatusType.tags, StatusType.overlay, StatusType.combat)) {
 	    updateTags();
 	    status.update(StatusType.tags);
 	}
-    
+	
 	if(status.updated(StatusType.drawable, StatusType.visibility, StatusType.tags, StatusType.icon)) {
 	    if(updateVisibility()) {
 		status.update(StatusType.visibility);
 	    }
 	}
-    
+	
 	if(status.updated(StatusType.drawable) && radius == null) {
 	    Resource res = getres();
 	    if(res != null) {
@@ -1549,7 +1570,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	    }
 	}
-    
+	
 	if(status.updated(StatusType.drawable, StatusType.hitbox, StatusType.visibility, StatusType.combat)) {
 	    updateHitbox();
 	}
@@ -1557,11 +1578,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if(status.updated(StatusType.drawable)) {
 	    customScale.update(this);
 	}
-    
+	
 	if(status.updated(StatusType.drawable, StatusType.id, StatusType.icon)) {
 	    updateIcon();
 	}
-    
+	
 	if(status.updated(StatusType.tags)) {
 	    updateWarnings();
 	}
@@ -1573,7 +1594,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if(status.updated(StatusType.tags, StatusType.color, StatusType.marker)) {
 	    updateMarkerSprite();
 	}
-    
+	
 	if(status.updated(StatusType.tags, StatusType.info, StatusType.color)) {
 	    updateColor();
 	}
@@ -1775,7 +1796,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	return 0;
     }
-
+    
     public String toString() {
 	return(String.format("#<ob %d %s>", id, getattr(Drawable.class)));
     }

@@ -15,8 +15,8 @@ public class FilterWnd extends GameUI.Hidewnd {
 		checkInput();
 	    }
 	});
-    
-	addtwdg(new IButton("gfx/hud/btn-help", "","-d","-h", () -> ItemFilter.showHelp(ui, ItemFilter.FILTER_HELP)));
+	
+	addtwdg(new IButton("gfx/hud/btn-help", "","-d","-h", () -> ItemFilter.showHelp(ui, ItemFilter.FILTER_HELP)).settip("Help"));
 	
 	pack();
 	hide();
@@ -38,10 +38,10 @@ public class FilterWnd extends GameUI.Hidewnd {
 	int mods = ev.getModifiersEx();
 	//any modifier except SHIFT pressed alone is ignored, TAB is also ignored
 	return (mods != 0 && mods != KeyEvent.SHIFT_DOWN_MASK)
-		|| code == KeyEvent.VK_CONTROL
-		|| code == KeyEvent.VK_ALT
-		|| code == KeyEvent.VK_META
-		|| code == KeyEvent.VK_TAB;
+	    || code == KeyEvent.VK_CONTROL
+	    || code == KeyEvent.VK_ALT
+	    || code == KeyEvent.VK_META
+	    || code == KeyEvent.VK_TAB;
     }
     
     private void setFilter(String text) {

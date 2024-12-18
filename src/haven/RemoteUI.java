@@ -77,6 +77,9 @@ public class RemoteUI implements UI.Receiver, UI.Runner {
 		sendua("render.device", env.caps().device());
 		sendua("render.driver", env.caps().driver());
 	    }
+	    sendua("ender.client", Config.confid); // KamiClient: I don't differenciate between Steam/Beta/Standalone
+	    sendua("ender.theme", CFG.THEME.get().name());
+	    sendua("ender.lang", L10N.language);
 	} catch(Exception e) {
 	    new Warning(e).issue();
 	}

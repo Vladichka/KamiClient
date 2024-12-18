@@ -19,14 +19,24 @@ public class InvHelper {
     
     static Optional<WItem> findFirstMatching(Predicate<WItem> what, Collection<Supplier<List<WItem>>> where) {
 	for (Supplier<List<WItem>> place : where) {
-	    Optional<WItem> w = place.get().stream()
-		.filter(what)
-		.findFirst();
+	    Optional<WItem> w = findFirstMatching(what, place);
 	    if(w.isPresent()) {
 		return w;
 	    }
 	}
 	return Optional.empty();
+    }
+    
+    static Optional<WItem> findFirstMatching(Predicate<WItem> what, Supplier<List<WItem>> place) {
+	return place.get().stream()
+	    .filter(what)
+	    .findFirst();
+    }
+    
+    static Optional<ContainedItem> findFirstContained(Predicate<WItem> what, Supplier<List<ContainedItem>> place) {
+	return place.get().stream()
+	    .filter(c -> what.test(c.item))
+	    .findFirst();
     }
     
     static Optional<WItem> findFirstThatContains(String what, Collection<Supplier<List<WItem>>> where) {
@@ -43,6 +53,10 @@ public class InvHelper {
     
     private static Predicate<WItem> contains(String what) {
 	return w -> w.contains.get().is(what);
+    }
+    
+    static Predicate<WItem> ofType(String... types) {
+	return w -> GobTag.ofType(w.item.resname(), types);
     }
     
     static float countItems(String what, Supplier<List<WItem>> where) {
@@ -248,7 +262,7 @@ public class InvHelper {
 	
 	@Override
 	public void take() {
-	    item.item.wdgmsg("take", Coord.z);
+	    item.take();
 	}
 	
 	@Override
@@ -273,12 +287,12 @@ public class InvHelper {
 	
 	@Override
 	public void take() {
-	    item.item.wdgmsg("take", Coord.z);
+	    item.take();
 	}
 	
 	@Override
 	public void putBack() {
-	    belt.item.wdgmsg("itemact", 0);
+	    belt.itemact(0);
 	}
     }
     
@@ -299,7 +313,7 @@ public class InvHelper {
 	
 	@Override
 	public void take() {
-	    item.item.wdgmsg("take", Coord.z);
+	    item.take();
 	}
 	
 	@Override

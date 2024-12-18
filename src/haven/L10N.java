@@ -21,7 +21,7 @@ public class L10N {
     public static final List<String> LANGUAGES;
     public static final CFG<String> LANGUAGE = new CFG<>("i10n.language", DEFAULT_LANGUAGE);
     public static final CFG<Boolean> DBG = new CFG<>("i10n.debug", false);
-    private static final String language = LANGUAGE.get();
+    public static final String language = LANGUAGE.get();
     
     enum Bundle {
 	BUTTON("button"),
@@ -34,10 +34,10 @@ public class L10N {
 	FLOWER("flower", true),
 	BIOME("biome"),
 	MSG("msg");
-    
+	
 	public final String name;
 	public final boolean useMatch;
-    
+	
 	Bundle(String name, boolean useMatch) {
 	    this.name = name;
 	    this.useMatch = useMatch;
@@ -60,7 +60,7 @@ public class L10N {
 	tmp.sort(String::compareTo);
 	set.addAll(tmp);
 	LANGUAGES = new LinkedList<>(set);
-    
+	
 	for (Bundle bundle : Bundle.values()) {
 	    if(bundle.useMatch) {
 		match.put(bundle, loadMatch(bundle));
@@ -196,6 +196,36 @@ public class L10N {
 	    reportMissing(bundle, key, def);
 	}
 	return result != null ? result : def;
+    }
+    
+    public static String revertFlower(String text) {
+	return revertTranslation(text, Bundle.FLOWER);
+    }
+    
+    private static String revertTranslation(String text, Bundle bundle) {
+	if (text == null || text.isEmpty() || L10N.isDefaultLanguage()) {
+	    return text;
+	}
+	Map<?, String> map = null;
+	if (bundle.useMatch) {
+	    map = match.get(bundle);
+	} else {
+	    map = simple.get(bundle);
+	}
+	if(map == null || map.isEmpty()) {
+	    return text;
+	}
+	for(Map.Entry<?, String> entry : map.entrySet()) {
+	    if (entry.getValue().equals(text)){
+		if (bundle.useMatch) {
+		    String result = ((Pattern) entry.getKey()).toString();
+		    return result.substring(1, result.length()-1);
+		} else {
+		    return (String) entry.getKey();
+		}
+	    }
+	}
+	return text;
     }
     
     private static void reportMissing(Bundle bundle, String key, String def) {

@@ -53,6 +53,7 @@ public abstract class ListWidget<T> extends Widget {
     public void change(T item) {
 	selindex = indexof(item);
 	sel = (selindex != -1) ? item : null;
+	changed(sel, selindex);
     }
     
     public void change(int index) {
@@ -64,7 +65,10 @@ public abstract class ListWidget<T> extends Widget {
 	    selindex = -1;
 	    sel = null;
 	}
+	changed(sel, selindex);
     }
+    
+    public void changed(T item, int index) {}
     
     public int indexof(T item) {
 	for (int i = 0; i < listitems(); i++)

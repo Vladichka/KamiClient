@@ -127,6 +127,7 @@ public class CFG<T> {
     
     //Color settings
     public static final CFG<Color> COLOR_MINE_SUPPORT_OVERLAY = new CFG<>("colors.mine_support_overlay", new Color(149, 246, 194));
+    public static final CFG<Color> COLOR_MINE_SUPPORT_DAMAGED_OVERLAY = new CFG<>("colors.damaged_mine_support_overlay", new Color(253, 44, 70));
     public static final CFG<Color> COLOR_TILE_GRID = new CFG<>("colors.tile_grid", new Color(255, 255, 255, 48));
     public static final CFG<Color> COLOR_HBOX_FILLED = new CFG<>("colors.hit_box_filled", new Color(178, 71, 178, 160));
     public static final CFG<Color> COLOR_HBOX_SOLID = new CFG<>("colors.hit_box_solid", new Color(178, 71, 178, 255));
@@ -150,7 +151,12 @@ public class CFG<T> {
     /**Unpack stacks into single items for extra inventory's list*/
     public static final CFG<Integer> UI_EXT_INV_MIN_ROWS = new CFG<>("ui.stack.ext_inv_min_rows", 3);
     public static final CFG<Boolean> UI_STACK_EXT_INV_UNPACK = new CFG<>("ui.stack.ext_inv_unpack", true);
-
+    
+    public static final CFG<Boolean> ALCHEMY_LIMIT_RECIPE_SAVE = new CFG<>("alchemy.limit_recipe_saving", true);
+    public static final CFG<Boolean> ALCHEMY_AUTO_PROCESS = new CFG<>("alchemy.auto_process", false);
+    public static final CFG<Boolean> ALCHEMY_DEEP_EFFECT_TRACK = new CFG<>("alchemy.deep_effect_track", false);
+    public static final CFG<Integer> ALCHEMY_LAST_TAB = new CFG<>("alchemy.last_lab", 0);
+    
     public static final CFG<Float> CAMERA_BRIGHT = new CFG<>("camera.bright", 0f);
     public static final CFG<Boolean> CAMERA_INVERT_X = new CFG<>("camera.invert_x", false);
     public static final CFG<Boolean> CAMERA_INVERT_Y = new CFG<>("camera.invert_y", false);
@@ -163,7 +169,15 @@ public class CFG<T> {
     public static final CFG<Boolean> AUTOFOOD_TRACK = new CFG<>("autofood.track", false);
     public static final CFG<Set<BuddyWnd.Group>> AUTOMAP_MARKERS = new CFG<>("automap.markers", new HashSet<>(), new TypeToken<Set<BuddyWnd.Group>>(){});
     public static final CFG<String> AUTOMAP_ENDPOINT = new CFG<>("automap.andpoint", "");
-
+    
+    public static final CFG<Boolean> ALWAYS_SHOW_DEWY_TIME = new CFG<>("addstg.always_show_dewy_time", false);
+    public static final CFG<Boolean> SHOW_TIME = new CFG<>("addstg.show_time", false);
+    public static final CFG<Boolean> SHOW_STATS = new CFG<>("addstg.show_stats", false);
+    
+    public static final CFG<Boolean> QUESTHELPER_HIGHLIGHT_QUESTGIVERS = new CFG<>("questhelper.highlight_questgivers", true);
+    public static final CFG<Boolean> QUESTHELPER_SHOW_TASKS_IN_TOOLTIP = new CFG<>("questhelper.show_tasks_in_tooltip", true);
+    public static final CFG<Boolean> QUESTHELPER_DONE_FIRST = new CFG<>("questhelper.done_first", true);
+    
     // KamiClient Additions
     public static final CFG<Boolean> ENABLE_TERRAIN_BLEND = new CFG("display.enalbe_terrain_blend", true);
     public static final CFG<Boolean> DISPLAY_CRACKING_TEXTURE = new CFG("display.display_cracking_texture", true);
@@ -180,10 +194,6 @@ public class CFG<T> {
     public static final CFG<Boolean> SHOW_MINIMAP_ON_START = new CFG<>("minimap.show_on_start", false);
     public static final CFG<Integer> DISPLAY_SCALE_TREES = new CFG<>("display.scale.trees", 100);
     public static final CFG<Integer> DISPLAY_SCALE_BUSHES = new CFG<>("display.scale.bushes", 100);
-    
-    public static final CFG<Integer> QUALITY_SORT = new CFG<>("ui.sort.quality", 0);
-    public static final CFG<Integer> NAME_SORT = new CFG<>("ui.sort.name", 2);
-    public static final CFG<Integer> RESNAME_SORT = new CFG<>("ui.sort.resname", 2);
     
     private static final String CONFIG_JSON = "config.json";
     private static final Map<Object, Object> cfg;

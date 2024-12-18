@@ -62,6 +62,7 @@ public class Equipory extends Widget implements DTarget {
     };
     
     public enum SLOTS {
+	INVALID(-1),
 	HEAD(0),       //00: Headgear
 	ACCESSORY(1),  //01: Main Accessory
 	SHIRT(2),      //02: Shirt
@@ -83,7 +84,7 @@ public class Equipory extends Widget implements DTarget {
 	MOUTH(18),     //18: Mouth
 	POUCH_LEFT(19),//19: Left Hand Pouch
 	POUCH_RIGHT(20);//20: Right Hand Pouch
-    
+	
 	public final int idx;
 	SLOTS(int idx) {
 	    this.idx = idx;
@@ -109,14 +110,14 @@ public class Equipory extends Widget implements DTarget {
 	    }
 	}
     }
-
+    
     public WItem[] slots = new WItem[ecoords.length];
     Map<GItem, Collection<WItem>> wmap = new HashMap<>();
     private final Avaview ava;
     public volatile long seq = 0;
-
+    
     AttrBonusesWdg bonuses;
-	
+    
     @RName("epry")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
@@ -130,42 +131,42 @@ public class Equipory extends Widget implements DTarget {
 	    return(new Equipory(gobid));
 	}
     }
-
+    
     protected void added() {
 	if(ava.avagob == -2)
 	    ava.avagob = getparent(GameUI.class).plid;
 	super.added();
     }
-
+    
     public Equipory(long gobid) {
 	super(isz);
 	ava = add(new Avaview(bg.sz(), gobid, "equcam") {
-		public boolean mousedown(MouseDownEvent ev) {
-		    return(false);
-		}
-
-		public void draw(GOut g) {
-		    g.image(bg, Coord.z);
-		    super.draw(g);
-		}
-
-		{
-		    basic.add(new Outlines(false));
-		}
-
-		final FColor cc = new FColor(0, 0, 0, 0);
-		protected FColor clearcolor() {return(cc);}
-	    }, bgc);
+	    public boolean mousedown(MouseDownEvent ev) {
+		return(false);
+	    }
+	    
+	    public void draw(GOut g) {
+		g.image(bg, Coord.z);
+		super.draw(g);
+	    }
+	    
+	    {
+		basic.add(new Outlines(false));
+	    }
+	    
+	    final FColor cc = new FColor(0, 0, 0, 0);
+	    protected FColor clearcolor() {return(cc);}
+	}, bgc);
 //	ava.color = null;
-
+	
 	bonuses = add(new AttrBonusesWdg(isz.y - UI.scale(20)), isz.x + 5, 0);
 	pack();
     }
-
+    
     public static interface SlotInfo {
 	public int slots();
     }
-
+    
     public void addchild(Widget child, Object... args) {
 	if(child instanceof GItem) {
 	    add(child);
@@ -211,7 +212,7 @@ public class Equipory extends Widget implements DTarget {
 	    synchronized (ava) {seq++;}
 	}
     }
-
+    
     public void uimsg(String msg, Object... args) {
 	if(msg == "pop") {
 	    ava.avadesc = Composited.Desc.decode(ui.sess, args);
@@ -219,7 +220,7 @@ public class Equipory extends Widget implements DTarget {
 	    super.uimsg(msg, args);
 	}
     }
-
+    
     public int epat(Coord c) {
 	for(int i = 0; i < ecoords.length; i++) {
 	    if(c.isect(ecoords[i], invsq.sz()))
@@ -227,12 +228,12 @@ public class Equipory extends Widget implements DTarget {
 	}
 	return(-1);
     }
-
+    
     public boolean drop(Coord cc, Coord ul) {
 	wdgmsg("drop", epat(cc));
 	return(true);
     }
-
+    
     public void drawslots(GOut g) {
 	int slots = 0;
 	GameUI gui = getparent(GameUI.class);
@@ -255,33 +256,33 @@ public class Equipory extends Widget implements DTarget {
 		g.image(ebgs[i], ecoords[i]);
 	}
     }
-
+    
     public Object tooltip(Coord c, Widget prev) {
 	int sl = epat(c);
 	if(sl >= 0)
 	    return(etts[sl]);
 	return(null);
     }
-
+    
     public void draw(GOut g) {
 	drawslots(g);
 	super.draw(g);
     }
-
+    
     public boolean iteminteract(Coord cc, Coord ul) {
 	return(false);
     }
-
+    
     @Override
     public void tick(double dt) {
 	super.tick(dt);
 	processParasites();
     }
-
+    
     @Override
     protected void attached() {
 	super.attached();
-
+	
 	Coord pos = pos("br");
 	if(isMe()) {
 	    adda(new CFGBox("Auto drop parasites", CFG.AUTO_DROP_PARASITES, "Drop leeches and ticks as soon as they attach to you.") {
@@ -298,12 +299,12 @@ public class Equipory extends Widget implements DTarget {
 	    adda(new Button(w, "Steal", false, this::transferAll).settip("Take all equipped items"), pos, 1, 0);
 	}
     }
-
+    
     private boolean isMe() {return this == ui.gui.equipory;}
-
+    
     private boolean hasBatCape;
     long batSeq = -1;
-
+    
     public boolean hasBatCape() {
 	//look into making this caching flexible if we ever use this for more than bat capes
 	if(seq != batSeq) {
@@ -316,23 +317,23 @@ public class Equipory extends Widget implements DTarget {
 	}
 	return hasBatCape;
     }
-
+    
     public boolean has(String name) throws Loading {
 	for (GItem item : wmap.keySet()) {
 	    if(item.resname().contains(name)) {return true;}
 	}
 	return false;
     }
-
+    
     private static final List<GItem> toCheckForParasites = new LinkedList<>();
     private long lastParasiteCheck = 0;
-
+    
     private void checkForParasites(GItem item) {
 	if(CFG.AUTO_DROP_PARASITES.get() && !processParasite(item)) {
 	    toCheckForParasites.add(item);
 	}
     }
-
+    
     private boolean processParasite(GItem item) {
 	try {
 	    String name = item.resname();
@@ -344,7 +345,7 @@ public class Equipory extends Widget implements DTarget {
 	    return false;
 	}
     }
-
+    
     private void processParasites() {
 	if(!CFG.AUTO_DROP_PARASITES.get() || toCheckForParasites.isEmpty()) {return;}
 	long now = System.currentTimeMillis();
@@ -352,9 +353,9 @@ public class Equipory extends Widget implements DTarget {
 	lastParasiteCheck = now;
 	toCheckForParasites.removeIf(this::processParasite);
     }
-
+    
     private void dropAll() {wmap.keySet().forEach(GItem::drop);}
-
+    
     private void transferAll() {wmap.keySet().forEach(GItem::transfer);}
     
     public void sendDrop() {
@@ -363,5 +364,13 @@ public class Equipory extends Widget implements DTarget {
     
     public void sendDrop(int slot) {
 	wdgmsg("drop", slot);
+    }
+    
+    public void sendDrop(SLOTS slot) {
+	sendDrop(slot.idx);
+    }
+    
+    public WItem slot(SLOTS slot) {
+	return slots[slot.idx];
     }
 }

@@ -130,11 +130,11 @@ public class Bot implements Defer.Callable<Void> {
     
     private static void doStart(Bot bot, UI ui, boolean silent) {
 	setCurrent(bot);
-	bot.run((error, message) -> {
-	    if(!silent && CFG.SHOW_BOT_MESSAGES.get() || error) {
-		GameUI.MsgType type = error ? GameUI.MsgType.ERROR : GameUI.MsgType.INFO;
+	bot.run((cancelled, message) -> {
+	    if(!silent && CFG.SHOW_BOT_MESSAGES.get() || message != null) {
+		GameUI.MsgType type = cancelled ? GameUI.MsgType.ERROR : GameUI.MsgType.INFO;
 		if(message == null) {
-		    message = error
+		    message = cancelled
 			? "Task is cancelled."
 			: "Task is completed.";
 		    type = GameUI.MsgType.INFO;

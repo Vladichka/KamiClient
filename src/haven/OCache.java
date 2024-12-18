@@ -34,6 +34,7 @@ import java.lang.reflect.*;
 import haven.render.Render;
 import java.util.stream.Stream;
 import haven.render.*;
+import haven.res.gfx.fx.msrad.MSRad;
 
 public class OCache implements Iterable<Gob> {
     public static final int OD_REM = 0;
@@ -67,12 +68,12 @@ public class OCache implements Iterable<Gob> {
     private final Collection<ChangeCallback> cbs = new WeakList<ChangeCallback>();
     public final PathVisualizer paths = new PathVisualizer();
     private final List<Disposable> disposables = new LinkedList<>();
-
+    
     public interface ChangeCallback {
 	public void added(Gob ob);
 	public void removed(Gob ob);
     }
-
+    
     public OCache(Glob glob) {
 	this.glob = glob;
 	
@@ -127,22 +128,22 @@ public class OCache implements Iterable<Gob> {
     public void gobAction(Consumer<Gob> action) {
 	synchronized (this) {
 	    for (Gob g : this) {
-	        action.accept(g);
+		action.accept(g);
 	    }
 	    local.forEach(gobs -> gobs.forEach(action));
 	}
     }
     
     public synchronized Stream<Gob> stream() {return Stream.of(objs.values().toArray(new Gob[0]));}
-
+    
     public synchronized void callback(ChangeCallback cb) {
 	cbs.add(cb);
     }
-
+    
     public synchronized void uncallback(ChangeCallback cb) {
 	cbs.remove(cb);
     }
-
+    
     public void add(Gob ob) {
 	synchronized(ob) {
 	    Collection<ChangeCallback> cbs;
@@ -155,7 +156,7 @@ public class OCache implements Iterable<Gob> {
 	    }
 	}
     }
-
+    
     public void remove(Gob ob) {
 	Gob old;
 	Collection<ChangeCallback> cbs;
@@ -173,7 +174,7 @@ public class OCache implements Iterable<Gob> {
 	    }
 	}
     }
-
+    
     public void ctick(double dt) {
 	ArrayList<Gob> copy = new ArrayList<Gob>();
 	synchronized(this) {
@@ -194,7 +195,7 @@ public class OCache implements Iterable<Gob> {
 	    glob.sess.ui.gui.mapfile.updateGobMarkers();
 	}
     }
-
+    
     public void gtick(Render g) {
 	ArrayList<Gob> copy = new ArrayList<Gob>();
 	synchronized(this) {
@@ -203,31 +204,31 @@ public class OCache implements Iterable<Gob> {
 	}
 	if(!Config.par.get()) {
 	    copy.forEach(ob -> {
-		    synchronized(ob) {
-			ob.gtick(g);
-		    }
-		});
+		synchronized(ob) {
+		    ob.gtick(g);
+		}
+	    });
 	} else {
 	    Collection<Render> subs = new ArrayList<>();
 	    ThreadLocal<Render> subv = new ThreadLocal<>();
 	    copy.parallelStream().forEach(ob -> {
-		    Render sub = subv.get();
-		    if(sub == null) {
-			sub = g.env().render();
-			synchronized(subs) {
-			    subs.add(sub);
-			}
-			subv.set(sub);
+		Render sub = subv.get();
+		if(sub == null) {
+		    sub = g.env().render();
+		    synchronized(subs) {
+			subs.add(sub);
 		    }
-		    synchronized(ob) {
-			ob.gtick(sub);
-		    }
-		});
+		    subv.set(sub);
+		}
+		synchronized(ob) {
+		    ob.gtick(sub);
+		}
+	    });
 	    for(Render sub : subs)
 		g.submit(sub);
 	}
     }
-
+    
     @SuppressWarnings("unchecked")
     public Iterator<Gob> iterator() {
 	Collection<Iterator<Gob>> is = new LinkedList<Iterator<Gob>>();
@@ -235,7 +236,7 @@ public class OCache implements Iterable<Gob> {
 	    is.add(gc.iterator());
 	return(new I2<Gob>(objs.values().iterator(), new I2<Gob>(is)));
     }
-
+    
     public void ladd(Collection<Gob> gob) {
 	Collection<ChangeCallback> cbs;
 	synchronized(this) {
@@ -249,7 +250,7 @@ public class OCache implements Iterable<Gob> {
 	    }
 	}
     }
-
+    
     public void lrem(Collection<Gob> gob) {
 	Collection<ChangeCallback> cbs;
 	synchronized(this) {
@@ -263,11 +264,31 @@ public class OCache implements Iterable<Gob> {
 	    }
 	}
     }
-
+    
     public synchronized Gob getgob(long id) {
 	return(objs.get(id));
     }
-
+    
+    private final List<SquareRadiiOverlay> msols = new LinkedList<>();
+    public boolean dirtyMSOls = true;
+    
+    /**Returns list of mine support overlays*/
+    public List<SquareRadiiOverlay> msols() {
+	if(!dirtyMSOls) {return msols;}
+	synchronized (msols) {
+	    dirtyMSOls = false;
+	    msols.clear();
+	    synchronized (this) {
+		for (Gob gob : objs.values()) {
+		    MSRad spr = gob.findsprol(MSRad.class);
+		    if(spr == null) {continue;}
+		    msols.add(spr.overlay);
+		}
+	    }
+	}
+	return msols;
+    }
+    
     private java.util.concurrent.atomic.AtomicLong nextvirt = new java.util.concurrent.atomic.AtomicLong(-1);
     public class Virtual extends Gob {
 	public Virtual(Coord2d c, double a) {
@@ -276,36 +297,36 @@ public class OCache implements Iterable<Gob> {
 	    virtual = true;
 	}
     }
-
+    
     public class FixedPlace extends Virtual {
 	public final Coord3f fc;
-
+	
 	public FixedPlace(Coord3f fc, double a) {
 	    super(Coord2d.of(fc), a);
 	    this.fc = fc;
 	}
-
+	
 	public FixedPlace() {
 	    this(Coord3f.o, 0);
 	}
-
+	
 	public Coord3f getc() {
 	    return(fc);
 	}
-
+	
 	protected Pipe.Op getmapstate(Coord3f pc) {
 	    return(null);
 	}
     }
-
+    
     public interface Delta {
 	public void apply(Gob gob, AttrDelta msg);
-
+	
 	public static Indir<Resource> getres(Gob gob, int id) {
 	    return(gob.glob.sess.getres(id));
 	}
     }
-//TODO: check for proper `g.drawableUpdated();` calls
+    //TODO: check for proper `g.drawableUpdated();` calls
     @dolda.jglob.Discoverable
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
@@ -326,7 +347,7 @@ public class OCache implements Iterable<Gob> {
 	    throw(new Error("Illegal objdelta class: " + cl));
 	}
     }
-
+    
     @DeltaType(OD_MOVE)
     public static class $move implements Delta {
 	public void apply(Gob g, AttrDelta msg) {
@@ -335,21 +356,21 @@ public class OCache implements Iterable<Gob> {
 	    g.move(c, a);
 	}
     }
-
+    
     public static class OlSprite implements Sprite.Mill<Sprite> {
 	public final Indir<Resource> res;
 	public Message sdt;
-
+	
 	public OlSprite(Indir<Resource> res, Message sdt) {
 	    this.res = res;
 	    this.sdt = sdt;
 	}
-
+	
 	public Sprite create(Sprite.Owner owner) {
 	    return(Sprite.create(owner, res.get(), sdt));
 	}
     }
-
+    
     @DeltaType(OD_OVERLAY)
     public static class $overlay implements Delta {
 	public void apply(Gob g, AttrDelta msg) {
@@ -410,7 +431,7 @@ public class OCache implements Iterable<Gob> {
 	    g.drawableUpdated();
 	}
     }
-
+    
     @DeltaType(OD_RESATTR)
     public static class $resattr implements Delta {
 	public void apply(Gob g, AttrDelta msg) {
@@ -421,7 +442,7 @@ public class OCache implements Iterable<Gob> {
 	    g.drawableUpdated();
 	}
     }
-
+    
     public class GobInfo {
 	public final long id;
 	public final LinkedList<AttrDelta> pending = new LinkedList<>();
@@ -429,12 +450,12 @@ public class OCache implements Iterable<Gob> {
 	public boolean nremoved, added, gremoved, virtual;
 	public Gob gob;
 	public Loader.Future<?> applier;
-
+	
 	public GobInfo(long id, int frame) {
 	    this.id = id;
 	    this.frame = frame;
 	}
-
+	
 	private void apply() {
 	    main: {
 		synchronized(this) {
@@ -477,7 +498,7 @@ public class OCache implements Iterable<Gob> {
 		checkdirty(false);
 	    }
 	}
-
+	
 	public void checkdirty(boolean interrupt) {
 	    synchronized(this) {
 		if(applier == null) {
@@ -490,9 +511,9 @@ public class OCache implements Iterable<Gob> {
 	    }
 	}
     }
-
+    
     private final Map<Long, GobInfo> netinfo = new HashMap<>();
-
+    
     private GobInfo netremove(long id, int frame) {
 	synchronized(netinfo) {
 	    GobInfo ng = netinfo.get(id);
@@ -506,7 +527,7 @@ public class OCache implements Iterable<Gob> {
 	    return(ng);
 	}
     }
-
+    
     private GobInfo netget(long id, int frame) {
 	synchronized(netinfo) {
 	    GobInfo ng = netinfo.get(id);
@@ -526,14 +547,14 @@ public class OCache implements Iterable<Gob> {
 	    return(ng);
 	}
     }
-
+    
     public static class ObjDelta {
 	public int fl, frame;
 	public int initframe;
 	public long id;
 	public final List<AttrDelta> attrs = new LinkedList<>();
 	public boolean rem = false;
-
+	
 	public ObjDelta(int fl, long id, int frame) {
 	    this.fl = fl;
 	    this.id = id;
@@ -541,25 +562,25 @@ public class OCache implements Iterable<Gob> {
 	}
 	public ObjDelta() {}
     }
-
+    
     public static class AttrDelta extends PMessage {
 	public boolean old;
-
+	
 	public AttrDelta(ObjDelta od, int type, Message blob, int len) {
 	    super(type, blob, len);
 	    this.old = ((od.fl & 4) != 0);
 	}
-
+	
 	public AttrDelta(AttrDelta from) {
 	    super(from);
 	    this.old = from.old;
 	}
-
+	
 	public AttrDelta clone() {
 	    return(new AttrDelta(this));
 	}
     }
-
+    
     public GobInfo receive(ObjDelta delta) {
 	if(delta.rem)
 	    return(netremove(delta.id, delta.frame - 1));

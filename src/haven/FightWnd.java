@@ -47,10 +47,6 @@ public class FightWnd extends Widget {
     private final Label count;
     private final Map<Indir<Resource>, Object[]> actrawinfo = new HashMap<>();
     
-    public static interface IconInfo {
-	public void draw(BufferedImage img, Graphics g);
-    }
-    
     private static final OwnerContext.ClassResolver<FightWnd> actxr = new OwnerContext.ClassResolver<FightWnd>()
 	.add(FightWnd.class, wdg -> wdg)
 	.add(Glob.class, wdg -> wdg.ui.sess.glob)
@@ -139,7 +135,7 @@ public class FightWnd extends Widget {
 	count.settext(String.format("Used: %d/%d", u, maxact));
 	count.setcolor((u > maxact)?Color.RED:Color.WHITE);
     }
-
+    
     public class Actions extends SListBox<Action, Widget> {
 	private boolean loading = false;
 	private Action drag = null;

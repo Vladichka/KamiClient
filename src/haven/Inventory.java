@@ -26,19 +26,11 @@
 
 package haven;
 
-import integrations.mapv4.MappingClient;
-import me.ender.ui.CFGBox;
-import me.ender.ui.CFGSlider;
 import rx.functions.Action0;
 
-import java.awt.*;
 import java.util.*;
 import java.awt.image.WritableRaster;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-
-import static haven.TileHighlight.*;
 
 public class Inventory extends Widget implements DTarget {
     public static final Coord sqsz = UI.scale(new Coord(32, 32)).add(1, 1);
@@ -56,10 +48,10 @@ public class Inventory extends Widget implements DTarget {
 	public int compare(WItem o1, WItem o2) {
 	    QualityList ql1 = o1.itemq.get();
 	    double q1 = (ql1 != null && !ql1.isEmpty()) ? ql1.single().value : 0;
-
+	    
 	    QualityList ql2 = o2.itemq.get();
 	    double q2 = (ql2 != null && !ql2.isEmpty()) ? ql2.single().value : 0;
-
+	    
 	    return Double.compare(q1, q2);
 	}
     };
@@ -69,10 +61,10 @@ public class Inventory extends Widget implements DTarget {
 	    return ITEM_COMPARATOR_ASC.compare(o2, o1);
 	}
     };
-
+    
     public boolean locked = false;
     Map<GItem, WItem> wmap = new HashMap<GItem, WItem>();
-
+    
     static {
 	Coord sz = sqsz.add(1, 1);
 	WritableRaster buf = PUtils.imgraster(sz);
@@ -91,14 +83,14 @@ public class Inventory extends Widget implements DTarget {
 	}
 	invsq = new TexI(PUtils.rasterimg(buf));
     }
-
+    
     @RName("inv")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
 	    return(new ExtInventory((Coord)args[0]));
 	}
     }
-
+    
     public void draw(GOut g) {
 	Coord c = new Coord();
 	int mo = 0;
@@ -115,7 +107,7 @@ public class Inventory extends Widget implements DTarget {
 	}
 	super.draw(g);
     }
-	
+    
     public Inventory(Coord sz) {
 	super(sqsz.mul(sz).add(1, 1));
 	isz = sz;
@@ -139,7 +131,7 @@ public class Inventory extends Widget implements DTarget {
     public boolean mousedown(MouseDownEvent ev) {
 	return locked || super.mousedown(ev);
     }
-
+    
     public void addchild(Widget child, Object... args) {
 	add(child);
 	Coord c = (Coord)args[0];
@@ -180,11 +172,11 @@ public class Inventory extends Widget implements DTarget {
 	}
 	return(true);
     }
-	
+    
     public boolean iteminteract(Coord cc, Coord ul) {
 	return(false);
     }
-	
+    
     public void uimsg(String msg, Object... args) {
 	if(msg.equals("sz")) {
 	    isz = (Coord)args[0];
@@ -209,7 +201,7 @@ public class Inventory extends Widget implements DTarget {
 	    super.uimsg(msg, args);
 	}
     }
-
+    
     @Override
     public void wdgmsg(Widget sender, String msg, Object... args) {
 	if(msg.equals("transfer-same")) {
@@ -224,13 +216,13 @@ public class Inventory extends Widget implements DTarget {
 	    super.wdgmsg(sender, msg, args);
 	}
     }
-
+    
     private void process(List<WItem> items, String action) {
 	for (WItem item : items){
 	    item.item.wdgmsg(action, Coord.z);
 	}
     }
-
+    
     private List<WItem> getSame(GItem item, Boolean ascending) {
 	String name = item.resname();
 	GSprite spr = item.spr();
@@ -327,7 +319,7 @@ public class Inventory extends Widget implements DTarget {
     }
     
     public void enableDrops() {
-        Window wnd = getparent(Window.class);
+	Window wnd = getparent(Window.class);
 	if(wnd != null) {
 	    canDropItems = true;
 	    dropsCallback = this::doDrops;
@@ -339,21 +331,6 @@ public class Inventory extends Widget implements DTarget {
 	    );
 	}
     }
-    
-    public ICheckBox sortBox;
-    
-    public void enableSort() {
-	Window wnd = getparent(Window.class);
-	if(wnd != null) {
-	    Widget box = new ICheckBox("gfx/hud/btn-sort", "", "-d", "-h")
-		.changed(this::showSortWindow)
-		.rclick(this::doSortStd)
-		.settip("Left-click to open sorting dialog\nRight-click to standard sort", true);
-	    wnd.addtwdg(box);
-	    sortBox = (ICheckBox)box;
-	}
-    }
-    
     public void itemsChanged() {
 	if(ext != null) {ext.itemsChanged();}
 	GItem.ContentsWindow cnt = getparent(GItem.ContentsWindow.class);
@@ -391,409 +368,17 @@ public class Inventory extends Widget implements DTarget {
     public static Coord invsz(Coord sz) {
 	return invsq.sz().add(new Coord(-1, -1)).mul(sz).add(new Coord(1, 1));
     }
-
+    
     public static Coord sqroff(Coord c){
 	return c.div(invsq.sz());
     }
-
+    
     public static Coord sqoff(Coord c){
 	return c.mul(invsq.sz());
     }
-
+    
     public void forEachItem(BiConsumer<GItem, WItem> consumer) {
 	wmap.forEach(consumer);
     }
     
-    // KamiClient: Sorting stuff from ArdClient
-    
-    public void sort(String s) {
-	//PBotUtils.sysMsg(ui, "Sorting! Please don't move!");
-	List<InvItem> items = new ArrayList<>();
-	List<Integer> ignoreSlots = new ArrayList<>();
-	Coord c1 = Coord.of(1);
-	for (Widget wdg = child; wdg != null; wdg = wdg.next) {
-	    if (wdg instanceof WItem) {
-		InvItem item = new InvItem((WItem) wdg);
-		Coord sz = item.getSize();
-		if (!sz.equals(c1)) {
-		    Coord slot = item.getSlot();
-		    for (int y = 0; y < sz.y; y++) {
-			for (int x = 0; x < sz.x; x++) {
-			    ignoreSlots.add(coordToSloti(slot.add(x, y)));
-			}
-		    }
-//                    PBotUtils.sysMsg(ui, "Not support large items! " + item.getName());
-//                    return;
-		    continue;
-		}
-		items.add(item);
-	    }
-	}
-	
-	items.sort(Comparator.comparing(InvItem::getSloti));
-	if (s.contains("!n"))
-	    items.sort((o1, o2) -> o2.getName().compareTo(o1.getName()));
-	else if (s.contains("n"))
-	    items.sort(Comparator.comparing(InvItem::getName));
-	if (s.contains("!q"))
-	    items.sort((o1, o2) -> {
-		if (o1.getQuality() == null && o2.getQuality() == null) return (0);
-		if (o1.getQuality() == null && o2.getQuality() != null) return (-1);
-		if (o1.getQuality() != null && o2.getQuality() == null) return (1);
-		return Objects.requireNonNull(o2.getQuality()).compareTo(o1.getQuality());
-	    });
-	else if (s.contains("q"))
-	    items.sort((o1, o2) -> {
-		if (o1.getQuality() == null && o2.getQuality() == null) return (0);
-		if (o1.getQuality() == null && o2.getQuality() != null) return (1);
-		if (o1.getQuality() != null && o2.getQuality() == null) return (-1);
-		return Objects.requireNonNull(o1.getQuality()).compareTo(o2.getQuality());
-	    });
-	
-	if (s.contains("!r"))
-	    items.sort((o1, o2) -> o2.getResname().compareTo(o1.getResname()));
-	else if (s.contains("r"))
-	    items.sort(Comparator.comparing(InvItem::getResname));
-	
-	sort:
-	for (int i = 0; i < items.size(); i++) {
-	    InvItem invItem = items.get(i);
-	    InvItem iItem = getItem(invItem.getSlot());
-	    AtomicInteger targetSloti = new AtomicInteger(i);
-	    ignoreSlots.stream().filter(sl -> sl <= targetSloti.get()).forEach(sl -> targetSloti.getAndIncrement());
-	    if (invItem.equals(iItem) && invItem.getSloti() != targetSloti.get()) {
-		if (invItem.take() == null)
-		    break;
-		InvItem item = getItem(slotiToCoord(targetSloti.get()));
-		if (!drop(slotiToCoord(targetSloti.get())))
-		    break;
-		while (item != null && ui.gui.vhand != null) {
-		    Integer in = getInt(items, item, ignoreSlots);
-		    if (in == null)
-			break;
-		    item = getItem(slotiToCoord(in));
-		    if (!drop(slotiToCoord(in)))
-			break sort;
-		}
-	    }
-	}
-	//PBotUtils.sysMsg(ui, "Sorting finished!");
-    }
-    
-    public class InvItem {
-	private final WItem wItem;
-	private GItem gItem;
-	private String resname;
-	private String name;
-	private boolean qinit = false;
-	private Double quality;
-	private Coord slot;
-	private Integer sloti;
-	private Coord size;
-	
-	public InvItem(WItem wItem) {
-	    this.wItem = wItem;
-	}
-	
-	public WItem getWItem() {
-	    return (this.wItem);
-	}
-	
-	public GItem getGItem() {
-	    if (this.gItem == null)
-		this.gItem = getWItem().item;
-	    return (this.gItem);
-	}
-	
-	public String getResname() {
-	    if (this.resname == null) {
-		Resource res = null;
-		for (int sleep = 10; res == null; ) {
-		    res = getGItem().resource();
-		    sleep(sleep);
-		}
-		this.resname = res.name;
-	    }
-	    return (this.resname);
-	}
-	
-	public String getName() {
-	    if (this.name == null) {
-		this.name = gItem.name.get();
-	    }
-	    return (this.name);
-	}
-	
-	public Double getQuality() {
-	    if (!this.qinit) {
-		QualityList ql1 = wItem.itemq.get();
-		this.quality = (ql1 != null && !ql1.isEmpty()) ? ql1.single().value : 0;
-		this.qinit = true;
-	    }
-	    return (this.quality);
-	}
-	
-	public Coord getSlot() {
-	    if (this.slot == null) {
-		this.slot = getWItem().c.sub(1, 1).div(UI.scale(sqsz.x, sqsz.y));
-	    }
-	    return (this.slot);
-	}
-	
-	public Integer getSloti() {
-	    if (this.sloti == null) {
-		this.sloti = coordToSloti(getSlot());
-	    }
-	    return (this.sloti);
-	}
-	
-	public Coord getSize() {
-	    if (this.size == null) {
-		GSprite spr = null;
-		for (int sleep = 10; spr == null; ) {
-		    spr = getGItem().spr();
-		    sleep(sleep);
-		}
-		this.size = spr.sz().div(UI.scale(30));
-	    }
-	    return (this.size);
-	}
-	
-	public WItem take() {
-	    for (int i = 0; i < 5; i++) {
-		getGItem().wdgmsg("take", Coord.z);
-		
-		for (int t = 0, sleep = 10; ui.gui.vhand == null; t += sleep) {
-		    if (t >= 1000)
-			break;
-		    else
-			sleep(sleep);
-		}
-		if (ui.gui.vhand != null)
-		    break;
-	    }
-	    return (ui.gui.vhand);
-	}
-	
-	@Override
-	public String toString() {
-	    return "InvItem{" +
-		"wItem=" + wItem +
-		", resname='" + resname + '\'' +
-		", name='" + name + '\'' +
-		", quality=" + quality +
-		", slot=" + slot +
-		", sloti=" + sloti +
-		", slotrollback=" + slotiToCoord(sloti) +
-		", size=" + size +
-		'}';
-	}
-	
-	@Override
-	public boolean equals(Object o) {
-	    if (this == o) return true;
-	    if (!(o instanceof InvItem)) return false;
-	    InvItem invItem = (InvItem) o;
-	    return getWItem().equals(invItem.getWItem());
-	}
-	
-	@Override
-	public int hashCode() {
-	    return Objects.hash(wItem);
-	}
-    }
-    
-    public Coord slotiToCoord(int slot) {
-	Coord c = new Coord();
-	int mo = 0;
-	int max = 0;
-	for (c.y = 0; c.y < isz.y; c.y++) {
-	    for (c.x = 0; c.x < isz.x; c.x++) {
-		if (sqmask == null || !sqmask[mo++]) {
-		    if (slot == max) return (c);
-		    else max++;
-		}
-	    }
-	}
-	return (null);
-    }
-    
-    public Integer coordToSloti(Coord slot) {
-	Coord c = new Coord();
-	int mo = 0;
-	int max = 0;
-	for (c.y = 0; c.y < isz.y; c.y++) {
-	    for (c.x = 0; c.x < isz.x; c.x++) {
-		if (sqmask == null || !sqmask[mo++]) {
-		    if (slot.x == c.x && slot.y == c.y) return (max);
-		    else max++;
-		}
-	    }
-	}
-	return (null);
-    }
-    
-    public boolean drop(Coord slot) {
-	InvItem item = getItem(slot);
-	wdgmsg("drop", slot);
-	InvItem nitem = getItem(slot);
-	for (int sleep = 10; nitem == null || nitem == item; ) {
-	    nitem = getItem(slot);
-	    sleep(sleep);
-	}
-	return (true);
-    }
-    
-    public InvItem getItem(Coord slot) {
-	InvItem item = null;
-	for (Widget wdg = child; wdg != null; wdg = wdg.next) {
-	    if (wdg instanceof WItem) {
-		WItem w = (WItem) wdg;
-		if (w.c.sub(1, 1).div(UI.scale(sqsz.x, sqsz.y)).equals(slot)) {
-		    item = new InvItem(w);
-		    break;
-		}
-	    }
-	}
-	return (item);
-    }
-    
-    public Integer getInt(List<InvItem> items, InvItem item, List<Integer> ignoreSlots) {
-	for (int i = 0; i < items.size(); i++)
-	    if (items.get(i).equals(item)) {
-		AtomicInteger targetSloti = new AtomicInteger(i);
-		ignoreSlots.stream().filter(sl -> sl <= targetSloti.get()).forEach(sl -> targetSloti.getAndIncrement());
-		return (targetSloti.get());
-	    }
-	return (null);
-    }
-    
-    public static void sleep(int t) {
-	try {
-	    Thread.sleep(t);
-	} catch (InterruptedException e) {
-	    e.printStackTrace();
-	}
-    }
-    
-    public void doSortStd() {
-	String s = "";
-	if (CFG.QUALITY_SORT.get() == 2)
-	    s = s.concat("q");
-	else if (CFG.QUALITY_SORT.get() == 0)
-	    s = s.concat("!q");
-	if (CFG.RESNAME_SORT.get() == 2)
-	    s = s.concat("r");
-	else if (CFG.RESNAME_SORT.get() == 0)
-	    s = s.concat("!r");
-	if (CFG.NAME_SORT.get() == 2)
-	    s = s.concat("n");
-	else if (CFG.NAME_SORT.get() == 0)
-	    s = s.concat("!n");
-	doSort(s);
-    }
-    
-    public void doSort(String s) {
-	Defer.later(() -> {
-	    try {
-		sort(s);
-	    } catch (Exception e) {
-	    }
-	    return (null);
-	});
-    }
-    
-    public CFGWnd wnd;
-    
-    public void showSortWindow(boolean v)
-    {
-	if(wnd == null) {
-	    wnd = ui.gui.add(new CFGWnd(this), ui.gui.invwnd.c);
-	} else {
-	    wnd.destroy();
-	}
-    }
-    
-    public static class CFGWnd extends WindowX {
-	public final Inventory inv;
-	
-	public CFGWnd(Inventory inv) {
-	    super(Coord.z, "Sort Settings");
-	    
-	    this.inv = inv;
-	    
-	    int STEP = UI.scale(25);
-	    int START = 0;
-	    int x, y;
-	    
-	    x = 0;
-	    y = START;
-	    
-	    y = addSlider(CFG.QUALITY_SORT, 0, 2, "Quality sort: %d", "0 = reversed; 1 = none; 2 = normal", x, y, STEP);
-	    
-	    y += STEP;
-	    y = addSlider(CFG.NAME_SORT, 0, 2, "Name sort: %d", "0 = reversed; 1 = none; 2 = normal", x, y, STEP);
-	    
-	    y += STEP;
-	    y = addSlider(CFG.RESNAME_SORT, 0, 2, "Resname sort: %d", "0 = reversed; 1 = none; 2 = normal", x, y, STEP);
-	    
-	    y += STEP;
-	    add(new Button(UI.scale(100), "Sort", false) {
-		@Override
-		public void click() {
-		    try {
-			String s = "";
-			if (CFG.QUALITY_SORT.get() == 2)
-			    s = s.concat("q");
-			else if (CFG.QUALITY_SORT.get() == 0)
-			    s = s.concat("!q");
-			if (CFG.RESNAME_SORT.get() == 2)
-			    s = s.concat("r");
-			else if (CFG.RESNAME_SORT.get() == 0)
-			    s = s.concat("!r");
-			if (CFG.NAME_SORT.get() == 2)
-			    s = s.concat("n");
-			else if (CFG.NAME_SORT.get() == 0)
-			    s = s.concat("!n");
-			inv.doSort(s);
-			closeThis();
-		    } catch (Exception ex) {}
-		    
-		}
-	    }, x, y);
-	    
-	    pack();
-
-	}
-	
-	@Override
-	public void destroy() {
-	    inv.wnd = null;
-	    super.destroy();
-	}
-	
-	public void closeThis()
-	{
-	    inv.sortBox.set(false);
-	}
-	
-	public void wdgmsg(Widget sender, String msg, Object... args) {
-	    if((sender == this) && (msg == "close")) {
-		closeThis();
-	    } else {
-		super.wdgmsg(sender, msg, args);
-	    }
-	}
-	
-	private int addSlider(CFG<Integer> cfg, int min, int max, String format, String tip, int x, int y, int STEP) {
-	    final Label label = add(new Label(""), x, y);
-	    label.settip(tip);
-	    
-	    y += STEP;
-	    add(new CFGSlider(UI.scale(200), min, max, cfg, label, format), x, y).settip(tip);
-	    
-	    return y;
-	}
-
-    }
 }

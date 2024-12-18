@@ -3,8 +3,11 @@ package haven.res.ui.inspect;
 
 import haven.*;
 
+import java.util.Collections;
+import java.util.List;
+
 /* >wdg: LocalInspect */
-@FromResource(name = "ui/inspect", version = 3)
+@FromResource(name = "ui/inspect", version = 4)
 public class LocalInspect extends Widget {
     public MapView mv;
     public Hover last = null, cur = null;
@@ -22,6 +25,43 @@ public class LocalInspect extends Widget {
 
     public void destroy() {
 	super.destroy();
+    }
+
+    public static class ObTip implements Indir<Tex> {
+	public final String name;
+	public final List<String> lines;
+
+	public ObTip(String name, List<String> lines) {
+	    this.name = name;
+	    this.lines = lines;
+	}
+
+	public boolean equals(ObTip that) {
+	    return(Utils.eq(this.name, that.name) && Utils.eq(this.lines, that.lines));
+	}
+	public boolean equals(Object x) {
+	    return((x instanceof ObTip) && equals((ObTip)x));
+	}
+
+	private Tex tex;
+	private boolean r = false;
+	public Tex get() {
+	    if(!r) {
+		StringBuilder buf = new StringBuilder();
+		if(name != null)
+		    buf.append(RichText.Parser.quote(name));
+		if(!lines.isEmpty()) {
+		    if(buf.length() > 0)
+			buf.append("\n\n");
+		    for(String ln : lines)
+			buf.append(RichText.Parser.quote(ln) + "\n");
+		}
+		if(buf.length() > 0)
+		    tex = new TexI(RichText.render(buf.toString(), 0).img);
+		r = true;
+	    }
+	    return(tex);
+	}
     }
 
     public class Hover extends MapView.Hittest {
@@ -55,18 +95,22 @@ public class LocalInspect extends Widget {
 
 	public Object tip() {
 	    if(ob != null) {
+		String name = null;
 		GobIcon icon = ob.getattr(GobIcon.class);
 		if(icon != null) {
-		    Resource.Tooltip name = icon.res.get().layer(Resource.tooltip);
-		    if(name != null)
-			return(name.t);
+		    Resource.Tooltip otip = icon.res.get().layer(Resource.tooltip);
+		    if(otip != null)
+			name = otip.t;
 		}
-		String tip = ob.tooltip();
-		String contents = ob.contents();
-		if(contents != null && !contents.isEmpty()) {
-		    tip += " of " + contents;
+		if(name == null) {
+		    name = ob.tooltip();
+		    String contents = ob.contents();
+		    if(contents != null && !contents.isEmpty()) {
+			name += " of " + contents;
+		    }
 		}
-		return tip;
+		SavedInfo cell = ob.getattr(SavedInfo.class);
+		return(new ObTip(name, (cell == null) ? Collections.emptyList() : cell.lines));
 	    }
 	    if(mc != null) {
 		int tid = ui.sess.glob.map.gettile(mc.floor(MCache.tilesz));

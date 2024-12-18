@@ -1,5 +1,6 @@
 package me.ender;
 
+import auto.InventorySorter;
 import haven.*;
 import haven.rx.CharterBook;
 import haven.rx.Reactor;
@@ -8,6 +9,8 @@ import me.ender.ui.CFGBox;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+
+import static me.ender.ItemHelpers.*;
 
 public class WindowDetector {
     public static final String WND_STUDY = "Study";
@@ -133,6 +136,21 @@ public class WindowDetector {
     }
     
     private static void extendTableWindow(Window wnd) {
+	Inventory food = null;
+	for (Inventory inventory : wnd.children(Inventory.class)) {
+	    Coord isz = inventory.isz;
+	    if(isz.equals(DISHES_SZ) || isz.equals(TABLECLOTH_SZ) || isz.equals(ALCHEMY_SZ)) {continue;}
+	    food = inventory;
+	    break;
+	}
+	if(food != null) {
+	    Coord p = wnd.xlate(food.parentpos(wnd, food.pos("ur")), false);
+	    final Inventory tmp = food;
+	    wnd.adda(new IButton("gfx/hud/btn-sort", "", "-d", "-h"), p, 1, 1)
+		.action(() -> InventorySorter.sort(tmp))
+		.settip("Sort");
+	}
+	
 	Button btn = wnd.getchild(Button.class);
 	if(btn == null) {return;}
 	

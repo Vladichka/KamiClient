@@ -39,6 +39,13 @@ public class ClientUtils {
 	return "???";
     }
     
+    public static String loadPrettyResName(String resname) {
+	try {
+	    return prettyResName(Resource.remote().loadwait(resname));
+	} catch (Exception ignore) {}
+	return prettyResName(resname);
+    }
+    
     public static String prettyResName(Resource res) {
 	if(res == null) {return "???";}
 	Resource.Tooltip tt = res.layer(Resource.tooltip);
@@ -81,7 +88,7 @@ public class ClientUtils {
 	if(resname.endsWith("flour")) {
 	    resname = resname.substring(0, resname.length() - 5) + " Flour";
 	}
-
+	
 	resname = resname.substring(0, 1).toUpperCase() + resname.substring(1);
 	
 	return resname;

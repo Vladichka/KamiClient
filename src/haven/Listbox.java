@@ -34,7 +34,7 @@ public abstract class Listbox<T> extends ListWidget<T> {
     public Color bgcolor = Color.BLACK;
     public int h;
     public final Scrollbar sb;
-    private T over;
+    private int over;
     
     public Listbox(int w, int h, int itemh) {
 	super(new Coord(w, h * itemh), itemh);
@@ -73,7 +73,7 @@ public abstract class Listbox<T> extends ListWidget<T> {
 	    GOut ig = g.reclip(new Coord(0, i * itemh), new Coord(w, itemh));
 	    if(item == sel)
 		drawsel(ig);
-	    else if(item == over){
+	    else if(idx == over){
 		drawsel(ig, overc);
 	    }
 	    drawitem(ig, item, idx);
@@ -151,9 +151,9 @@ public abstract class Listbox<T> extends ListWidget<T> {
     public void mousemove(MouseMoveEvent ev) {
 	super.mousemove(ev);
 	if(ev.c.isect(Coord.z, sz)){
-	    over = itemat(ev.c);
+	    over = idxat(ev.c);
 	} else{
-	    over = null;
+	    over = -1;
 	}
     }
     
@@ -166,6 +166,8 @@ public abstract class Listbox<T> extends ListWidget<T> {
 	    itemactivate(item);
 	return(true);
     }
+    
+    protected int over() {return over;}
     
     // ensures that selected element is visible
     public void showsel() {

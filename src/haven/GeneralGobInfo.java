@@ -12,6 +12,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static me.ender.gob.GobContents.*;
@@ -27,8 +28,15 @@ public class GeneralGobInfo extends GobInfo {
     private static final Map<Pair<Color, String>, Text.Line> TEXT_CACHE = new HashMap<>();
     public static final int MARGIN = UI.scale(3);
     public static final int PAD = 0;
-    public static Pattern GOB_Q = Pattern.compile("Quality: (\\d+)");
+    private static final Pattern GOB_Q = Pattern.compile("Quality: (\\d+)");
+    private static final Pattern GOB_TAKEN = Pattern.compile("(\\d+)% taken");
     private static final Map<Long, Integer> gobQ = new LinkedHashMap<Long, Integer>() {
+	@Override
+	protected boolean removeEldestEntry(Map.Entry eldest) {
+	    return size() > 50;
+	}
+    };
+    private static final Map<Long, Integer> gobTaken = new LinkedHashMap<Long, Integer>() {
 	@Override
 	protected boolean removeEldestEntry(Map.Entry eldest) {
 	    return size() > 50;
@@ -37,7 +45,7 @@ public class GeneralGobInfo extends GobInfo {
     private GobHealth health;
     private int scalePercent = -1;
     private String contents = null;
-    int q;
+    int q, taken;
     private static final Map<String, Integer> POS = new HashMap<>();
     
     public final GobTimerData timer;
@@ -53,14 +61,47 @@ public class GeneralGobInfo extends GobInfo {
     protected GeneralGobInfo(Gob owner) {
 	super(owner);
 	q = gobQ.getOrDefault(gob.id, 0);
+	taken = gobTaken.getOrDefault(gob.id, -1);
 	timer = GobTimerData.from(gob);
 	center = new Pair<>(0.5, 1.0);
     }
     
+    public static void parse(Gob gob, List<String> lines) {
+	int value;
+	for (String line : lines) {
+	    //Quality
+	    value = parse(GOB_Q, line);
+	    if(value > 0) {
+		gob.setQuality(value);
+		continue;
+	    }
+	    //Taken
+	    value = parse(GOB_TAKEN, line);
+	    if(value > 0) {
+		gob.setTaken(value);
+		continue;
+	    }
+	}
+    }
+    
+    private static int parse(Pattern pattern, String line) {
+	Matcher m = pattern.matcher(line);
+	if(m.matches()) {
+	    try {
+		return Integer.parseInt(m.group(1));
+	    } catch (Exception ignored) {}
+	}
+	return -1;
+    }
     
     public void setQ(int q) {
 	gobQ.put(gob.id, q);
 	this.q = q;
+    }
+    
+    public void setTaken(int v) {
+	gobTaken.put(gob.id, v);
+	this.taken = v;
     }
     
     @Override
@@ -76,6 +117,7 @@ public class GeneralGobInfo extends GobInfo {
 	up(POS.getOrDefault(resid, 1));
 	BufferedImage[] parts = new BufferedImage[]{
 	    growth(),
+	    remaining(),
 	    health(),
 	    icons(),
 	    content(),
@@ -188,6 +230,14 @@ public class GeneralGobInfo extends GobInfo {
 	return null;
     }
     
+    private BufferedImage remaining() {
+	if(taken < 0) {return null;}
+	//Do we need an option to disable this info part?
+	int remain = (100 - taken);
+	Color c = Utils.blendcol(remain / 100.0, Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN);
+	return text(String.format("%d%%", remain), c).img;
+    }
+    
     private static int getTreeScale(Gob gob) {
 	Message data = getDrawableData(gob);
 	if(data == null || data.eom()) {return -1;}
@@ -221,7 +271,7 @@ public class GeneralGobInfo extends GobInfo {
 		.filter(name -> name.startsWith(ResName.BARREL_WITH_CONTENTS))
 		.map(ClientUtils::prettyResName)
 		.findAny();
-	    
+	 
 	} else if(res.startsWith("gfx/terobjs/iconsign")) {
 	    if(!force && GobInfoOpts.disabled(InfoPart.DISPLAY_SIGN)) {return contents;}
 	    Message sdt = gob.sdtm();
@@ -271,11 +321,11 @@ public class GeneralGobInfo extends GobInfo {
 	Map<String, String> data = getData(gob);
 	if(data == null) {return null;}
 	BufferedImage[] parts = null;
-
+	
 	//TODO: switch to using tags to detect leaves, seeds and growth status
 	if(isSpriteKind(gob, "Tree")) {
 	    int scale = getTreeScale(gob);
-
+	    
 	    if(GobInfoOpts.disabled(InfoPart.TREE_CONTENTS)
 		|| (CFG.DISPLAY_GOB_INFO_TREE_HIDE_GROWING_PARTS.get() && scale >= 0 && scale < 100)) {
 		return null;
@@ -290,42 +340,16 @@ public class GeneralGobInfo extends GobInfo {
 		GobInfoOpts.enabled(TreeSubPart.BARK) ? getIcon(data.get(BARK)) : null,
 		GobInfoOpts.enabled(TreeSubPart.BOUGH) ? getIcon(data.get(BOUGH)) : null,
 	    };
-
-	} else if (gob.is(GobTag.COOP)) {
-	    int sdt = gob.sdt();
-	    boolean water = (sdt & 0b0001) != 0;
-	    boolean food = (sdt & 0b0000_0010) != 0;
-	    parts = new BufferedImage[]{
-		!food && GobInfoOpts.enabled(InfoPart.COOPS)  ? getIcon(data.get(FOOD), true) : null,
-		!water && GobInfoOpts.enabled(InfoPart.COOPS)  ? getIcon(data.get(WATER), true) : null,
-	    };
-	} else if (gob.is(GobTag.TROUGH)) {
-	    int sdt = gob.sdt();
-	    boolean food = (sdt & 0b0001) != 0;
-	    parts = new BufferedImage[]{
-		!food && GobInfoOpts.enabled(InfoPart.TROUGH)  ? getIcon(data.get(FOOD), true) : null
-	    };
-	} else if (gob.is(GobTag.GARDENPOT)) {
-	    int sdt = gob.sdt();
-	    boolean water = (sdt & 0b0001) != 0;
-	    boolean soil = (sdt & 0b0000_0010) != 0;
-	    boolean flower = (CountOlsForPots(gob) > 1);
-	    boolean noFlowerPlanted = (CountOlsForPots(gob) == 0);
-	    parts = new BufferedImage[]{
-		!water && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(WATER)) : null,
-		!soil && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(SOIL)) : null,
-		flower && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(FLOWER)) : null,
-		water && soil && noFlowerPlanted && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(NOT_PLANTED)) : null
-	    };
+	    
 	} else if(CFG.SHOW_PROGRESS_COLOR.get()) { //should this be separate option?
 	    if(gob.is(GobTag.SMELTER)) {
 		parts = new BufferedImage[]{
 		    gob.is(GobTag.READY) ? getIcon(data.get(READY)) : null,
-		    gob.is(GobTag.IS_COLD) ? getIcon(data.get(COLD)) : null,
+		    gob.is(GobTag.COLD) ? getIcon(data.get(COLD)) : null,
 		};
 	    }
 	}
-
+	
 	if(parts == null) {return null;}
 	
 	for (BufferedImage part : parts) {
@@ -335,32 +359,17 @@ public class GeneralGobInfo extends GobInfo {
 	return null;
     }
     
-    private static int CountOlsForPots(Gob gob)
-    {
-	int c = 0;
-	for(Gob.Overlay ol: gob.ols)
-	{
-	    if (ol.id > 0)
-		c++;
-	}
-	return c;
-    }
-    
     private static final Map<String, BufferedImage> iconCache = new HashMap<>();
     
     private static BufferedImage getIcon(String name) {
-	return getIcon(name, false);
-    }
-    private static BufferedImage getIcon(String name, boolean big) {
 	if(name == null) {return null;}
 	if(iconCache.containsKey(name)) {
 	    return iconCache.get(name);
 	}
-	Coord sz = big ? UI.scale(40,40) : UI.scale(20,20);
 	BufferedImage img;
 	try {
 	    img = Resource.remote().loadwait(name).layer(Resource.imgc).img;
-	    img = PUtils.convolvedown(img, sz, CharWnd.iconfilter);
+	    img = PUtils.convolvedown(img, UI.scale(20, 20), CharWnd.iconfilter);
 	} catch (Exception e) {
 	    System.err.printf("Couldn't load content icon: '%s'%n", name);
 	    img = null;

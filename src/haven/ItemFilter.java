@@ -6,6 +6,7 @@ import haven.resutil.Curiosity;
 import haven.resutil.FoodInfo;
 import me.ender.ClientUtils;
 import me.ender.Reflect;
+import me.ender.alchemy.Effect;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -103,6 +104,15 @@ public class ItemFilter {
 	"$font[monospaced,13]{  attr:str>2    }will find items granting more than 2 str bonus.\n" +
 	"$font[monospaced,13]{  attr:agi<0    }will find items giving agility penalty.\n";
     
+    public static final String HELP_EFF = "$size[20]{$b{Alchemy ingredient effect search}}\n" +
+	"$font[monospaced,16]{eff:[name]} or $font[monospaced,16]{effect:[name]}\n" +
+	"Will highlight ingredients that have known effect with $font[monospaced,13]{[name]} or have any known effects if $font[monospaced,13]{[name]} is empty.\n" +
+	"$font[monospaced,13]{[name]} can be any attribute, skill or wound name that can be in elixir effects.\n" +
+	"$size[16]{\nExamples:}\n" +
+	"$font[monospaced,13]{  eff:lore  }will find all ingredients that have increase Lore effect.\n" +
+	"$font[monospaced,13]{  eff:jelly }will find all ingredients that have heal Jellyfish Sting effect.\n" +
+	"$font[monospaced,13]{  eff:dur   }will find all ingredients that have elixir duration increase/decrease effects.\n";
+    
     public static final String HELP_INPUTS = "$size[20]{$b{Crafting inputs search}}\n" +
 	"$font[monospaced,16]{use:[what][sign][value]}\n" +
 	"Will highlight items that have $font[monospaced,13]{[what]} items in its crafting inputs in amount described by $font[monospaced,13]{[sign]} and $font[monospaced,13]{[value]}.\n" +
@@ -111,7 +121,7 @@ public class ItemFilter {
 	"$font[monospaced,13]{  use:snow   }will find all items that require snow to craft.\n" +
 	"$font[monospaced,13]{  use:iron>2 }will find items that require more that 2 iron bars/ingots to craft.\n";
     
-    public static final String[] FILTER_HELP = {HELP_SIMPLE, HELP_FULL_TEXT, HELP_CONTENT, HELP_QUALITY, HELP_CURIO, HELP_FEP, HELP_ARMOR, HELP_SYMBEL, HELP_ATTR, HELP_INPUTS};
+    public static final String[] FILTER_HELP = {HELP_SIMPLE, HELP_FULL_TEXT, HELP_CONTENT, HELP_QUALITY, HELP_CURIO, HELP_FEP, HELP_ARMOR, HELP_SYMBEL, HELP_ATTR, HELP_EFF, HELP_INPUTS};
     
     public boolean matches(List<ItemInfo> info) {
 	if(info == null || info.isEmpty()) {return false;}
@@ -211,6 +221,10 @@ public class ItemFilter {
 		    case "use":
 		    case "uses":
 			filter = new Inputs(text, sign, value, opt);
+			break;
+		    case "eff":
+		    case "effect":
+			filter = new Effects(text, sign, value, opt);
 			break;
 		}
 	    }
@@ -622,6 +636,30 @@ public class ItemFilter {
 		    }
 		}
 	    }
+	    return false;
+	}
+    }
+    
+    private static class Effects extends Complex {
+	
+	public Effects(String text, String sign, String value, String opts) {
+	    super(text, sign, value, opts);
+	}
+	
+	@Override
+	public boolean matches(List<ItemInfo> infos) {
+	    for (ItemInfo info : infos) {
+		String name = Effect.name(info);
+		if(text.isEmpty()) {
+		    if(name.isEmpty()) {
+			continue;
+		    } else {
+			return true;
+		    }
+		}
+		if(name.toLowerCase().contains(text)) {return true;}
+	    }
+	    
 	    return false;
 	}
     }

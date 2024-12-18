@@ -1,6 +1,8 @@
 package haven;
 
 import auto.Actions;
+import auto.Equip;
+import auto.InventorySorter;
 import me.ender.CustomCursors;
 import me.ender.GobInfoOpts;
 
@@ -17,18 +19,20 @@ public enum Action {
     OPEN_QUICK_BUILD(GameUI::toggleBuildList, "Open building list", "Opens list of objects you can build. Start typing to narrow the list. Press Enter or double-click to select building."),
     OPEN_QUICK_ACTION(GameUI::toggleActList, "Open actions list", "Opens list of actions you can perform. Start typing to narrow the list. Press Enter or double-click to perform action."),
     OPEN_CRAFT_DB(GameUI::toggleCraftDB, "Open crafting DB"),
+    OPEN_ALCHEMY_DB(GameUI::toggleAlchemyDB, "Open alchemy"),
     OPEN_QUEST_HELP(GameUI::toggleQuestHelper, "Open quest helper", "Opens window with uncompleted tasks for all active quests."),
     TOGGLE_CURSOR(GameUI::toggleHand, "Toggle cursor item", "Hide/show item on a cursor. Allows you to walk with item on cursor when hidden."),
     TOGGLE_STUDY(GameUI::toggleStudy, "Toggle study window"),
     FILTER(GameUI::toggleFilter, "Show item filter"),
+    SORT_INVENTORY(InventorySorter::sortAll, "Sort all opened inventories"),
     TOGGLE_GOB_INFO(CFG.DISPLAY_GOB_INFO, "Display info", "Display crop/tree growth and object health overlay."),
     TOGGLE_GOB_HITBOX(Hitbox::toggle, "Display hitboxes"),
     TOGGLE_HIDE_TREES(CFG.HIDE_TREES, "Hide trees"),
     TOGGLE_GOB_RADIUS(CFG.SHOW_GOB_RADIUS, "Display radius", "Displays effective radius of beehives/mine supports etc."),
     TOGGLE_TILE_CENTERING(gui ->
     {
-	Config.center_tile = !Config.center_tile;
-	gui.ui.message(String.format("Tile centering turned %s", Config.center_tile ? "ON" : "OFF"), GameUI.MsgType.INFO);
+        Config.center_tile = !Config.center_tile;
+        gui.ui.message(String.format("Tile centering turned %s", Config.center_tile ? "ON" : "OFF"), GameUI.MsgType.INFO);
     }, "Toggle tile centering"),
     TOGGLE_INSPECT(gui -> CustomCursors.toggleInspectMode(gui.map), "Toggle inspect mode"),
     TRACK_OBJECT(gui -> CustomCursors.toggleTrackingMode(gui.map), "Track object"),
@@ -39,6 +43,10 @@ public enum Action {
     AGGRO_ONE_PVE(Actions::aggroOnePVE, "Aggro closest non-player to cursor", "Will try to aggro (or switch target to) one non-player target closest to cursor"),
     AGGRO_ONE_PVP(Actions::aggroOnePVP, "Aggro closest player to cursor", "Will try to aggro (or switch target to) one player closest to cursor"),
     AGGRO_ALL(Actions::aggroAll, "Aggro all creatures near player", "Will try to aggro all creatures near player that are not in party"),
+    
+    EQUIP_BOW(gui -> Equip.twoHanded(gui, Equip.BOW), "Equip Bow"),
+    EQUIP_SPEAR(gui -> Equip.twoHanded(gui, Equip.SPEAR), "Equip Boar Spear"),
+    EQUIP_SWORD_N_BOARD(gui -> Equip.twoItems(gui, Equip.SHIELD, Equip.SWORD), "Equip Sword & Shield"),
     
     //Camera controls
     CAM_ZOOM_IN(gui -> gui.map.zoomCamera(-1), "Camera zoom in"),
@@ -76,32 +84,32 @@ public enum Action {
     
     //TODO: add possibility to use Paginae for name and description
     Action(Do action, String name, String description) {
-	this.name = name;
-	this.action = action;
-	this.description = description;
+        this.name = name;
+        this.action = action;
+        this.description = description;
     }
     
     Action(Do action) {
-	this(action, null);
+        this(action, null);
     }
     
     Action(Do action, String name) {
-	this(action, name, null);
+        this(action, name, null);
     }
     
     Action(CFG<Boolean> toggle, String name, String description) {
-	this(gui -> toggle.set(!toggle.get(), true), name, description);
+        this(gui -> toggle.set(!toggle.get(), true), name, description);
     }
     
     Action(CFG<Boolean> toggle, String name) {
-	this(toggle, name, null);
+        this(toggle, name, null);
     }
     
     public void run(GameUI gui) {
-	action.run(gui);
+        action.run(gui);
     }
     
     interface Do {
-	void run(GameUI gui);
+        void run(GameUI gui);
     }
 }

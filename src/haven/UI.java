@@ -85,6 +85,20 @@ public class UI {
     public final Loader loader;
     public final CommandQueue queue = new CommandQueue();
     private static final double scalef;
+    public final ItemInfo.Owner infoOwner = new ItemInfo.Owner() {
+	@Override
+	public List<ItemInfo> info() {
+	    return Collections.emptyList();
+	}
+	
+	@Override
+	public <T> T context(Class<T> cl) {
+	    if(cl == Session.class || cl == Resource.Resolver.class) {
+		return (T) sess;
+	    }
+	    return null;
+	}
+    };
     private final Object guiLock = new Object();
     public GameUI gui = null;
     
@@ -730,7 +744,7 @@ public class UI {
 	public default Audio.Clip sfx() {return(null);}
 	public default boolean handle(Widget w) {return(false);}
 	public default boolean handler(Widget w) {return(false);}
-
+	
 	public static interface Handler {
 	    public default boolean msg(Notice msg) {
 		return(false);
@@ -752,7 +766,7 @@ public class UI {
 		    (cons) -> (owner, args) -> cons.apply(new Object[] {owner, args})));
 	    }
 	}
-
+	
 	@Resource.PublishedCode(name = "msg", instancer = FactMaker.class)
 	public static interface Factory {
 	    public Notice format(OwnerContext owner, Object... args);
@@ -1139,6 +1153,10 @@ public class UI {
 		this.gui = null;
 	    }
 	}
+    }
+    
+    public boolean isDefaultCursor() {
+	return RootWidget.defcurs == getcurs(mc);
     }
     
     static {

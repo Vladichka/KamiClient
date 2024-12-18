@@ -2,19 +2,20 @@ package haven;
 
 import haven.MenuGrid.Pagina;
 import me.ender.ui.ICraftParent;
+import me.ender.ui.TabStrip;
 
 import java.awt.event.KeyEvent;
 import java.util.HashMap;
 import java.util.Map;
 
-import static haven.TabStrip.frame;
+import static me.ender.ui.TabStrip.frame;
 
 public class CraftWindow extends GameUI.Hidewnd implements ICraftParent {
     private final TabStrip<Pagina> tabStrip;
     private final Map<String, TabStrip.Button<Pagina>> tabs = new HashMap<>();
     private String currentCraft;
     private Widget makeWidget;
-
+    
     public CraftWindow() {
 	super(Coord.z, "Crafting");
 	tabStrip = add(new TabStrip<Pagina>() {
@@ -31,7 +32,7 @@ public class CraftWindow extends GameUI.Hidewnd implements ICraftParent {
 	});
 	setfocusctl(true);
     }
-
+    
     @Override
     public void wdgmsg(Widget sender, String msg, Object... args) {
 	if((sender == this) && msg.equals("close")) {
@@ -40,7 +41,7 @@ public class CraftWindow extends GameUI.Hidewnd implements ICraftParent {
 	}
 	super.wdgmsg(sender, msg, args);
     }
-
+    
     @Override
     public <T extends Widget> T add(T child) {
 	if(child instanceof Makewindow) {
@@ -56,7 +57,7 @@ public class CraftWindow extends GameUI.Hidewnd implements ICraftParent {
 	}
 	return super.add(child);
     }
-
+    
     @Override
     public void cdestroy(Widget w) {
 	if(makeWidget == w) {
@@ -65,18 +66,18 @@ public class CraftWindow extends GameUI.Hidewnd implements ICraftParent {
 	    if(visible) {hide();}
 	}
     }
-
+    
     @Override
     public void cdraw(GOut g) {
 	super.cdraw(g);
 	frame.draw(g, new Coord(0, Math.max(0, tabStrip.sz.y - 1)), ca().sz().sub(0, tabStrip.sz.y));
     }
-
+    
     @Override
     public void resize(Coord sz) {
 	super.resize(sz.add(5, 5));
     }
-
+    
     @Override
     public boolean globtype(GlobKeyEvent ev) {
 	if(visible && ev.c == KeyEvent.VK_TAB && ev.awt.isShiftDown()) {
@@ -86,7 +87,7 @@ public class CraftWindow extends GameUI.Hidewnd implements ICraftParent {
 	}
 	return super.globtype(ev);
     }
-
+    
     @Override
     public void hide() {
 	super.hide();
@@ -94,7 +95,7 @@ public class CraftWindow extends GameUI.Hidewnd implements ICraftParent {
 	    makeWidget.wdgmsg("close");
 	}
     }
-
+    
     private void addTab(Pagina pagina) {
 	String resName = pagina.res().name;
 	if(tabs.containsKey(resName)) {
@@ -106,8 +107,7 @@ public class CraftWindow extends GameUI.Hidewnd implements ICraftParent {
 	if(text.length() > 12) {
 	    text = text.substring(0, 12 - 2) + "..";
 	}
-	TabStrip.Button<Pagina> added = tabStrip.insert(0, icon, text, pagina.button().act().name);
-	added.tag = pagina;
+	TabStrip.Button<Pagina> added = tabStrip.insert(0, pagina, icon, text, pagina.button().act().name);
 	tabStrip.select(added);
 	added.setActive(true);
 	if(tabStrip.getButtonCount() > 4) {
@@ -115,18 +115,18 @@ public class CraftWindow extends GameUI.Hidewnd implements ICraftParent {
 	}
 	tabs.put(resName, added);
     }
-
+    
     private void removeTab(int index) {
 	TabStrip.Button<Pagina> removed = tabStrip.remove(index);
 	tabs.values().remove(removed);
     }
-
+    
     @Override
     public void setCraftAmount(int amount) {
 	if(currentCraft == null) {return;}
 	ICraftParent.CraftAmounts.put(currentCraft, amount);
     }
-
+    
     @Override
     public int getCraftAmount() {
 	if(currentCraft == null) {return -1;}

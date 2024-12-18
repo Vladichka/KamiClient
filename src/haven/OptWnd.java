@@ -41,6 +41,7 @@ import me.ender.CustomOptPanels;
 import me.ender.ui.CFGBox;
 import me.ender.ui.CFGSlider;
 import me.ender.ui.DrinkMeter;
+import me.ender.ui.TabStrip;
 
 import java.awt.event.KeyEvent;
 import java.util.Set;
@@ -1403,6 +1404,27 @@ public class OptWnd extends WindowX {
 	y += STEP;
 	panel.add(new CFGBox("Disable window animation", CFG.DISABLE_WINDOW_ANIMATION, "Disabled fade-in and fade-out animation for windows"), new Coord(x, y));
 	
+	y += STEP;
+	panel.add(new Label("Stats widget:"), x, y);
+	
+	y += STEP;
+	panel.add(new CFGBox("Show time", CFG.SHOW_TIME), x, y);
+	
+	y += STEP;
+	panel.add(new CFGBox("Show stats (ping, players number)", CFG.SHOW_STATS), x, y);
+	
+	y += STEP;
+	panel.add(new CFGBox("Always show time for dewy lady's mantle", CFG.ALWAYS_SHOW_DEWY_TIME), x, y);
+	
+	y += STEP;
+	panel.add(new Label("Quest markers:"), x, y);
+	
+	y += STEP;
+	panel.add(new CFGBox("Highlight QuestGivers on map", CFG.QUESTHELPER_HIGHLIGHT_QUESTGIVERS, null, true), x, y);
+	
+	y += STEP;
+	panel.add(new CFGBox("Show QuestGiver tasks in tooltip on map ", CFG.QUESTHELPER_SHOW_TASKS_IN_TOOLTIP), x, y);
+	
 	my = Math.max(my, y);
     
 	panel.add(new PButton(UI.scale(200), "Back", 27, main), new Coord(0, my + UI.scale(35)));
@@ -1418,8 +1440,8 @@ public class OptWnd extends WindowX {
     
     private void initShortcutsPanel() {
 	TabStrip<KeyBinder.KeyBindType> tabs = new TabStrip<>(this::populateShortcutsPanel);
-	tabs.insert(0, null, "General", null).tag = KeyBinder.KeyBindType.GENERAL;
-	tabs.insert(1, null, "Combat", null).tag = KeyBinder.KeyBindType.COMBAT;
+	tabs.insert(KeyBinder.KeyBindType.GENERAL, null, "General", null);
+	tabs.insert(KeyBinder.KeyBindType.COMBAT, null, "Combat", null);
 	shortcuts.add(tabs);
 	int y = tabs.sz.y;
 	

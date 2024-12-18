@@ -4,6 +4,7 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import haven.MenuGrid.Pagina;
+import haven.res.ui.tt.alch.effect.Effect;
 import haven.res.ui.tt.attrmod.AttrMod;
 import haven.res.ui.tt.level.Level;
 import haven.res.ui.tt.slot.Slotted;
@@ -76,8 +77,15 @@ public class ItemData {
 	return false;
     }
     
-    public static void modifyFoodTooltip(ItemInfo.Owner owner, Collection<BufferedImage> imgs, int[] types, double glut, double fepSum) {
-	imgs.add(RichText.render(String.format("Base FEP: $col[128,255,0]{%s}, FEP/Hunger: $col[128,255,0]{%s}", Utils.odformat2(fepSum, 2), FEPPerHunger(glut, fepSum)), 0).img);
+    public static boolean hasIngredientInfo(GItem item) {
+	try {
+	    return item.info().stream().anyMatch(i -> i instanceof Effect);
+	} catch (Loading ignored) {}
+	return false;
+    }
+    
+    public static void modifyFoodTooltip(ItemInfo.Owner owner, CompImage cmp, int[] types, double glut, double fepSum) {
+	cmp.add(RichText.render(String.format("Base FEP: $col[128,255,0]{%s}, FEP/Hunger: $col[128,255,0]{%s}", Utils.odformat2(fepSum, 2), FEPPerHunger(glut, fepSum)), 0).img, FoodInfo.PAD);
 	
 	//this is not real item, don't add extra info
 	if(!(owner instanceof GItem)) {return;}
@@ -98,13 +106,13 @@ public class ItemData {
 	//satiation
 	if(types.length > 0) {
 	    //TODO: find a way to get actual categories like meat, dairy, offal etc.
-	    if(showCategories) {imgs.add(Text.render("Categories:").img);}
+	    if(showCategories) {cmp.add(Text.render("Categories:").img, FoodInfo.PAD);}
 	    
 	    double satiation = 1;
 	    for (int type : types) {
 		CharacterInfo.Constipation.Data c = constipation.get(type);
 		if(c != null) {
-		    if(showCategories) {imgs.add(constipation.render(FoodInfo.class, c));}
+		    if(showCategories) {cmp.add(constipation.render(FoodInfo.class, c), FoodInfo.PAD);}
 		    satiation = Math.min(satiation, c.value);
 		}
 	    }
@@ -124,13 +132,13 @@ public class ItemData {
 	if(mods.isEmpty()) {return;}
 	double fullMult = 1;
 	
-	imgs.add(RichText.render("Effectiveness:").img);
+	cmp.add(RichText.render("Effectiveness:").img, FoodInfo.PAD);
 	for (FEPMod mod : mods) {
-	    imgs.add(mod.img());
+	    cmp.add(mod.img(), FoodInfo.PAD);
 	    fullMult *= mod.val;
 	}
 	double adjustedFEP = fepSum * fullMult;
-	imgs.add(RichText.render(String.format("Adjusted FEP: %s, FEP/Hunger: $col[200,150,255]{%s}", RichText.color(Utils.odformat2(adjustedFEP, 2), color(fullMult)), FEPPerHunger(glut, adjustedFEP)), 0).img);
+	cmp.add(RichText.render(String.format("Adjusted FEP: %s, FEP/Hunger: $col[200,150,255]{%s}", RichText.color(Utils.odformat2(adjustedFEP, 2), color(fullMult)), FEPPerHunger(glut, adjustedFEP)), 0).img, FoodInfo.PAD);
     }
     
     private static String FEPPerHunger(double glut, double fepSum) {
@@ -419,7 +427,7 @@ public class ItemData {
 	}
 	
 	public String name() {
-	    if("seeds".equals(unit)) {
+	    if(unit != null && unit.startsWith("seed")) {
 		return String.format("Seeds of %s", name);
 	    }
 	    return name;

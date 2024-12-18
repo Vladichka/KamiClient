@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import haven.MenuGrid.Pagina;
 import haven.rx.Reactor;
 import me.ender.ui.ICraftParent;
+import me.ender.ui.TabStrip;
 import rx.Subscription;
 
 import java.awt.*;
@@ -133,11 +134,11 @@ public class CraftDBWnd extends WindowX implements ICraftParent {
 	    }
 	}, 0, UI.scale(2));
 	Mode[] modes = Mode.values();
-	for (int i = 0; i < modes.length; i++) {
-	    Resource res = modes[i].res.get();
-	    tabStrip.insert(i,
+	for (Mode mode : modes) {
+	    Resource res = mode.res.get();
+	    tabStrip.insert(mode,
 		new TexI(PUtils.convolvedown(res.layer(Resource.imgc).img, ICON_SZ, CharWnd.iconfilter)),
-		paginafor(modes[i].res).button().act().name, null).tag = modes[i];
+		paginafor(mode.res).button().act().name, null);
 	}
 	
 	box = add(new RecipeListBox(UI.scale(200), LIST_SIZE) {

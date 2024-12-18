@@ -2405,8 +2405,23 @@ public class Utils {
 	    });
     }
     
-    
-    /* KamiClient Additions*/
+    public static <T> Iterator<T> circularIterator(List<T> list) {
+	return new Iterator<T>() {
+	    int i = 0;
+	    
+	    @Override
+	    public boolean hasNext() {
+		return !list.isEmpty();
+	    }
+	    
+	    @Override
+	    public T next() {
+		return hasNext() ? list.get(i++ % list.size()) : null;
+	    }
+	};
+    }
+
+/* KamiClient Additions*/
     public static Color hex2color(String hex, Color def){
 	Color c = def;
 	if (hex != null) {

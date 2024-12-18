@@ -27,7 +27,7 @@ public class FlowerList extends WidgetList<FlowerList.Item> {
 	
 	update();
     }
-
+    
     @Override
     public void wdgmsg(Widget sender, String msg, Object... args) {
 	switch(msg) {
@@ -35,7 +35,7 @@ public class FlowerList extends WidgetList<FlowerList.Item> {
 		String name = (String) args[0];
 		boolean val = (Boolean) args[1];
 		synchronized(AUTOCHOOSE) {
-		    AUTOCHOOSE.put(name, val);
+		    AUTOCHOOSE.put(L10N.revertFlower(name), val);
 		}
 		FlowerMenu.saveAutochoose();
 		break;
@@ -43,7 +43,7 @@ public class FlowerList extends WidgetList<FlowerList.Item> {
 	    case "delete": {
 		String name = ((Item) sender).name;
 		synchronized (AUTOCHOOSE) {
-		    AUTOCHOOSE.remove(name);
+		    AUTOCHOOSE.remove(L10N.revertFlower(name));
 		}
 		FlowerMenu.saveAutochoose();
 		removeitem((Item) sender, true);
@@ -53,7 +53,7 @@ public class FlowerList extends WidgetList<FlowerList.Item> {
 	    case "up": {
 		String name = ((Item) sender).name;
 		synchronized (AUTOCHOOSE) {
-		    AUTOCHOOSE.up(name);
+		    AUTOCHOOSE.up(L10N.revertFlower(name));
 		}
 		FlowerMenu.saveAutochoose();
 		update();
@@ -62,7 +62,7 @@ public class FlowerList extends WidgetList<FlowerList.Item> {
 	    case "down": {
 		String name = ((Item) sender).name;
 		synchronized (AUTOCHOOSE) {
-		    AUTOCHOOSE.down(name);
+		    AUTOCHOOSE.down(L10N.revertFlower(name));
 		}
 		FlowerMenu.saveAutochoose();
 		update();
@@ -73,43 +73,44 @@ public class FlowerList extends WidgetList<FlowerList.Item> {
 		break;
 	}
     }
-
+    
     public void add(String name) {
 	if(name != null && !name.isEmpty() && !AUTOCHOOSE.has(name)) {
+	    String originalName = L10N.revertFlower(name);
 	    synchronized (AUTOCHOOSE) {
-		AUTOCHOOSE.put(name, true);
+		AUTOCHOOSE.put(L10N.revertFlower(originalName), true);
 	    }
 	    FlowerMenu.saveAutochoose();
-	    additem(new Item(name));
+	    additem(new Item(originalName));
 	    update();
 	}
     }
-
+    
     private void update() {
 	list.sort(Comparator.comparingInt(o -> AUTOCHOOSE.index(o.name)));
 	updateChildPositions();
     }
-
+    
     protected static class Item extends Widget {
-
+	
 	public final String name;
 	private final CheckBox cb;
 	private boolean a = false;
 	private UI.Grab grab;
-
+	
 	public Item(String name) {
 	    super(UI.scale(235, 25));
 	    this.name = name;
-
+	    
 	    cb = adda(new CheckBox.Untranslated(L10N.flower(name)), UI.scale(3, 12), 0, 0.5);
 	    cb.a = FlowerMenu.autochoose(name);
 	    cb.canactivate = true;
-
+	    
 	    add(new Button(UI.scale(24), "X", false), UI.scale(210, 0)).action(() -> wdgmsg("delete"));
 	    add(new Button(UI.scale(24), "⇑", false), UI.scale(180, 0)).action(() -> wdgmsg("up"));
 	    add(new Button(UI.scale(24), "⇓", false), UI.scale(156, 0)).action(() -> wdgmsg("down"));
 	}
-
+	
 	@Override
 	public boolean mousedown(MouseDownEvent ev) {
 	    if(ev.propagate(this)) {
@@ -121,7 +122,7 @@ public class FlowerList extends WidgetList<FlowerList.Item> {
 	    grab = ui.grabmouse(this);
 	    return (true);
 	}
-
+	
 	@Override
 	public boolean mouseup(MouseUpEvent ev) {
 	    if(a && ev.b == 1) {
@@ -136,12 +137,12 @@ public class FlowerList extends WidgetList<FlowerList.Item> {
 	    }
 	    return (false);
 	}
-
+	
 	private void click() {
 	    cb.a = !cb.a;
 	    wdgmsg("changed", name, cb.a);
 	}
-
+	
 	@Override
 	public void wdgmsg(Widget sender, String msg, Object... args) {
 	    switch(msg) {
@@ -220,7 +221,7 @@ public class FlowerList extends WidgetList<FlowerList.Item> {
 		i++;
 	    }
 	}
-    
+	
 	public int index(String name) {
 	    Predicate<Opt> check = byName(name);
 	    for (int i = 0; i < options.size(); i++) {

@@ -75,6 +75,10 @@ public class CompImage {
 	return(this);
     }
     
+    public CompImage add(final BufferedImage img, int x) {
+	return add(img, Coord.of(x, sz.y));
+    }
+    
     public static Image mk(final CompImage img) {
 	return(new Image() {
 	    public void draw(Graphics g, Coord c) {

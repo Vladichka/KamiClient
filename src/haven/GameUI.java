@@ -27,6 +27,7 @@
 package haven;
 
 import haven.Equipory.SLOTS;
+import haven.res.ui.locptr.Pointer;
 import haven.rx.BuffToggles;
 import haven.rx.Reactor;
 import integrations.mapv4.MappingClient;
@@ -46,6 +47,7 @@ import java.util.regex.Matcher;
 
 import static haven.ItemFilter.*;
 import haven.render.Location;
+import me.ender.alchemy.AlchemyWnd;
 import static haven.Inventory.invsq;
 
 public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.Handler {
@@ -53,6 +55,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     public final String chrid, genus;
     public final long plid;
     private final Hidepanel ulpanel, umpanel, urpanel, blpanel, mapmenupanel, brpanel, menupanel;
+    public StatusWdg statuswdg;
+    public TimeWdg timewdg;
     public Widget portrait;
     public MenuGrid menu;
     public MapView map;
@@ -98,9 +102,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     public final Map<Integer, String> polowners = new HashMap<Integer, String>();
     public Bufflist buffs;
     public CraftDBWnd craftwnd = null;
+    public AlchemyWnd alchemywnd = null;
     public ActWindow craftlist, buildlist, actlist;
     public TimerPanel timers;
-    private Gob detectGob;
     public StudyWnd studywnd;
     private Widget questPanel;
     
@@ -377,9 +381,12 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	opts.hide();
 	zerg = add(new Zergwnd(), Utils.getprefc("wndc-zerg", UI.scale(new Coord(187, 50))));
 	zerg.hide();
-	questHelper = add(new QuestHelper(), UI.scale(new Coord(187, 50)));
+	questHelper = add(new QuestHelper(this), UI.scale(new Coord(187, 50)));
 	questHelper.hide();
 	placemmap();
+	timewdg = add(new TimeWdg(), new Coord(umpanel.c.x - UI.scale(200), 0));
+	CFG.ALWAYS_SHOW_DEWY_TIME.observe(cfg -> timewdg.updateTime());
+	statuswdg = add(new StatusWdg());
 	CFG.Observer<Boolean> change = cfg -> {
 	    synchronized (this) {
 		if (!blpanel.tvis && CFG.VANILLA_CHAT.get()) {
@@ -674,6 +681,14 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    craftwnd = add(new CraftDBWnd(), ClientUtils.getScreenCenter(ui));
 	} else {
 	    craftwnd.close();
+	}
+    }
+    
+    public void toggleAlchemyDB() {
+	if(alchemywnd == null) {
+	    alchemywnd = add(new AlchemyWnd(), ClientUtils.getScreenCenter(ui).sub(AlchemyWnd.WND_SZ.div(2)));
+	} else {
+	    alchemywnd.close();
 	}
     }
     
@@ -1156,7 +1171,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    invwnd.hide();
 	    maininv = maininvext.inv;
 	    maininv.enableDrops();
-	    maininv.enableSort();
 	    add(invwnd, Utils.getprefc("wndc-inv", new Coord(100, 100)));
 	} else if(place == "equ") {
 	    equwnd = new Hidewnd(Coord.z, "Equipment");
@@ -1238,11 +1252,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		    }
 		});
 	} else if(place == "misc") {
-	    if (child instanceof Window)
-	    {
-		if ((child).lchild instanceof ExtInventory)
-		    ((ExtInventory)child.lchild).inv.enableSort();
-	    }
 	    Coord c;
 	    int a = 1;
 	    if(args[a] instanceof Coord) {
@@ -1919,10 +1928,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     public void presize() {
 	resize(parent.sz);
     }
-
-    public void setDetectGob(Gob gob) {
-	detectGob = gob;
-    }
     
     public static interface LogMessage extends UI.Notice {
 	public ChatUI.Channel.Message logmessage();
@@ -1938,17 +1943,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    logged = new ChatUI.Channel.SimpleMessage(msg.message(), msg.color());
 	msgtime = Utils.rtime();
 	lastmsg = RootWidget.msgfoundry.render(msg.message(), msg.color());
-	Gob g = detectGob;
-	if(g != null) {
-	    Matcher m = GeneralGobInfo.GOB_Q.matcher(msg.message());
-	    if(m.matches()) {
-		try {
-		    int q = Integer.parseInt(m.group(1));
-		    g.setQuality(q);
-		} catch (Exception ignored) {}
-		detectGob = null;
-	    }
-	}
 	syslog.append(logged);
 	ui.sfxrl(msg.sfx());
 	return(true);
@@ -1959,7 +1953,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     }
     
     public void msg(String msg, MsgType type) {
-	msg(new UI.SimpleMessage(msg, type.color, type.sfx));
+	msg(new UI.NoticeEvent(new UI.SimpleMessage(msg, type.color, type.sfx)));
     }
     
     public enum MsgType {
@@ -1987,15 +1981,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     private final Map<Marker, Widget> trackedMarkers = new HashMap<>();
     public void track(Marker marker) {
 	untrack(marker);
-	try {
-	    Factory f = Widget.gettype2("ui/locptr");
-	    if(f != null) {
-		Widget wdg = f.create(ui, new Object[]{marker});
-		trackedMarkers.put(marker, wdg);
-		ui.gui.add(wdg);
-	    }
-	} catch (InterruptedException ignored) {
-	}
+	Widget wdg = new Pointer(marker);
+	trackedMarkers.put(marker, wdg);
+	ui.gui.add(wdg);
     }
     
     public void untrack(Marker marker) {

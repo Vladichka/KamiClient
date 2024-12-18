@@ -38,6 +38,7 @@ import haven.MapFile.Segment;
 import haven.MapFile.DataGrid;
 import haven.MapFile.GridInfo;
 import me.ender.ClientUtils;
+import me.ender.QuestCondition;
 import me.ender.gob.KinInfo;
 import me.ender.minimap.*;
 
@@ -427,9 +428,17 @@ public class MiniMap extends Widget {
 	}
 	
 	private void checkTip(final String nm) {
-	    if (tip == null || !tip.text.equals(nm)) {
+	    if (CFG.QUESTHELPER_SHOW_TASKS_IN_TOOLTIP.get() && m instanceof SMarker) {
+		StringBuilder sb = new StringBuilder(nm);
+		if (!((SMarker) m).questConditions.isEmpty())
+		    sb.append("\n");
+		for (QuestCondition questCondition : ((SMarker)m).questConditions) {
+		    sb.append("\n");
+		    sb.append(questCondition.name());
+		}
+		tip = RichText.render(sb.toString(), 300);
+	    } else if (tip == null || !tip.text.equals(nm))
 		tip = Text.renderstroked(nm, Color.WHITE, Color.BLACK);
-	    }
 	}
 	
 	private Area hit(final UI ui) {
@@ -1126,7 +1135,7 @@ public class MiniMap extends Widget {
 	    g.chcolor(VIEW_BG_COLOR);
 	    g.frect(rc, viewsz);
 	    g.chcolor(VIEW_BORDER_COLOR);
-	    g.rect(rc, viewsz);
+	    g.rectWithChecks(rc, viewsz);
 	    g.chcolor();
 	}
     }
@@ -1144,8 +1153,10 @@ public class MiniMap extends Widget {
     
     void drawPointers(GOut g) {
 	for (IPointer p : pointers()) {
-	    if(curloc != null && p.seg() == curloc.seg.id) {
-		p.drawmmarrow(g, p2c(p.tc(curloc.seg.id)), sz);
+	    if(curloc == null || p.seg() != curloc.seg.id) {continue;}
+	    Coord2d tc = p.tc(curloc.seg.id);
+	    if(tc != null) {
+		p.drawmmarrow(g, p2c(tc), sz);
 	    }
 	}
 	g.chcolor();

@@ -34,7 +34,7 @@ public class BotUtil {
 	if(!result) {b.cancel();}
     };
     
-    private static boolean waitHeldChanged(GameUI gui) {
+    static boolean waitHeldChanged(GameUI gui) {
 	boolean result = true;
 	try {
 	    synchronized (gui.heldNotifier) {
