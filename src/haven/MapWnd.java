@@ -947,6 +947,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	}
 
 	public void tick(double dt) {
+	    super.tick(dt);
 	    if(!th.isAlive())
 		destroy();
 	}
@@ -988,6 +989,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	}
 
 	public void tick(double dt) {
+	    super.tick(dt);
 	    if(!th.isAlive())
 		destroy();
 	}

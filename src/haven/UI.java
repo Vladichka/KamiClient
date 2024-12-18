@@ -729,10 +729,17 @@ public class UI {
 	public default Color color() {return(Color.WHITE);}
 	public default Audio.Clip sfx() {return(null);}
 	public default boolean handle(Widget w) {return(false);}
-	
+	public default boolean handler(Widget w) {return(false);}
+
 	public static interface Handler {
-	    public default boolean msg(Notice msg) {return(false);}
-	    public default boolean msg(NoticeEvent ev) {return(msg(ev.msg));}
+	    public default boolean msg(Notice msg) {
+		return(false);
+	    }
+	    public default boolean msg(NoticeEvent ev) {
+		if(ev.propagate((Widget)this))
+		    return(true);
+		return(msg(ev.msg));
+	    }
 	}
 	
 	public static class FactMaker extends Resource.PublishedCode.Instancer.Chain<Factory> {
@@ -745,8 +752,8 @@ public class UI {
 		    (cons) -> (owner, args) -> cons.apply(new Object[] {owner, args})));
 	    }
 	}
-	
-	@Resource.PublishedCode(name = "msg")
+
+	@Resource.PublishedCode(name = "msg", instancer = FactMaker.class)
 	public static interface Factory {
 	    public Notice format(OwnerContext owner, Object... args);
 	}

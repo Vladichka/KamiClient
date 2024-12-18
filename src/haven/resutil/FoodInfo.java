@@ -27,131 +27,69 @@
 package haven.resutil;
 
 import haven.*;
-import me.ender.ClientUtils;
-
-import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.util.*;
-import java.util.List;
-
-import static haven.QualityList.SingleType.*;
+import java.awt.Color;
+import java.awt.image.*;
 
 public class FoodInfo extends ItemInfo.Tip {
-    public final double end, glut, cons;
+    public final double end, glut, sev, cons;
     public final Event[] evs;
     public final Effect[] efs;
     public final int[] types;
-    
-    public FoodInfo(Owner owner, double end, double glut, double cons, Event[] evs, Effect[] efs, int[] types) {
+
+    public FoodInfo(Owner owner, double end, double glut, double cons, double sev, Event[] evs, Effect[] efs, int[] types) {
 	super(owner);
 	this.end = end;
 	this.glut = glut;
+	this.sev = sev;
 	this.cons = cons;
 	this.evs = evs;
 	this.efs = efs;
 	this.types = types;
     }
-    
-    public FoodInfo(Owner owner, double end, double glut, Event[] evs, Effect[] efs, int[] types) {
-	this(owner, end, glut, 0, evs, efs, types);
+
+    public FoodInfo(Owner owner, double end, double glut, double cons, Event[] evs, Effect[] efs, int[] types) {
+	this(owner, end, glut, cons, 0, evs, efs, types);
     }
-    
+
     public static class Event {
 	public static final Coord imgsz = new Coord(Text.std.height(), Text.std.height());
 	public final BAttrWnd.FoodMeter.Event ev;
 	public final BufferedImage img;
 	public final double a;
-	private final String res;
-	
+
 	public Event(Resource res, double a) {
 	    this.ev = res.flayer(BAttrWnd.FoodMeter.Event.class);
 	    this.img = PUtils.convolve(res.flayer(Resource.imgc).img, imgsz, CharWnd.iconfilter);
 	    this.a = a;
-	    this.res = res.name;
 	}
     }
-    
+
     public static class Effect {
 	public final List<ItemInfo> info;
 	public final double p;
-	
+
 	public Effect(List<ItemInfo> info, double p) {this.info = info; this.p = p;}
     }
-    
-    public BufferedImage tipimg() {
-	String energy_hunger = glut != 0 
-	    ? Utils.odformat2(end / (10 * glut), 2)
-	    : end == 0 ? "0" : "∞";
-	
-	String head = String.format("Energy: $col[128,128,255]{%s%%}, Hunger: $col[255,192,128]{%s\u2030}, Energy/Hunger: $col[128,128,255]{%s%%}",
-	    Utils.odformat2(end * 100, 2), Utils.odformat2(glut * 1000, 2), energy_hunger);
+
+    public void layout(Layout l) {
+	String head = String.format("Energy: $col[128,128,255]{%s%%}, Hunger: $col[255,192,128]{%s\u2030}", Utils.odformat2(end * 100, 2), Utils.odformat2(glut * 1000, 2));
 	if(cons != 0)
-	    head += String.format(", Satiation: $col[192,192,128]{%s%%}", Utils.odformat2(cons * 1000, 2));
-	BufferedImage base = RichText.render(head, 0).img;
-	Collection<BufferedImage> imgs = new LinkedList<BufferedImage>();
-	imgs.add(base);
-	double fepSum = 0;
-	for (int i = 0; i < evs.length; i++) {
-	    fepSum += evs[i].a;
-	}
+	    head += String.format(", Satiation: $col[192,192,128]{%s%%}", Utils.odformat2(cons * 100, 2));
+	l.cmp.add(RichText.render(head, 0).img, Coord.of(0, l.cmp.sz.y));
 	for(int i = 0; i < evs.length; i++) {
-	    double probability = 100 * evs[i].a / fepSum;
-	    String fepItemString = String.format("%s (%s%%)", Utils.odformat2(evs[i].a, 2), Utils.odformat2(probability, 2));
 	    Color col = Utils.blendcol(evs[i].ev.col, Color.WHITE, 0.5);
-	    imgs.add(catimgsh(5, evs[i].img, RichText.render(String.format("%s: $col[%d,%d,%d]{%s}", evs[i].ev.nm, col.getRed(), col.getGreen(), col.getBlue(), fepItemString), 0).img));
+	    l.cmp.add(catimgsh(5, evs[i].img, RichText.render(String.format("%s: %s{%s}", evs[i].ev.nm, RichText.Parser.col2a(col), Utils.odformat2(evs[i].a, 2)), 0).img),
+		      Coord.of(UI.scale(5), l.cmp.sz.y));
 	}
+	if(sev > 0)
+	    l.cmp.add(RichText.render(String.format("Total: $col[128,192,255]{%s} ($col[128,192,255]{%s}/\u2030 hunger)", Utils.odformat2(sev, 2), Utils.odformat2(sev / (1000 * glut), 2)), 0).img,
+		      Coord.of(UI.scale(5), l.cmp.sz.y));
 	for(int i = 0; i < efs.length; i++) {
 	    BufferedImage efi = ItemInfo.longtip(efs[i].info);
 	    if(efs[i].p != 1)
 		efi = catimgsh(5, efi, RichText.render(String.format("$i{($col[192,192,255]{%d%%} chance)}", (int)Math.round(efs[i].p * 100)), 0).img);
-	    imgs.add(efi);
-	}
-	
-	ItemData.modifyFoodTooltip(owner, imgs, types, glut, fepSum);
-	return(catimgs(0, imgs.toArray(new BufferedImage[0])));
-    }
-    
-    public static class Data implements ItemData.ITipData {
-	private final double end;
-	private final double glut;
-	private final List<Pair<String, Double>> fep;
-	private final int[] types;
-	
-	public Data(FoodInfo info, QualityList q) {
-	    end = info.end;
-	    glut = info.glut;
-	    QualityList.Quality single = q.single(Quality);
-	    if(single == null) {
-		single = QualityList.DEFAULT;
-	    }
-	    double multiplier = single.multiplier;
-	    fep = new ArrayList<>(info.evs.length);
-	    for (int i = 0; i < info.evs.length; i++) {
-		fep.add(new Pair<>(info.evs[i].res, ClientUtils.round(info.evs[i].a / multiplier, 2)));
-	    }
-	    types  = info.types;
-	}
-	
-	@Override
-	public ItemInfo create(Session sess) {
-	    Event[] evs;
-	    if (fep == null) {
-		evs = new Event[0];
-	    } else {
-		evs = new Event[fep.size()];
-		for (int i = 0; i < fep.size(); i++) {
-		    Pair<String, Double> tmp = fep.get(i);
-		    evs[i] = new Event(Resource.remote().loadwait(tmp.a), tmp.b);
-		}
-	    }
-	    int[] t;
-	    if (types == null) {
-		t = new int[0];
-	    } else {
-		t = types;
-	    }
-	    
-	    return new FoodInfo(null, end, glut, evs, new Effect[0], t);
+	    l.cmp.add(efi, Coord.of(UI.scale(5), l.cmp.sz.y));
 	}
     }
 }

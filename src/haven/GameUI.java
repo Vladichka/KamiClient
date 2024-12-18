@@ -803,7 +803,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public Hidewnd(Coord sz, String cap, boolean lg) {
 	    super(sz, cap, lg);
 	}
-    
+ 
 	public Hidewnd(Coord sz, String cap) {
 	    super(sz, cap);
 	}
@@ -815,7 +815,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    }
 	    super.wdgmsg(sender, msg, args);
 	}
-    
+ 
 	public void toggle() {
 	    show(!visible);
 	    if(visible) {this.raise();}
@@ -1135,7 +1135,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		mapfile = new MapWnd2(file, map, Utils.getprefc("wndsz-map", UI.scale(new Coord(700, 500))), "Map");
 		mapfile.show(Utils.getprefb("wndvis-map", false));
 		add(mapfile, Utils.getprefc("wndc-map", new Coord(50, 50)));
-		minesweeper = new Minesweeper(file);		
+		minesweeper = new Minesweeper(file);
 	    }
 	    placemmap();
 	} else if(place == "menu") {
@@ -1346,7 +1346,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    }
 	}
 	if(w instanceof GItem) {
-	    Collection<DraggedItem> hand = handHidden ? handSave : this.hand; 
+	    Collection<DraggedItem> hand = handHidden ? handSave : this.hand;
 	    for(Iterator<DraggedItem> i = hand.iterator(); i.hasNext();) {
 		DraggedItem di = i.next();
 		if(di.item == w) {
@@ -1927,11 +1927,10 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     public static interface LogMessage extends UI.Notice {
 	public ChatUI.Channel.Message logmessage();
     }
-    
-    public boolean msg(UI.NoticeEvent ev) {
-	if(ev.propagate(this))
+
+    public boolean msg(UI.Notice msg) {
+	if(msg.handler(this))
 	    return(true);
-	UI.Notice msg = ev.msg;
 	ChatUI.Channel.Message logged;
 	if(msg instanceof LogMessage)
 	    logged = ((LogMessage)msg).logmessage();
