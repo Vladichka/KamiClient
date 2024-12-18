@@ -1,3 +1,7 @@
+$size[14]{$u{update on 18.12.2024:}
+  * another big merge with both ender and loftar to fix crashing
+  * removed inventory sorting from ard in favor of inventory sorting from ender
+
 $size[14]{$u{update on 23.11.2024:}
   * Short form: massive merge with Ender and all the loftar code
   * Inventory proxies have now a little handle at the right side for easier dragging
