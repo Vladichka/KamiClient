@@ -812,12 +812,10 @@ public class OptWnd extends WindowX {
 	addPanelButton("Global shortcuts", 's', shortcuts, colum, row++);
 	//addPanelButton("",'l', Action.);
 	if (LoginScreen.authmech.get() == "steam") {
-	    LoginScreen.authmech = Config.Variable.prop("nothing", "native");
-	    addPanelButton("Log out to native", 'q', Action.LOGOUT, colum, row++);
+	    addPanelButton("Log out to native", 'q', Action.LOGOUT_AND_SWITCH_AUTH_METHOD, colum, row++);
 	}
 	if (LoginScreen.authmech.get() == "native") {
-	    LoginScreen.authmech = Config.Variable.prop("nothing", "steam");
-	    addPanelButton("log out to steam", 'q', Action.LOGOUT, colum, row++);
+	    addPanelButton("log out to steam", 'q', Action.LOGOUT_AND_SWITCH_AUTH_METHOD, colum, row++);
 	}
     
 	colum++;

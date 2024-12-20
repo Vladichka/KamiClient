@@ -76,7 +76,8 @@ public enum Action {
     
     CLEAR_PLAYER_DAMAGE(GobDamageInfo::clearPlayerDamage, "Clear damage from player"),
     CLEAR_ALL_DAMAGE(GobDamageInfo::clearAllDamage, "Clear damage from everyone"),
-    LOGOUT(gui -> {
+    LOGOUT_AND_SWITCH_AUTH_METHOD(gui -> {
+        LoginScreen.authmech = Config.Variable.prop("nothing", (LoginScreen.authmech.get() == "steam" ? "native" : "steam"));
         gui.act("lo");
     });
     

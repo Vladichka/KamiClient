@@ -341,6 +341,32 @@ public class GeneralGobInfo extends GobInfo {
 		GobInfoOpts.enabled(TreeSubPart.BOUGH) ? getIcon(data.get(BOUGH)) : null,
 	    };
 	    
+	}else if (gob.is(GobTag.COOP)) {
+	    int sdt = gob.sdt();
+	    boolean water = (sdt & 0b0001) != 0;
+	    boolean food = (sdt & 0b0000_0010) != 0;
+	    parts = new BufferedImage[]{
+		!food && GobInfoOpts.enabled(InfoPart.COOPS)  ? getIcon(data.get(FOOD), true) : null,
+		!water && GobInfoOpts.enabled(InfoPart.COOPS)  ? getIcon(data.get(WATER), true) : null,
+	    };
+	} else if (gob.is(GobTag.TROUGH)) {
+	    int sdt = gob.sdt();
+	    boolean food = (sdt & 0b0001) != 0;
+	    parts = new BufferedImage[]{
+		!food && GobInfoOpts.enabled(InfoPart.TROUGH)  ? getIcon(data.get(FOOD), true) : null
+	    };
+	} else if (gob.is(GobTag.GARDENPOT)) {
+	    int sdt = gob.sdt();
+	    boolean water = (sdt & 0b0001) != 0;
+	    boolean soil = (sdt & 0b0000_0010) != 0;
+	    boolean flower = (CountOlsForPots(gob) > 1);
+	    boolean noFlowerPlanted = (CountOlsForPots(gob) == 0);
+	    parts = new BufferedImage[]{
+		!water && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(WATER)) : null,
+		!soil && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(SOIL)) : null,
+		flower && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(FLOWER)) : null,
+		water && soil && noFlowerPlanted && GobInfoOpts.enabled(InfoPart.GARDEN_POT)  ? getIcon(data.get(NOT_PLANTED)) : null
+	    };
 	} else if(CFG.SHOW_PROGRESS_COLOR.get()) { //should this be separate option?
 	    if(gob.is(GobTag.SMELTER)) {
 		parts = new BufferedImage[]{
@@ -359,17 +385,32 @@ public class GeneralGobInfo extends GobInfo {
 	return null;
     }
     
+    private static int CountOlsForPots(Gob gob)
+    {
+	int c = 0;
+	for(Gob.Overlay ol: gob.ols)
+	{
+	    if (ol.id > 0)
+		c++;
+	}
+	return c;
+    }
+    
     private static final Map<String, BufferedImage> iconCache = new HashMap<>();
     
     private static BufferedImage getIcon(String name) {
+	return getIcon(name, false);
+    }
+    private static BufferedImage getIcon(String name, boolean big) {
 	if(name == null) {return null;}
 	if(iconCache.containsKey(name)) {
 	    return iconCache.get(name);
 	}
+	Coord sz = big ? UI.scale(40,40) : UI.scale(20,20);
 	BufferedImage img;
 	try {
 	    img = Resource.remote().loadwait(name).layer(Resource.imgc).img;
-	    img = PUtils.convolvedown(img, UI.scale(20, 20), CharWnd.iconfilter);
+	    img = PUtils.convolvedown(img, sz, CharWnd.iconfilter);
 	} catch (Exception e) {
 	    System.err.printf("Couldn't load content icon: '%s'%n", name);
 	    img = null;
