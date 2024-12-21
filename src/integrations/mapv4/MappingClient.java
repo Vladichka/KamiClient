@@ -300,13 +300,23 @@ public class MappingClient {
 		if (markers.isEmpty())
 		    return;
 		
+		List<Color> uploadColors = new LinkedList<>();
+		CFG.AUTOMAP_MARKERS.get().forEach(g -> {
+		    uploadColors.add(g.col);
+		});
+		
 		System.out.println("processing " + markers.size() + " markers");
 		for (int i = 0; i < markers.size(); i++) {
 		    try {
 			MarkerData md = markers.get(i);
-			Coord mgc = new Coord(Math.floorDiv(md.m.tc.x, 100), Math.floorDiv(md.m.tc.y, 100));
 			if (md.indirGrid.get() == null)
 			    continue;
+			
+			if (md.m instanceof PMarker)
+			    if (!uploadColors.contains(((PMarker) md.m).color))
+				continue;
+			
+			Coord mgc = new Coord(Math.floorDiv(md.m.tc.x, 100), Math.floorDiv(md.m.tc.y, 100));
 			long gridId = md.indirGrid.get().id;
 			JSONObject o = new JSONObject();
 			o.put("name", md.m.nm);

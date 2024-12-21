@@ -233,7 +233,7 @@ public class Fightsess extends Widget {
 	c0 = dragger.c.add(dragger.sz.div(2));
 	int x0 = c0.x;
 	int y0 = c0.y;
-	int bottom = ui.gui.beltwdg.c.y - 40;
+	int bottom = ui.gui.beltwdg.c.y - UI.scale(40);
 	double now = Utils.rtime();
 
 	for(Buff buff : fv.buffs.children(Buff.class))
@@ -254,7 +254,7 @@ public class Fightsess extends Widget {
 	    if(now < fv.atkct) {
 		double a = (now - fv.atkcs) / (fv.atkct - fv.atkcs);
 		g.chcolor(255, 0, 128, 224);
-		g.fellipse(cdc, UI.scale(altui ? UI.scale(24, 24) : UI.scale(22, 22)), Math.PI / 2 - (Math.PI * 2 * Math.min(1.0 - a, 1.0)), Math.PI / 2);
+		g.fellipse(cdc, UI.scale(altui ? new Coord(24, 24) : new Coord(22, 22)), Math.PI / 2 - (Math.PI * 2 * Math.min(1.0 - a, 1.0)), Math.PI / 2);
 		g.chcolor();
 		FastText.aprintf(g, cdc, 0.5, 0.5, "%.1f", fv.atkct - now);
 	    }
@@ -269,7 +269,7 @@ public class Fightsess extends Widget {
 	    double lastuse = fv.lastuse;
 	    if(lastact != null) {
 		Tex ut = lastact.get().flayer(Resource.imgc).tex();
-		Coord useul = altui ? new Coord(x0 - 69, y0) : pcc.add(usec1).sub(ut.sz().div(2));
+		Coord useul = altui ? new Coord(x0 - UI.scale(69), y0) : pcc.add(usec1).sub(ut.sz().div(2));
 		g.image(ut, useul);
 		g.image(useframe, useul.sub(useframeo));
 		double a = now - lastuse;
@@ -292,7 +292,7 @@ public class Fightsess extends Widget {
 		double lastuse = fv.current.lastuse;
 		if(lastact != null) {
 		    Tex ut = lastact.get().flayer(Resource.imgc).tex();
-		    Coord useul = altui ? new Coord(x0 + 69 - ut.sz().x, y0) : pcc.add(usec2).sub(ut.sz().div(2));
+		    Coord useul = altui ? new Coord(x0 + UI.scale(69) - ut.sz().x, y0) : pcc.add(usec2).sub(ut.sz().div(2));
 		    g.image(ut, useul);
 		    g.image(useframe, useul.sub(useframeo));
 		    double a = now - lastuse;
@@ -307,7 +307,7 @@ public class Fightsess extends Widget {
 	    }
 	}
 	for(int i = 0; i < actions.length; i++) {
-	    Coord ca = altui ? new Coord(xa - 18, bottom - 150).add(actc(i)) : pcc.add(actc(i));
+	    Coord ca = altui ? new Coord(xa - UI.scale(18), bottom - UI.scale(150)).add(actc(i)) : pcc.add(actc(i));
 	    Action act = actions[i];
 	    try {
 		if(act != null) {
