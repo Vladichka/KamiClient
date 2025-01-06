@@ -35,7 +35,6 @@ public class AutoDrink {
 	int autoDrinkThreshold = CFG.AUTO_DRINK_THRESHOLD.get();
 	if (autoDrinkThreshold == 0)
 	    return;
-	//System.out.println("" + gob.id + " " + (gob.is(GobTag.DRINKING) ? "drinking" : ""));
 	if (gob.is(GobTag.DRINKING))
 	    return;
 	long currentTime = System.currentTimeMillis();
