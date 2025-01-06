@@ -38,13 +38,15 @@ public class AutoDrink {
 	//System.out.println("" + gob.id + " " + (gob.is(GobTag.DRINKING) ? "drinking" : ""));
 	if (gob.is(GobTag.DRINKING))
 	    return;
-	IMeter meter = gui.getIMeter("stam");
-	double currentStamina = meter.meter(0);
-	if (currentStamina < autoDrinkThreshold / 100f) {
-	    long currentTime = System.currentTimeMillis();
-	    if (currentTime - lastDrinkTime < CFG.AUTO_DRINK_DELAY.get()) {
-		lastDrinkTime = currentTime;
-		gui.wdgmsg("act", "drink");
+	long currentTime = System.currentTimeMillis();
+	if (currentTime - lastDrinkTime > CFG.AUTO_DRINK_DELAY.get()) {
+	    IMeter meter = gui.getIMeter("stam");
+	    if (meter != null) {
+		double currentStamina = meter.meter(0);
+		if (currentStamina >= 0 && currentStamina < (autoDrinkThreshold / 100f)) {
+		    lastDrinkTime = currentTime;
+		    gui.wdgmsg("act", "drink");
+		}
 	    }
 	}
     }
