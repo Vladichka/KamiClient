@@ -15,10 +15,10 @@ public class AutoDrink {
     private AutoDrink(){}
     
     public static AutoDrink getInstance() {
-	if (instance == null) {
-	    instance = new AutoDrink();
-	}
-	return instance;
+        if (instance == null) {
+            instance = new AutoDrink();
+        }
+        return instance;
     }
     
     /**
@@ -26,27 +26,27 @@ public class AutoDrink {
      * @param gui GameUI object to work with
      */
     public void init(GameUI gui) {
-	this.gui = gui;
+        this.gui = gui;
     }
     
     public void tick(Gob gob) {
-	if (gui == null)
-	    return;
-	int autoDrinkThreshold = CFG.AUTO_DRINK_THRESHOLD.get();
-	if (autoDrinkThreshold == 0)
-	    return;
-	if (gob.is(GobTag.DRINKING))
-	    return;
-	long currentTime = System.currentTimeMillis();
-	if (currentTime - lastDrinkTime > CFG.AUTO_DRINK_DELAY.get()) {
-	    IMeter meter = gui.getIMeter("stam");
-	    if (meter != null) {
-		double currentStamina = meter.meter(0);
-		if (currentStamina >= 0 && currentStamina < (autoDrinkThreshold / 100f)) {
-		    lastDrinkTime = currentTime;
-		    gui.wdgmsg("act", "drink");
-		}
-	    }
-	}
+        if (gui == null)
+            return;
+        int autoDrinkThreshold = CFG.AUTO_DRINK_THRESHOLD.get();
+        if (autoDrinkThreshold == 0)
+            return;
+        if (gob.is(GobTag.DRINKING))
+            return;
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastDrinkTime > CFG.AUTO_DRINK_DELAY.get()) {
+            IMeter meter = gui.getIMeter("stam");
+            if (meter != null) {
+                double currentStamina = meter.meter(0);
+                if (currentStamina >= 0 && currentStamina < (autoDrinkThreshold / 100f)) {
+                    lastDrinkTime = currentTime;
+                    gui.wdgmsg("act", "drink");
+                }
+            }
+        }
     }
 }
