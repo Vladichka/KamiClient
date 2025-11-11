@@ -30,6 +30,7 @@ import java.util.*;
 import haven.render.*;
 import me.ender.CustomizeStaticSprite;
 
+@Resource.PublishedCode.Builtin(type = Sprite.Factory.class, name = "static")
 public class StaticSprite extends Sprite {
     public final RenderTree.Node[] parts;
     

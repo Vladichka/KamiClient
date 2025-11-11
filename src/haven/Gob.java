@@ -81,7 +81,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     public static final ChangeCallback CHANGED = new ChangeCallback() {
 	@Override
 	public void added(Gob ob) {
-	    
+	
 	}
 	
 	@Override
@@ -90,7 +90,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
     };
     
-    public static class Overlay implements RenderTree.Node {
+    public static class Overlay implements RenderTree.Node, Sprite.Owner {
 	public final int id;
 	public final Gob gob;
 	public final Sprite.Mill<?> sm;
@@ -123,7 +123,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	
 	private void init() {
 	    if(spr == null) {
-		spr = sm.create(gob);
+		spr = sm.create(this);
 		if(old)
 		    spr.age();
 		if(added && (spr instanceof SetupMod))
@@ -188,6 +188,13 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    if(slots != null)
 		slots.remove(slot);
 	}
+	
+	private static final ClassResolver<Overlay> ctxr = new ClassResolver<Overlay>()
+	    .add(Overlay.class, o -> o);
+	public <T> T context(Class<T> cl) {return(OwnerContext.orparent(cl, ctxr.context(cl, this, false), gob));}
+	public Random mkrandoom() {return(gob.mkrandoom());}
+	@Deprecated
+	public Resource getres() {return(gob.getres());}
 	
 	public String name() {
 	    Sprite spr = this.spr;

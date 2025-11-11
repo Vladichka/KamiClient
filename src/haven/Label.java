@@ -39,9 +39,9 @@ public class Label extends Widget {
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
 	    if(args.length > 1)
-		return(new Label((String)args[0], UI.scale(Utils.iv(args[1]))));
+		return(new Label(Utils.sv(args[0]), UI.scale(Utils.iv(args[1]))));
 	    else
-		return(new Label((String)args[0]));
+		return(new Label(Utils.sv(args[0])));
 	}
     }
 	
@@ -54,7 +54,7 @@ public class Label extends Widget {
 	text = i10n(text);
 	this.f = f;
 	this.text = f.renderwrap(texts = text, this.col, w);
-	sz = this.text.sz();
+	resize(this.text.sz());
     }
 
     public Label(String text, Text.Foundry f) {
@@ -62,41 +62,44 @@ public class Label extends Widget {
 	this.f = f;
 	text = i10n(text);
 	this.text = f.render(texts = text, this.col);
-	sz = this.text.sz();
+	resize(this.text.sz());
     }
 
     public Label(String text, int w) {
 	this(text, w, Text.std);
     }
-	
+
     public Label(String text) {
 	this(text, Text.std);
     }
 	
     public void settext(String text) {
+	if(text.equals(this.text.text))
+	    return;
 	text = i10n(text);
 	this.text.dispose();
 	this.text = f.render(texts = text, col);
-	sz = this.text.sz();
+	resize(this.text.sz());
     }
     
     public String gettext() {return texts;}
 	
     public void setcolor(Color color) {
-	col = color;
+	if(color.equals(col))
+	    return;
 	this.text.dispose();
-	this.text = f.render(texts, col);
-	sz = this.text.sz();
+	this.text = f.render(texts, col = color);
+	resize(this.text.sz());
     }
 
     public void dispose() {
 	super.dispose();
 	this.text.dispose();
     }
-	
+
     public void uimsg(String msg, Object... args) {
 	if(msg == "set") {
-	    settext((String)args[0]);
+	    settext(Utils.sv(args[0]));
 	} else if(msg == "col") {
 	    setcolor((Color)args[0]);
 	} else {
@@ -125,19 +128,19 @@ public class Label extends Widget {
 		    return(new Untranslated((String)args[0]));
 	    }
 	}
-        
+ 
 	public Untranslated(String text, int w, Text.Foundry f) {
 	    super(text, w, f);
 	}
-    
+ 
 	public Untranslated(String text, Text.Foundry f) {
 	    super(text, f);
 	}
-    
+ 
 	public Untranslated(String text, int w) {
 	    super(text, w, Text.std);
 	}
-    
+ 
 	public Untranslated(String text) {
 	    super(text, Text.std);
 	}

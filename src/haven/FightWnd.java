@@ -659,7 +659,7 @@ public class FightWnd extends Widget {
 	    List<Action> acts = new ArrayList<Action>();
 	    int a = 0;
 	    while(true) {
-		int resid = (Integer)args[a++];
+		int resid = Utils.iv(args[a++]);
 		if(resid < 0)
 		    break;
 		int av = Utils.iv(args[a++]);
@@ -674,7 +674,7 @@ public class FightWnd extends Widget {
 	    this.acts = acts;
 	    actlist.loading = true;
 	} else if(nm == "tt") {
-	    Indir<Resource> res = ui.sess.getres((Integer)args[0]);
+	    Indir<Resource> res = ui.sess.getresv(args[0]);
 	    Object[] rawinfo = (Object[])args[1];
 	    actrawinfo.put(res, rawinfo);
 	} else if(nm == "used") {
@@ -682,7 +682,7 @@ public class FightWnd extends Widget {
 	    for(Action act : acts)
 		act.u(0);
 	    for(int i = 0; i < order.length; i++) {
-		int resid = (Integer)args[a++];
+		int resid = Utils.iv(args[a++]);
 		if(resid < 0) {
 		    order[i] = null;
 		    continue;
