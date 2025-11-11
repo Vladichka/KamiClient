@@ -59,7 +59,7 @@ public class Composite extends Drawable implements EquipTarget {
 	this.base = base;
 	this.baseres = base.get();
 	comp = new Composited(baseres.layer(Skeleton.Res.class).s, gob);
-	comp.eqowner = gob;
+	//comp.eqowner = gob;
 	processResId();
     }
     

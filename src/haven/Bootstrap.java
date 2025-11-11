@@ -270,7 +270,7 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		    if(savepw) {
 			byte[] ntoken = (creds instanceof AuthClient.TokenCred) ? ((AuthClient.TokenCred)creds).token : auth.gettoken();
 			settoken(acct.name, hostname, ntoken);
-			AccountList.storeAccount(acctname, Utils.byte2hex(ntoken));
+			AccountList.storeAccount(acct.name, Utils.byte2hex(ntoken));
 		    }
 		} catch(UnknownHostException e) {
 		    ui.uimsg(1, "error", "Could not locate server");

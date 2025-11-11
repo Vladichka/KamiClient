@@ -5,7 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class WidgetList<T extends Widget> extends ListWidget<T> {
-    public static final IBox BOX = new IBox("gfx/hud/box", "tl", "tr", "bl", "br", "extvl", "extvr", "extht", "exthb");
+    public static final IBox BOX = new IBox.Scaled("gfx/hud/box", "tl", "tr", "bl", "br", "extvl", "extvr", "extht", "exthb");
     public static final Coord BTLOFF = BOX.btloff();
     protected final List<T> list = new LinkedList<>();
     protected final Scrollbar sb;

@@ -37,7 +37,7 @@ import haven.Skeleton.PoseMod;
 public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
     public static final Collection<RMod> rmods = new ArrayList<>();
     private static final ThreadLocal<Cons> curcons = new ThreadLocal<Cons>();
-    private static RenderTree.Node[] noparts = {};
+    private static final RenderTree.Node[] noparts = {};
     private static final Ticker[] notickers = {};
     private static final EquipTarget[] noeqtgts = {};
     private static final Mod[] nomods = {};
@@ -74,7 +74,7 @@ public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
 	public default int order() {return(0);}
 	public default void age() {}
 	public default boolean decdata(Message sdt) {return(false);}
-
+	
 	public static Mod of(Consumer<Cons> mod, int order) {
 	    return(new Mod() {
 		public void operate(Cons cons) {mod.accept(cons);}
@@ -291,6 +291,16 @@ public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
 	imods.add(mod);
     }
     
+    public <T> T imod(Class<T> cl) {
+	if(imods == null)
+	    return(null);
+	for(Mod mod : imods) {
+	    if(cl.isInstance(mod))
+		return(cl.cast(mod));
+	}
+	return(null);
+    }
+    
     protected Cons cons() {
 	return(new Cons());
     }
@@ -451,7 +461,7 @@ public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
 	public final ModSprite main;
 	public final RenderLink.Res[] rlinks;
 	public final RenderTree.Node[] parts;
-
+	
 	public RenderLinks(ModSprite spr, RenderLink.Res[] rlinks) {
 	    this.main = spr;
 	    this.rlinks = rlinks;

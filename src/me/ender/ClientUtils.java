@@ -320,4 +320,14 @@ public class ClientUtils {
     public static Coord getScreenCenter(UI ui) {
 	return ui.root.sz.div(2);
     }
+    
+    public static Gob owner2gob(Sprite.Owner owner) {
+	if(owner instanceof Gob) {return (Gob) owner;}
+	return owner.context(Gob.class);
+    }
+    
+    public static Optional<Gob> owner2ogob(Sprite.Owner owner) {
+	if(owner instanceof Gob) {return Optional.of((Gob) owner);}
+	return owner.ocontext(Gob.class);
+    }
 }

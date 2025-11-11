@@ -353,7 +353,7 @@ public class Session implements Resource.Resolver {
 	conn.connect((user.alias != null) ? user.alias : user.name, encrypt, cookie, args);
 	
 	Arrays.stream(LOCAL_CACHED).forEach(this::cacheres);
-	Config.setUserName(username);
+	Config.setUserName(user.name);
     }
     
     public void close() {

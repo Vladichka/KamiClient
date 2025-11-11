@@ -9,7 +9,7 @@ import haven.res.ui.polity.*;
 import static haven.BuddyWnd.width;
 
 /* >wdg: Realm */
-@FromResource(name = "ui/realm", version = 30)
+@FromResource(name = "ui/realm", version = 31)
 public class Realm extends Polity {
     public static final Map<String, Resource.Image> authimg = Utils.<String, Resource.Image>map().
 	//use Resource.remote() instead of Resource.classres().pool because this class is loaded locally, but thingwall icon is not local
@@ -111,7 +111,7 @@ public class Realm extends Polity {
     public void uimsg(String msg, Object... args) {
 	if(msg == "authn") {
 	    String tp = (String)args[0];
-	    int n = (Integer)args[1];
+	    int n = Utils.iv(args[1]);
 	    synchronized(authn) {
 		authn.put(tp, n);
 	    }

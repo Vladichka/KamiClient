@@ -29,7 +29,6 @@ package haven;
 import haven.rx.Reactor;
 import me.ender.WindowDetector;
 
-import java.awt.*;
 import java.awt.event.InputEvent;
 import java.util.*;
 import java.util.function.*;
