@@ -149,10 +149,10 @@ public class Charlist extends Widget {
 		}
 	    }
 	}, UI.scale(80, 553));
-	logout2 = parent.add(new Button(UI.scale(110), "switch to " + (LoginScreen.authmech.get() == "steam" ? "native" : "steam")) {
+	logout2 = parent.add(new Button(UI.scale(110), "switch to " + (LoginScreen.authmech.get() == "native" ? "steam" : "native")) {
 	    @Override
 	    public void click() {
-		LoginScreen.authmech = Config.Variable.prop("nothing", (LoginScreen.authmech.get() == "steam" ? "native" : "steam"));
+		LoginScreen.authmech = Config.Variable.prop("nothing", (LoginScreen.authmech.get() == "native" ? "steam" : "native"));
 		RemoteUI rui = (RemoteUI) ui.rcvr;
 		synchronized (rui.sess) {
 		    rui.sess.close();
