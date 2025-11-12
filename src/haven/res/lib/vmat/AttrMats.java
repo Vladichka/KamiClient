@@ -2,45 +2,40 @@
 package haven.res.lib.vmat;
 
 import haven.*;
-
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import haven.render.*;
+import haven.ModSprite.*;
+import java.util.*;
+import java.util.function.Consumer;
 
 @haven.FromResource(name = "lib/vmat", version = 39)
 public class AttrMats extends VarMats {
     public final Map<Integer, Material> mats;
-    public final List<Resource> res;
 
-    public AttrMats(Gob gob, Pair<Map<Integer, Material>, List<Resource>> data) {
+    public AttrMats(Gob gob, Map<Integer, Material> mats) {
 	super(gob);
-
-	this.mats = data.a;
-	this.res = data.b;
+	this.mats = mats;
     }
 
     public Material varmat(int id) {
-	return (mats.get(id));
+	return(mats.get(id));
     }
 
-    public static Pair<Map<Integer, Material>, List<Resource>> decode(Resource.Resolver rr, Message sdt) {
-	Map<Integer, Material> ret = new IntMap<>();
-	List<Resource> resources = new LinkedList<>();
+    public static Map<Integer, Material> decode(Resource.Resolver rr, Message sdt) {
+	Map<Integer, Material> ret = new IntMap<Material>();
 	int idx = 0;
-	while (!sdt.eom()) {
+	while(!sdt.eom()) {
 	    Indir<Resource> mres = rr.getres(sdt.uint16());
 	    int mid = sdt.int8();
 	    Material.Res mat;
-	    Resource res = mres.get();
-	    resources.add(res);
 	    if(mid >= 0)
-		mat = res.layer(Material.Res.class, mid);
+		mat = mres.get().layer(Material.Res.class, mid);
 	    else
-		mat = res.layer(Material.Res.class);
+		mat = mres.get().layer(Material.Res.class);
 	    ret.put(idx++, mat.get());
 	}
-	return new Pair<>(ret, resources);
+	return(ret);
     }
+
 
     public static void parse(Gob gob, Message dat) {
 	gob.setattr(new AttrMats(gob, decode(gob.context(Resource.Resolver.class), dat)));
