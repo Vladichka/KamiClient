@@ -99,7 +99,7 @@ public class RichText extends Text {
     
     public static interface ImageSource {
 	public Image get(String[] args, int[] ap);
-
+	
 	public static ImageSource chain(ImageSource... srcs) {
 	    return((args, ap) -> {
 		for(ImageSource src : srcs) {
@@ -110,7 +110,7 @@ public class RichText extends Text {
 		return(null);
 	    });
 	}
-
+	
 	public static ImageSource id(String id, Supplier<? extends Image> img) {
 	    return((args, ap) -> {
 		if(args[ap[0]].equals(id)) {
@@ -128,7 +128,7 @@ public class RichText extends Text {
 		return(null);
 	    });
 	}
-
+	
 	public static ImageSource res(Resource res) {
 	    return((args, ap) -> {
 		try {
@@ -139,7 +139,7 @@ public class RichText extends Text {
 		}
 	    });
 	}
-
+	
 	public static ImageSource res(Resource.Pool pool) {
 	    return((args, ap) -> {
 		Resource res = pool.loadwait(args[ap[0]++]);
@@ -158,7 +158,7 @@ public class RichText extends Text {
 	    });
 	}
     }
-
+    
     public static class Image extends Part {
 	public BufferedImage img;
 	public int h = -1;
@@ -171,12 +171,12 @@ public class RichText extends Text {
 	public Image(BufferedImage img) {
 	    this.img = img;
 	}
-
+	
 	public Image(Resource.Image img) {
 	    this.img = img.img;
 	    this.imgscale = img.scale;
 	}
-
+	
 	public Image(Resource res, int id) {
 	    for(Resource.Image img : res.layers(Resource.imgc)) {
 		if(img.id == id) {
@@ -450,7 +450,7 @@ public class RichText extends Text {
 	}
 	
 	public Parser(Map<? extends Attribute, ?> defattrs) {
-	    this(ImageSource.res(Resource.local()), defattrs);
+	    this(ImageSource.res(Resource.remote()), defattrs);
 	}
 	
 	public Parser(ImageSource isrc, Object... attrs) {
@@ -458,7 +458,7 @@ public class RichText extends Text {
 	}
 	
 	public Parser(Object... attrs) {
-	    this(ImageSource.res(Resource.local()), attrs);
+	    this(ImageSource.res(Resource.remote()), attrs);
 	}
 	
 	public static class PState {
@@ -506,6 +506,10 @@ public class RichText extends Text {
 		Image img = isrc.get(args, a);
 		img.attrs = attrs;
 		for(; a[0] < args.length; a[0]++) {
+		    if("c".equals(args[a[0]])) {
+			img.center = true;
+			continue;
+		    }
 		    int p = args[a[0]].indexOf('=');
 		    if(p < 0)
 			continue;
@@ -688,7 +692,7 @@ public class RichText extends Text {
 	    Graphics2D g = junk.createGraphics();
 	    rs = new RState(g.getFontRenderContext());
 	}
-
+	
 	public Foundry(ImageSource isrc, Map<? extends Attribute, ?> defattrs) {
 	    this(new Parser(isrc, defattrs));
 	}
