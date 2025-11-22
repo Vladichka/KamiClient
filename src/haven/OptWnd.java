@@ -1668,6 +1668,7 @@ public class OptWnd extends WindowX {
 			setUsername = true;
 		    }
 		    MappingClient automapper = MappingClient.getInstance();
+		    automapper.setGenus(ui.sess.user.genus);
 		    if (setUsername)
 			automapper.SetPlayerName(ui.sess.user.name);
 		    automapper.SetEndpoint(CFG.AUTOMAP_ENDPOINT.get());

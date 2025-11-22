@@ -301,6 +301,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	this.chrid = chrid;
 	this.plid = plid;
 	this.genus = genus;
+	if(MappingClient.initialized()) {
+	    MappingClient.getInstance().setGenus(genus);
+	}
 	setcanfocus(true);
 	setfocusctl(true);
 	chat = add(new ChatUI() {
@@ -411,6 +414,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     @Override
     protected void attach(UI ui) {
 	ui.setGUI(this);
+	ui.sess.user.genus = genus;
 	Timer.start(this);
 	super.attach(ui);
     }
@@ -1130,6 +1134,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		try {
 		    file = MapFile.load(mapstore, mapfilename());
 		    if(CFG.AUTOMAP_UPLOAD.get() && MappingClient.initialized()) {
+			MappingClient.getInstance().setGenus(genus);
 			MappingClient.getInstance().ProcessMap(file, (m) -> {
 			    if(m instanceof PMarker) {
 				return CFG.AUTOMAP_MARKERS.get().stream()
