@@ -1,3 +1,11 @@
+$size[14]{$u{update on 22.12.2024:}
+  * Fixed (tree) log size.
+  * Fixed log out to native / steam buttons for steam.
+
+$size[14]{$u{update on 21.12.2024:}
+  * Fixed Combat UI scaling issues and positioning when chat is hidden.
+  * Fixed color selection for marker upload. Not selected colors don't get uploaded.
+
 $size[14]{$u{update on 18.12.2024:}
   * another big merge with both ender and loftar to fix crashing
   * removed inventory sorting from ard in favor of inventory sorting from ender

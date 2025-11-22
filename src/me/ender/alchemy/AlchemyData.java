@@ -5,6 +5,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import haven.*;
 import haven.res.ui.tt.attrmod.AttrMod;
+import haven.res.ui.tt.attrmod.Entry;
+import haven.res.ui.tt.attrmod.Mod;
+import haven.res.ui.tt.attrmod.resattr;
 import haven.rx.Reactor;
 import me.ender.Reflect;
 
@@ -17,24 +20,24 @@ public class AlchemyData {
     private static final String ALL_INGREDIENTS_JSON = "all_ingredients.json";
     private static final String COMBOS_JSON = "combos.json";
     private static final String EFFECTS_JSON = "all_effects.json";
-
+    
     public static final String INGREDIENTS_UPDATED = "ALCHEMY:INGREDIENTS:UPDATED";
     public static final String ELIXIRS_UPDATED = "ALCHEMY:ELIXIRS:UPDATED";
     public static final String COMBOS_UPDATED = "ALCHEMY:COMBOS:UPDATED";
     public static final String EFFECTS_UPDATED = "ALCHEMY:EFFECTS:UPDATED";
-
-
+    
+    
     public static final String HERBAL_GRIND = "/herbalgrind";
     public static final String LYE_ABLUTION = "/lyeablution";
     public static final String MINERAL_CALCINATION = "/mineralcalcination";
     public static final String MEASURED_DISTILLATE = "/measureddistillate";
     public static final String FIERY_COMBUSTION = "/fierycombustion";
-
+    
     private static final Gson GSON = new GsonBuilder()
 	.registerTypeAdapter(Effect.class, new Effect.Adapter())
 	.create();
     public static final int MAX_EFFECTS = 4;
-
+    
     private static boolean initializedIngredients = false;
     private static boolean initializedElixirs = false;
     private static boolean initializedCombos = false;
@@ -44,21 +47,21 @@ public class AlchemyData {
     private static final Set<String> INGREDIENT_LIST = new HashSet<>();
     private static final Map<String, Set<String>> COMBOS = new HashMap<>();
     private static final HashSet<Effect> EFFECTS = new HashSet<>();
-
-
+    
+    
     private static void initIngredients() {
 	if(initializedIngredients) {return;}
 	initializedIngredients = true;
 	loadIngredients(Config.loadJarFile(INGREDIENTS_JSON));
 	loadIngredients(Config.loadFSFile(INGREDIENTS_JSON));
     }
-
+    
     private static void initElixirs() {
 	if(initializedElixirs) {return;}
 	initializedElixirs = true;
 	loadElixirs(Config.loadFile(ELIXIRS_JSON));
     }
-
+    
     private static void initCombos() {
 	if(initializedCombos) {return;}
 	initializedCombos = true;
@@ -66,28 +69,28 @@ public class AlchemyData {
 	loadIngredientList(Config.loadFSFile(ALL_INGREDIENTS_JSON));
 	loadCombos(Config.loadFile(COMBOS_JSON));
     }
-
+    
     private static void initEffects() {
 	if(initializedEffects) {return;}
 	initializedEffects = true;
 	loadEffectList(Config.loadJarFile(EFFECTS_JSON));
 	loadEffectList(Config.loadFSFile(EFFECTS_JSON));
-
+	
 	boolean changed = false;
-
+	
 	initIngredients();
 	for (Ingredient ingredient : INGREDIENTS.values()) {
 	    changed = tryAddUnknownEffects(ingredient) || changed;
 	}
-
+	
 	initElixirs();
 	for (Elixir elixir : ELIXIRS) {
 	    changed = tryAddUnknownEffects(elixir) || changed;
 	}
-
+	
 	if(changed) {saveEffects();}
     }
-
+    
     private static void loadIngredients(String json) {
 	if(json == null) {return;}
 	try {
@@ -99,7 +102,7 @@ public class AlchemyData {
 	    }
 	} catch (Exception ignore) {}
     }
-
+    
     private static void loadElixirs(String json) {
 	if(json == null) {return;}
 	try {
@@ -108,7 +111,7 @@ public class AlchemyData {
 	    ELIXIRS.addAll(tmp);
 	} catch (Exception ignore) {}
     }
-
+    
     private static void loadIngredientList(String json) {
 	if(json == null) {return;}
 	try {
@@ -117,7 +120,7 @@ public class AlchemyData {
 	    INGREDIENT_LIST.addAll(tmp);
 	} catch (Exception ignore) {}
     }
-
+    
     private static void loadCombos(String json) {
 	if(json == null) {return;}
 	try {
@@ -130,7 +133,7 @@ public class AlchemyData {
 	    }
 	} catch (Exception ignore) {}
     }
-
+    
     private static void loadEffectList(String json) {
 	if(json == null) {return;}
 	try {
@@ -139,47 +142,47 @@ public class AlchemyData {
 	    EFFECTS.addAll(tmp);
 	} catch (Exception ignore) {}
     }
-
+    
     public static void saveIngredients() {
 	Config.saveFile(INGREDIENTS_JSON, GSON.toJson(INGREDIENTS));
     }
-
+    
     private static void saveElixirs() {
 	Config.saveFile(ELIXIRS_JSON, GSON.toJson(ELIXIRS));
     }
-
+    
     private static void saveIngredientList() {
 	Config.saveFile(ALL_INGREDIENTS_JSON, GSON.toJson(INGREDIENT_LIST));
     }
-
+    
     private static void saveCombos() {
 	Config.saveFile(COMBOS_JSON, GSON.toJson(COMBOS));
     }
-
+    
     private static void saveEffects() {
 	Config.saveFile(EFFECTS_JSON, GSON.toJson(EFFECTS));
     }
-
+    
     public static void autoProcess(GItem item) {
 	if(!CFG.ALCHEMY_AUTO_PROCESS.get()) {return;}
 	if(item.ui.gui.getchild(AlchemyWnd.class) != null || item.ui.gui.getchild(TrackWnd.class) != null) {
 	    process(item, false);
 	}
     }
-
+    
     public static void process(GItem item, boolean storeRecipe) {
 	String res = item.resname();
 	List<ItemInfo> infos = item.info();
 	double q = item.quality();
 	double qc = q > 0 ? 1d / Math.sqrt(10 * q) : 1d;
-
+	
 	ItemInfo.Contents contents = ItemInfo.find(ItemInfo.Contents.class, infos);
 	if(contents != null) {infos = contents.sub;}
-
+	
 	List<Effect> effects = new LinkedList<>();
 	boolean isElixir = false;
 	Recipe recipe = null;
-
+	
 	for (ItemInfo info : infos) {
 	    if(Reflect.is(info, "Elixir")) {
 		isElixir = true;
@@ -194,7 +197,7 @@ public class AlchemyData {
 		tryAddIngredientEffect(effects, info);
 	    }
 	}
-
+	
 	boolean effectsChanged = false;
 	if(isElixir && recipe != null) {
 	    //TODO: option to ignore bad-only elixirs?
@@ -219,13 +222,13 @@ public class AlchemyData {
 	    }
 	    effectsChanged = tryAddUnknownEffects(ingredient);
 	}
-
+	
 	if(effectsChanged) {
 	    saveEffects();
 	    Reactor.event(EFFECTS_UPDATED);
 	}
     }
-
+    
     private static void updateIngredientList(String ingredient) {
 	initCombos();
 	if(INGREDIENT_LIST.add(ingredient)) {
@@ -233,13 +236,13 @@ public class AlchemyData {
 	    Reactor.event(COMBOS_UPDATED);
 	}
     }
-
+    
     private static void updateCombos(Elixir elixir) {
 	List<String> natural = elixir.recipe.ingredients.stream()
 	    .map(i -> i.res)
 	    .filter(AlchemyData::isNatural)
 	    .collect(Collectors.toList());
-
+	
 	if(natural.isEmpty()) {return;}
 	initCombos();
 	boolean listUpdated = false;
@@ -249,57 +252,57 @@ public class AlchemyData {
 	    Set<String> combos = COMBOS.computeIfAbsent(ingredient, k -> new HashSet<>());
 	    if(combos.addAll(natural)) {combosUpdated = true;}
 	}
-
+	
 	if(listUpdated) {saveIngredientList();}
 	if(combosUpdated) {saveCombos();}
-
+	
 	if(listUpdated || combosUpdated) {Reactor.event(COMBOS_UPDATED);}
     }
-
+    
     public static List<String> ingredients() {
 	initIngredients();
 	return new ArrayList<>(INGREDIENTS.keySet());
     }
-
+    
     public static Ingredient ingredient(String res) {
 	initIngredients();
 	return INGREDIENTS.getOrDefault(res, null);
     }
-
+    
     public static List<Elixir> elixirs() {
 	initElixirs();
 	return ELIXIRS.stream().sorted().collect(Collectors.toList());
     }
-
+    
     public static void rename(Elixir elixir, String name) {
 	initElixirs();
 	elixir.name(name);
 	saveElixirs();
 	Reactor.event(ELIXIRS_UPDATED);
     }
-
+    
     public static void remove(Elixir elixir) {
 	initElixirs();
 	ELIXIRS.remove(elixir);
 	saveElixirs();
 	Reactor.event(ELIXIRS_UPDATED);
     }
-
+    
     public static List<String> allIngredients() {
 	initCombos();
 	return new ArrayList<>(INGREDIENT_LIST);
     }
-
+    
     public static Set<String> combos(String target) {
 	initCombos();
 	return COMBOS.getOrDefault(target, Collections.emptySet());
     }
-
+    
     public static Set<Effect> effects() {
 	initEffects();
 	return EFFECTS;
     }
-
+    
     public static Set<Effect> testedEffects(String res) {
 	if(res == null) {return Collections.emptySet();}
 	initEffects();
@@ -318,18 +321,18 @@ public class AlchemyData {
 	}
 	return tested;
     }
-
+    
     public static Set<Effect> untestedEffects(String res) {
 	Set<Effect> tested = testedEffects(res);
 	if(tested.isEmpty()) {return Collections.emptySet();}
-
+	
 	HashSet<Effect> effects = new HashSet<>(effects());
 	if(effects.removeAll(tested)) {
 	    return effects;
 	}
 	return Collections.emptySet();
     }
-
+    
     public static boolean tryAddUnknownEffects(Ingredient ingredient) {
 	boolean changed = false;
 	initEffects();
@@ -338,7 +341,7 @@ public class AlchemyData {
 	}
 	return changed;
     }
-
+    
     public static boolean tryAddUnknownEffects(Elixir elixir) {
 	boolean changed = false;
 	initEffects();
@@ -348,29 +351,32 @@ public class AlchemyData {
 	}
 	return changed;
     }
-
+    
     public static Tex tex(Collection<Effect> effects) {
 	try {
 	    List<ItemInfo> tips = Effect.ingredientInfo(effects);
 	    if(tips.isEmpty()) {return null;}
 	    return new TexI(ItemInfo.longtip(tips));
-
+	    
 	} catch (Loading ignore) {}
 	return null;
     }
-
+    
     public static void tryAddIngredientEffect(Collection<Effect> effects, ItemInfo info) {
 	Effect effect = Effect.from(info);
 	if(effect != null) {
 	    effects.add(effect);
 	}
     }
-
+    
     public static void tryAddElixirEffect(double qc, Collection<Effect> effects, ItemInfo info) {
 	if(info instanceof AttrMod) {
-	    for (AttrMod.Mod mod : ((AttrMod) info).mods) {
+	    for (Entry e : ((AttrMod) info).tab) {
+		if(!(e instanceof Mod)) {continue;}
+		Mod mod = (Mod) e;
+		if(!(mod.attr instanceof resattr)) {continue;}
 		long a = Math.round(qc * mod.mod);
-		effects.add(new Effect(Effect.BUFF, mod.attr.name, Long.toString(a)));
+		effects.add(new Effect(Effect.BUFF, ((resattr) mod.attr).res.name, Long.toString(a)));
 	    }
 	} else if(Reflect.is(info, "HealWound")) {
 	    //this is from elixir, it uses different resource and has value
@@ -388,7 +394,7 @@ public class AlchemyData {
 	}
 	//TODO: detect less/more time effects in elixirs?
     }
-
+    
     public static boolean isNatural(String res) {
 	return !res.contains(HERBAL_GRIND)
 	    && !res.contains(LYE_ABLUTION)
@@ -396,7 +402,7 @@ public class AlchemyData {
 	    && !res.contains(MEASURED_DISTILLATE)
 	    && !res.contains(FIERY_COMBUSTION);
     }
-
+    
     public static boolean isMineral(String res) {
 	return GobIconCategoryList.GobCategory.isRock(res) || GobIconCategoryList.GobCategory.isOre(res);
     }

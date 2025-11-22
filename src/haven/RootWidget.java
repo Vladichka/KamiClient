@@ -47,15 +47,13 @@ public class RootWidget extends ConsoleHost implements UI.Notice.Handler, Widget
 	hasfocus = true;
 	effects = new GobEffects(ui);
     }
-    
+
     public boolean getcurs(CursorQuery ev) {
-	Resource ret = defcurs;
 	if(cursor != null) {
 	    try {
-		ret = cursor.get();
+		ev.set(cursor.get());
 	    } catch(Loading l) {}
 	}
-	ev.set(ret);
 	return(false);
     }
     

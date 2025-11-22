@@ -4,6 +4,8 @@ package haven.res.gfx.fx.bprad;
 import haven.*;
 import haven.render.*;
 import haven.render.Model.Indices;
+import me.ender.ClientUtils;
+
 import java.nio.*;
 import java.awt.Color;
 import java.util.Collection;
@@ -40,7 +42,7 @@ public class BPRad extends Sprite {
     
     public BPRad(Owner owner, Resource res, float r) {
 	super(owner, res);
-	overlay = new SquareRadiiOverlay((Gob) owner, r, bpol);
+	overlay = new SquareRadiiOverlay(ClientUtils.owner2gob(gob), r, bpol);
 	int n = Math.max(24, (int)(2 * Math.PI * r / 11.0));
 	FloatBuffer posb = Utils.wfbuf(n * 3 * 2);
 	FloatBuffer nrmb = Utils.wfbuf(n * 3 * 2);

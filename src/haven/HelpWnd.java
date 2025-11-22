@@ -36,7 +36,7 @@ public class HelpWnd extends WindowX {
     
     static {
 	/* XXX: This should use the shown resource's respool. */
-	fnd = new RichText.Foundry(Resource.remote());
+	fnd = new RichText.Foundry(RichText.ImageSource.res(Resource.remote()));
 	fnd.aa = true;
     }
     

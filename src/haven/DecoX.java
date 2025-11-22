@@ -191,7 +191,7 @@ public class DecoX extends Window.DefaultDeco {
 	    Resource.loadsimg("gfx/hud/btn-close-h")
 	};
 	
-	private static final IBox wbox = new IBox("gfx/hud/wnd", "tl", "tr", "bl", "br", "extvl", "extvr", "extht", "exthb") {
+	private static final IBox wbox = new IBox.Scaled("gfx/hud/wnd", "tl", "tr", "bl", "br", "extvl", "extvr", "extht", "exthb") {
 	    final Coord co = UI.scale(3, 3), bo = UI.scale(2, 2);
 	    
 	    public Coord btloff() {return (super.btloff().sub(bo));}
@@ -214,7 +214,7 @@ public class DecoX extends Window.DefaultDeco {
 	    Coord asz = isz;
 	    Coord csz = asz.add(mrgn.mul(2));
 	    
-	    decoX.cptl = Coord.of(0, wbox.ctl.sz().y);
+	    decoX.cptl = Coord.of(0, wbox.ctloff().y);
 	    Coord wsz = csz.add(wbox.bisz()).addy(cm.sz().y / 2).add(decoX.cptl);
 	    decoX.resize(wsz);
 	    

@@ -811,7 +811,7 @@ public class OptWnd extends WindowX {
 	addPanelButton("Widget shortcuts", 'k', keybind, colum, row++);
 	addPanelButton("Global shortcuts", 's', shortcuts, colum, row++);
 	//addPanelButton("",'l', Action.);
-	if (LoginScreen.authmech.get() == "steam") {
+	if (LoginScreen.authmech.get() == "steam" || LoginScreen.authmech.get() == null) {
 	    addPanelButton("Log out to native", 'q', Action.LOGOUT_AND_SWITCH_AUTH_METHOD, colum, row++);
 	}
 	if (LoginScreen.authmech.get() == "native") {
@@ -1669,13 +1669,13 @@ public class OptWnd extends WindowX {
 	    public void click() {
 		try {
 		    boolean setUsername = false;
-		    if (!MappingClient.initialized() && ui.sess.username != null &&  ui.sess.username.length() > 0) {
+		    if (!MappingClient.initialized() && ui.sess.user.name != null &&  ui.sess.user.name.length() > 0) {
 			MappingClient.init(ui.sess.glob);
 			setUsername = true;
 		    }
 		    MappingClient automapper = MappingClient.getInstance();
 		    if (setUsername)
-			automapper.SetPlayerName(ui.sess.username);
+			automapper.SetPlayerName(ui.sess.user.name);
 		    automapper.SetEndpoint(CFG.AUTOMAP_ENDPOINT.get());
 		    automapper.EnableGridUploads(CFG.AUTOMAP_UPLOAD.get());
 		    automapper.EnableTracking(CFG.AUTOMAP_TRACK.get());

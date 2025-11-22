@@ -4,6 +4,8 @@ package haven.res.lib.plants;
 import haven.*;
 import haven.render.*;
 import haven.resutil.*;
+import me.ender.ClientUtils;
+
 import java.util.*;
 
 @haven.FromResource(name = "lib/plants", version = 11)
@@ -36,7 +38,7 @@ public class TrellisPlant implements Sprite.Factory {
     }
     
     public Sprite create(Sprite.Owner owner, Resource res, Message sdt) {
-	double a = ((owner instanceof Gob) ? (Gob) owner : owner.context(Gob.class)).a;
+	double a = ClientUtils.owner2gob(owner).a;
 	float ac = (float) Math.cos(a), as = -(float) Math.sin(a);
 	int st = sdt.uint8();
 	if((st >= this.var.size()) || (this.var.get(st).size() < 1))

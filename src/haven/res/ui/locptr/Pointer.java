@@ -16,7 +16,7 @@ import static haven.OCache.*;
 import static java.lang.Math.*;
 
 /* >wdg: Pointer */
-@FromResource(name = "ui/locptr", version = 21)
+@FromResource(name = "ui/locptr", version = 22)
 public class Pointer extends Widget implements MiniMap.IPointer, DTarget {
     private static final Color TRIANGULATION_COLOR = new Color(100, 100, 100);
     public static final BaseColor[] colors = new BaseColor[]{
@@ -35,7 +35,6 @@ public class Pointer extends Widget implements MiniMap.IPointer, DTarget {
     public Coord lc;
     public Marker marker;
     public long gobid = -1;
-    public boolean click;
     private Tex licon;
     private String tip = null;
     private boolean triangulating = false;
@@ -152,47 +151,23 @@ public class Pointer extends Widget implements MiniMap.IPointer, DTarget {
 	Coord2d tc = tc();
 	if(tc == null)
 	    return;
-	Gob gob = getGob();
-	Coord3f sl;
+	Gob gob = (gobid < 0) ? null : ui.sess.glob.oc.getgob(gobid);
+	MapView mv = getparent(GameUI.class).map;
+	HomoCoord4f sl;
 	if(gob != null) {
 	    try {
-		sl = getparent(GameUI.class).map.screenxf(gob.getc());
+		sl = mv.clipxf(gob.getc(), true);
 	    } catch(Loading l) {
 		return;
 	    }
 	} else {
-	    Coord3f map3d = getMap3d(tc);
-	    MapView map = getparent(GameUI.class).map;
-	    HomoCoord4f homo = map.clipxf(map3d, false);
-	    if(homo.w < 0) {
-		homo = map.clipxf(map3d, true);
-	    }
-	    sl = homo.toview(Area.sized(map.sz));
-	}
-	if(sl != null)
-	    drawarrow(g, new Coord(sl));
-    }
-
-    Coord3f getMap3d(Coord2d mc) {
-	float z = 0;
-	MapView map = getparent(GameUI.class).map;
-	Gob player = map == null ? null : map.player();
-	if(player != null) {
 	    try {
-		Coord2d gsz = tilesz.mul(cmaps.x, cmaps.y);
-		Coord pgc = player.rc.floor(gsz);
-		Coord mgc = mc.floor(gsz);
-		if(pgc.manhattan2(mgc) <= 1) {
-		    Coord3f mp = ui.sess.glob.map.getzp(mc);
-		    z = mp.z;
-		} else {
-		    z = player.getc().z;
-		}
-	    } catch (Loading ignored) {
-		
+		sl = mv.clipxf(Coord3f.of((float)tc.x, (float)tc.y, mv.getcc().z), true);
+	    } catch(Loading l) {
+		return;
 	    }
 	}
-	return new Coord3f((float) mc.x, (float) mc.y, z);
+	drawarrow(g, new Coord(sl.toview(Area.sized(mv.sz))));
     }
     
     public void update(Coord2d tc, long gobid) {
@@ -202,7 +177,7 @@ public class Pointer extends Widget implements MiniMap.IPointer, DTarget {
     }
 
     public boolean mousedown(Widget.MouseDownEvent ev) {
-	if(lc != null && lc.dist(ev.c) < 20) {
+	if(checkhit(ev.c)) {
 	    if(ev.b == 1) {
 		Gob gob = getGob();
 		if(gob != null) {
@@ -224,10 +199,13 @@ public class Pointer extends Widget implements MiniMap.IPointer, DTarget {
 		    }
 		}
 	    }
-	    if(click) {wdgmsg("click", ev.b, ui.modflags());}
 	    return(true);
 	}
 	return (super.mousedown(ev));
+    }
+
+    public boolean checkhit(Coord c) {
+	return((lc != null) && (lc.dist(c) < 20));
     }
     
     private QuestWnd getQuestWnd() {
@@ -261,8 +239,6 @@ public class Pointer extends Widget implements MiniMap.IPointer, DTarget {
 	    Indir<Resource> icon = (iconid < 0) ? null : ui.sess.getres(iconid);
 	    this.icon = icon;
 	    licon = null;
-	} else if(name == "cl") {
-	    click = ((Integer)args[0]) != 0;
 	} else if(name == "tip") {
 	    Object tt = args[0];
 	    if(tt instanceof String) {

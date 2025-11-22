@@ -10,6 +10,7 @@ import java.util.*;
 import haven.*;
 import haven.render.*;
 import me.ender.CFGOverlayId;
+import me.ender.ClientUtils;
 
 /* >spr: MSRad */
 @haven.FromResource(name = "gfx/fx/msrad", version = 16)
@@ -30,7 +31,7 @@ public class MSRad extends Sprite {
     
     public MSRad(Owner owner, Resource res, float r, Color color1, Color color2) {
 	super(owner, res);
-	Gob gob = (Gob) owner;
+	Gob gob = ClientUtils.owner2gob(owner);
 	circle = new ColoredRadius(gob, r, color1, color2);
 	overlay = new SquareRadiiOverlay(gob, r, safeol, dangerol);
     }
@@ -106,7 +107,7 @@ public class MSRad extends Sprite {
     }
     
     private boolean useRadii() {
-	String resid = ((Gob)owner).resid();
+	String resid = owner.context(Gob.class).resid();
 	if(resid == null || !CFG.SHOW_MINE_SUPPORT_AS_OVERLAY.get()) {return true;}
 	switch (resid) {
 	    case "gfx/terobjs/minesupport":

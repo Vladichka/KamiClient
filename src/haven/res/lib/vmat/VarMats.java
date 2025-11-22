@@ -4,10 +4,12 @@ package haven.res.lib.vmat;
 import haven.*;
 import haven.render.*;
 import haven.ModSprite.*;
+import me.ender.CustomizeVarMat;
+
 import java.util.*;
 import java.util.function.Consumer;
 
-@FromResource(name = "lib/vmat", version = 38)
+@haven.FromResource(name = "lib/vmat", version = 39)
 public abstract class VarMats extends GAttrib implements Mod {
     public VarMats(Gob gob) {
 	super(gob);
@@ -16,6 +18,8 @@ public abstract class VarMats extends GAttrib implements Mod {
     public abstract Material varmat(int id);
 
     public void operate(Cons cons) {
+	if (this.gob != null)
+	    if(CustomizeVarMat.NoMat(this.gob)) {return;}
 	for(Part part : cons.parts) {
 	    if(part.obj instanceof FastMesh.ResourceMesh) {
 		FastMesh.ResourceMesh m = (FastMesh.ResourceMesh)part.obj;
@@ -24,7 +28,7 @@ public abstract class VarMats extends GAttrib implements Mod {
 		if(mid >= 0) {
 		    Material vm = varmat(mid);
 		    if(vm != null)
-			part.wraps.addFirst(vm);
+			part.wraps.addFirst(new VarWrap.Applier(vm, mid));
 		}
 	    }
 	}
@@ -32,3 +36,5 @@ public abstract class VarMats extends GAttrib implements Mod {
 
     public int order() {return(100);}
 }
+
+/* >objdelta: AttrMats */

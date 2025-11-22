@@ -1,6 +1,8 @@
 package haven;
 
 import haven.res.ui.tt.attrmod.AttrMod;
+import haven.res.ui.tt.attrmod.Attribute;
+import haven.res.ui.tt.attrmod.Mod;
 
 import java.awt.image.BufferedImage;
 import java.util.*;
@@ -15,31 +17,31 @@ public class AttrBonusesWdg extends Widget implements ItemInfo.Owner {
 	.add(Glob.class, wdg -> wdg.ui.sess.glob)
 	.add(Session.class, wdg -> wdg.ui.sess);
     private final Scrollbar bar;
-
+    
     private boolean needUpdate = false;
     private boolean needBuild = false;
     private boolean needRedraw = false;
-
+    
     private WItem[] items;
     private Map<Resource, Integer> bonuses;
     private List<ItemInfo> info = null;
     private BufferedImage tip = null;
-
+    
     private CharWnd charWnd = null;
     private long attrseq = 0;
-
+    
     public AttrBonusesWdg(int y) {
 	super(new Coord(UI.scale(175), y));
 	add(new Label("Equipment bonuses:"));
 	bar = adda(new Scrollbar(y - bonusc.y, 0, 0), sz.x, bonusc.y, 1, 0);
     }
-
+    
     @Override
     public boolean mousewheel(MouseWheelEvent ev) {
 	bar.ch(15 * ev.a);
 	return true;
     }
-
+    
     public void update(WItem[] items) {
 	this.items = items;
 	needUpdate = true;
@@ -65,7 +67,7 @@ public class AttrBonusesWdg extends Widget implements ItemInfo.Owner {
 	if(needRedraw) {
 	    render();
 	}
-
+	
 	if(tip != null) {
 	    Coord c = Coord.z;
 	    if(bar.visible) {
@@ -75,7 +77,7 @@ public class AttrBonusesWdg extends Widget implements ItemInfo.Owner {
 	}
 	super.draw(g);
     }
-
+    
     private void render() {
 	try {
 	    if(info != null && !info.isEmpty()) {
@@ -83,12 +85,12 @@ public class AttrBonusesWdg extends Widget implements ItemInfo.Owner {
 	    } else {
 		tip = null;
 	    }
-
+	    
 	    int delta = tip != null ? tip.getHeight() : 0;
 	    bar.visible = delta > bar.sz.y;
 	    bar.max = delta - bar.sz.y;
 	    bar.ch(0);
-
+	    
 	    needRedraw = false;
 	} catch (Loading ignored) {}
     }
@@ -171,37 +173,37 @@ public class AttrBonusesWdg extends Widget implements ItemInfo.Owner {
 		);
 		info = compiled != null ? Collections.singletonList(compiled) : null;
 	    }
-
+	    
 	    needBuild = false;
 	    needRedraw = true;
 	} catch (Loading ignored) {}
     }
-
+    
     private ItemInfo make(Collection<Entry<Resource, Integer>> values) {
 	if(values.isEmpty()) {
 	    return null;
 	}
 	
 	return new AttrMod(this, values.stream()
-	    .map(m -> new AttrMod.Mod(m.getKey(), m.getValue()))
+	    .map(m -> new Mod(Attribute.get(m.getKey()), m.getValue()))
 	    .collect(Collectors.toList()));
     }
-
+    
     private int BY_PRIORITY(Entry<Resource, Integer> o1, Entry<Resource, Integer> o2) {
 	Resource r1 = o1.getKey();
 	Resource r2 = o2.getKey();
-
+	
 	if(charWnd != null) {
 	    return charWnd.BY_PRIORITY(r1, r2);
 	}
 	return r1.name.compareTo(r2.name);
     }
-
+    
     @Override
     public List<ItemInfo> info() {
 	return info;
     }
-
+    
     @Override
     public <T> T context(Class<T> cl) {
 	return (ctxr.context(cl, this));

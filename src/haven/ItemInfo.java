@@ -27,6 +27,9 @@
 package haven;
 
 import haven.res.ui.tt.attrmod.AttrMod;
+import haven.res.ui.tt.attrmod.Entry;
+import haven.res.ui.tt.attrmod.Mod;
+import haven.res.ui.tt.attrmod.resattr;
 import haven.res.ui.tt.ncont.NamedContents;
 import haven.res.ui.tt.slot.Slotted;
 import haven.res.ui.tt.slots.ISlots;
@@ -266,6 +269,7 @@ public abstract class ItemInfo {
 	    public String name();
 	}
 	
+	@Resource.PublishedCode.Builtin(type = InfoFactory.class, name = "defn")
 	public static class Default implements InfoFactory {
 	    public static String get(Owner owner) {
 		if(owner instanceof SpriteOwner) {
@@ -624,14 +628,16 @@ public abstract class ItemInfo {
     
     public static void parseAttrMods(Map<Resource, Integer> bonuses, List<AttrMod> infos) {
 	for (AttrMod inf : infos) {
-	    Collection<AttrMod.Mod> mods = inf.mods;
-	    for (AttrMod.Mod mod : mods) {
-		Resource attr = mod.attr;
-		int value = mod.mod;
-		if (bonuses.containsKey(attr)) {
-		    bonuses.put(attr, bonuses.get(attr) + value);
+	    for (Entry entry : inf.tab) {
+		if(!(entry instanceof Mod)) {continue;}
+		Mod mod = (Mod) entry;
+		if(!(mod.attr instanceof resattr)) {continue;}
+		Resource attr = ((resattr) mod.attr).res;
+		double value = mod.mod;
+		if(bonuses.containsKey(attr)) {
+		    bonuses.put(attr, bonuses.get(attr) + (int) value);
 		} else {
-		    bonuses.put(attr, value);
+		    bonuses.put(attr, (int) value);
 		}
 	    }
 	}

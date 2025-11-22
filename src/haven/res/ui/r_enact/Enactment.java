@@ -6,7 +6,7 @@ import haven.CharWnd.LoadingTextBox;
 import java.util.*;
 import java.awt.Color;
 
-@FromResource(name = "ui/r-enact", version = 64)
+@FromResource(name = "ui/r-enact", version = 65)
 public class Enactment {
     public final int id;
     public final Indir<Resource> res;
