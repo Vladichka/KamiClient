@@ -137,16 +137,27 @@ public class MappingClient {
 	}
     }
     
+    private Coord2d playerCoord = new Coord2d(0,0);
+    private long playerGridId = 0;
+    
     /***
      * Track a gob at a location.  Typically called in Gob.move
+     * Note, current implementation in gob is actually only tracking the player and nothing else
      * @param id
      * @param coordinates
      */
     public void Track(long id, Coord2d coordinates) {
 	try {
+	    playerCoord = coordinates;
 	    MCache.Grid g = glob.map.getgrid(toGC(coordinates));
+	    playerGridId = g.id;
 	    pu.Track(id, coordinates, g.id, genus);
 	} catch (Exception ex) {}
+    }
+    
+    public void SetTimerToNearestRes(String inspectResult)
+    {
+	scheduler.execute(new UploadInspectResult(playerGridId, playerCoord, inspectResult, genus));
     }
     
     private Coord lastGC = null;
@@ -600,8 +611,8 @@ public class MappingClient {
 	private final WeakReference<MCache.Grid> grid;
 	private final String genus;
 	
-	GridUploadTask(String gridID, WeakReference<MCache.Grid> grid, String genus) {
-	    this.gridID = gridID;
+	GridUploadTask(String gridId, WeakReference<MCache.Grid> grid, String genus) {
+	    this.gridID = gridId;
 	    this.grid = grid;
 	    this.genus = genus;
 	}
@@ -713,6 +724,57 @@ public class MappingClient {
 	
 	public String toString() {
 	    return (gc.toString() + " in map space " + mapID);
+	}
+    }
+    
+    private class UploadInspectResult implements Runnable {
+	Coord2d coord;
+	long gridId;
+	String inspectResult;
+	String genus;
+	
+	UploadInspectResult(long gridId, Coord2d coords, String inspectResult, String genus) {
+	    this.coord = gridOffset(coords);
+	    this.gridId = gridId;
+	    this.inspectResult = inspectResult;
+	    this.genus = genus;
+	}
+	
+	public JSONObject getJSON() {
+	    JSONObject j = new JSONObject();
+	    j.put("genus", genus);
+	    j.put("inspectResult", inspectResult);
+	    j.put("gridId", String.valueOf(gridId));
+	    JSONObject c = new JSONObject();
+	    c.put("x", (int) (coord.x / 11));
+	    c.put("y", (int) (coord.y / 11));
+	    j.put("coords", c);
+	    return j;
+	}
+	
+	@Override
+	public void run() {
+	    if (trackingEnabled)
+	    {
+		try {
+		    HttpURLConnection connection =
+			(HttpURLConnection) new URL(endpoint + "/inspectUpdate").openConnection();
+		    connection.setRequestMethod("POST");
+		    connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+		    connection.setDoOutput(true);
+		    try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
+			String json = getJSON().toString();
+			out.write(json.getBytes(StandardCharsets.UTF_8));
+		    } catch (IOException e) {
+		    
+		    }
+		    connection.getResponseCode();
+		} catch (Exception ex)
+		{
+		    System.out.println("Cannot upload inspect result: " + ex.getMessage());
+		}
+		
+	    }
 	}
     }
 }
