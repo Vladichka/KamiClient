@@ -636,7 +636,6 @@ public class DynresWindow extends WindowX {
 		}
 
 		public Random mkrandoom() {return(bk.mkrandoom());}
-		@SuppressWarnings("deprecation") public Resource getres() {return(bk.getres());}
 	    }
 
 	    public Sprite create(Sprite.Owner owner, Indir<Resource> vres) {

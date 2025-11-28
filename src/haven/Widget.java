@@ -1045,8 +1045,6 @@ public class Widget {
 	public MouseDownEvent derive(Coord c) {return(new MouseDownEvent(this, c));}
 	
 	protected boolean shandle(Widget w) {
-	    if(hackhandle(this, w, "mousedown", new Class<?>[] {Coord.class, Integer.TYPE}, c, b))
-		return(true);
 	    if(w.mousedown(this))
 		return(true);
 	    return(super.shandle(w));
@@ -1064,8 +1062,6 @@ public class Widget {
 	public MouseUpEvent derive(Coord c) {return(new MouseUpEvent(this, c));}
 	
 	protected boolean shandle(Widget w) {
-	    if(hackhandle(this, w, "mouseup", new Class<?>[] {Coord.class, Integer.TYPE}, c, b))
-		return(true);
 	    if(w.mouseup(this))
 		return(true);
 	    return(super.shandle(w));
@@ -1089,8 +1085,6 @@ public class Widget {
 	}
 	
 	public boolean shandle(Widget w) {
-	    if(hackhandle(this, w, "mousemove", new Class<?>[] {Coord.class}, c))
-		return(true);
 	    w.mousemove(this);
 	    return(false);
 	}
@@ -1111,8 +1105,6 @@ public class Widget {
 	public MouseWheelEvent derive(Coord c) {return(new MouseWheelEvent(this, c));}
 	
 	public boolean shandle(Widget w) {
-	    if(hackhandle(this, w, "mousewheel", new Class<?>[] {Coord.class, Integer.TYPE}, c, a))
-		return(true);
 	    if(w.mousewheel(this))
 		return(true);
 	    return(super.shandle(w));
@@ -1150,8 +1142,6 @@ public class Widget {
 	}
 	
 	protected boolean shandle(Widget w) {
-	    if(hackhandle(this, w, "mousehover", new Class<?>[] {Coord.class, Boolean.TYPE}, c, hovering))
-		return(true);
 	    if(w.mousehover(this, hovering))
 		return(true);
 	    return(super.shandle(w));
@@ -1216,8 +1206,6 @@ public class Widget {
 	public KeyDownEvent(KeyEvent awt) {super(awt);}
 	
 	protected boolean shandle(Widget w) {
-	    if(hackhandle(this, w, "keydown", new Class<?>[] {KeyEvent.class}, awt))
-		return(true);
 	    if(w.keydown(this))
 		return(true);
 	    return(super.shandle(w));
@@ -1228,8 +1216,6 @@ public class Widget {
 	public KeyUpEvent(KeyEvent awt) {super(awt);}
 	
 	public boolean shandle(Widget w) {
-	    if(hackhandle(this, w, "keyup", new Class<?>[] {KeyEvent.class}, awt))
-		return(true);
 	    if(w.keyup(this))
 		return(true);
 	    return(super.shandle(w));
@@ -1248,8 +1234,6 @@ public class Widget {
 	}
 	
 	protected boolean shandle(Widget w) {
-	    if(hackhandle(this, w, "keydown", new Class<?>[] {Character.TYPE, KeyEvent.class}, awt.getKeyChar(), awt))
-		return(true);
 	    if(w.globtype(this))
 		return(true);
 	    return(super.shandle(w));
@@ -1340,63 +1324,13 @@ public class Widget {
 
 	protected Object defvalue() {return(defcurs);}
     }
-    
-    /* XXX: Remove me! */
-    private static final ThreadLocal<Event> hackhandling = new ThreadLocal<>();
-    private static final Set<Pair<Class, String>> hackwarned = new HashSet<>();
-    private static boolean hackhandle(Event ev, Widget w, String nm, Class<?>[] argt, Object... args) {
-	Event prev = hackhandling.get();
-	hackhandling.set(ev);
-	try {
-	    Class<?> cls = w.getClass();
-	    Method m = cls.getMethod(nm, argt),
-		wm = Widget.class.getMethod(nm, argt);
-	    if(Utils.eq(m, wm))
-		return(false);
-	    if(!cls.getName().startsWith("haven.res.") && hackwarned.add(new Pair<>(cls, nm)))
-		Warning.warn("hack-hacndling event %s for %s", nm, cls);
-	    Boolean ret = (Boolean)wm.invoke(w, args);
-	    return((ret == null) ? false : ret);
-	} catch(InvocationTargetException e) {
-	    throw((RuntimeException)e.getCause());
-	} catch(NoSuchMethodException | IllegalAccessException e) {
-	    return(false);
-	} finally {
-	    hackhandling.set(prev);
-	}
-    }
-    
+
     public boolean mousedown(MouseDownEvent ev) {return(false);}
     public boolean mouseup(MouseUpEvent ev) {return(false);}
     public boolean mousewheel(MouseWheelEvent ev) {return(false);}
     public void mousemove(MouseMoveEvent ev) {}
     public boolean mousehover(MouseHoverEvent ev, boolean hovering) {return(false);}
-    
-    @Deprecated
-    public boolean mousedown(Coord c, int button) {
-	return(hackhandling.get().propagate(this));
-    }
-    
-    @Deprecated
-    public boolean mouseup(Coord c, int button) {
-	return(hackhandling.get().propagate(this));
-    }
-    
-    @Deprecated
-    public boolean mousewheel(Coord c, int amount) {
-	return(hackhandling.get().propagate(this));
-    }
-    
-    @Deprecated
-    public void mousemove(Coord c) {
-	hackhandling.get().propagate(this);
-    }
-    
-    @Deprecated
-    public boolean mousehover(Coord c, boolean hovering) {
-	return(hackhandling.get().propagate(this));
-    }
-    
+
     private static final Map<Integer, Integer> gkeys = Utils.<Integer, Integer>map().
 	put((int)'0', KeyEvent.VK_0).put((int)'1', KeyEvent.VK_1).put((int)'2', KeyEvent.VK_2).put((int)'3', KeyEvent.VK_3).put((int)'4', KeyEvent.VK_4).
 	put((int)'5', KeyEvent.VK_5).put((int)'6', KeyEvent.VK_6).put((int)'7', KeyEvent.VK_7).put((int)'8', KeyEvent.VK_8).put((int)'9', KeyEvent.VK_9).
@@ -1474,18 +1408,7 @@ public class Widget {
 	}
 	return(false);
     }
-    
-    @Deprecated
-    public boolean gkeytype(KeyEvent ev) {
-	wdgmsg("activate", UI.modflags(ev));
-	return(true);
-    }
-    
-    @Deprecated
-    public boolean globtype(char key, KeyEvent ev) {
-	return(hackhandling.get().propagate(this));
-    }
-    
+
     public Widget setgkey(KeyMatch gkey) {
 	this.gkey = gkey;
 	return(this);
@@ -1497,22 +1420,7 @@ public class Widget {
 	    tooltip = new KeyboundTip();
 	return(this);
     }
-    
-    public Widget allowGlobalKeysWhenHidden(boolean value) {
-	allowGlobalKeysWhenHidden = value;
-	return(this);
-    }
-    
-    @Deprecated
-    public boolean keydown(KeyEvent ev) {
-	return(hackhandling.get().propagate(this));
-    }
-    
-    @Deprecated
-    public boolean keyup(KeyEvent ev) {
-	return(hackhandling.get().propagate(this));
-    }
-    
+
     public Area area() {
 	return(Area.sized(c, sz));
     }

@@ -253,7 +253,8 @@ public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
     
     protected ModSprite(boolean dummy, Owner owner, Resource res) {
 	super(owner, res);
-	if((gob = owner.fcontext(Gob.class, false)) != null) {
+	gob = (owner == null) ? null : owner.fcontext(Gob.class, false);
+	if(gob != null) {
 	    omods = getomods();
 	    lastupd = gob.updateseq;
 	}
@@ -499,10 +500,7 @@ public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
 	public Random mkrandoom() {
 	    return(main.owner.mkrandoom());
 	}
-	@Deprecated public Resource getres() {
-	    return(main.res);
-	}
-	
+
 	public int order() {return(2000);}
 	
 	@RMod.Global

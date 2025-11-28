@@ -54,18 +54,10 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
     public static final Coord ametersz = UI.scale(new Coord(32, 3));
     public static final int textw = UI.scale(200);
     public Indir<Resource> res;
-    public double cmeter = -1;
-    public double cmrem = -1;
-    public double gettime;
     protected int a = 255;
     protected boolean dest = false;
     private ItemInfo.Raw rawinfo = null;
     private List<ItemInfo> info = Collections.emptyList();
-    /* Deprecated */
-    String tt = null;
-    int ameter = -1;
-    int nmeter = -1, rnmeter = -1;
-    Tex ntext = null;
 
     @RName("buff")
     public static class $_ implements Factory {
@@ -99,12 +91,6 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	return(info);
     }
 
-    private Tex nmeter() {
-	if(ntext == null)
-	    ntext = new TexI(Utils.outline2(nfnd.render(Integer.toString(nmeter), Color.WHITE).img, Color.BLACK));
-	return(ntext);
-    }
-
     public interface AMeterInfo {
 	public double ameter();
     }
@@ -129,10 +115,8 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 
     public void draw(GOut g) {
 	g.chcolor(255, 255, 255, a);
-	Double ameter = (this.ameter >= 0) ? Double.valueOf(this.ameter / 100.0) : ameteri.get();
-	int ameteri = 0;
+	Double ameter = ameteri.get();
 	if(ameter != null) {
-	    ameteri = (int) (100*ameter);
 	    g.image(cframe, Coord.z);
 	    g.chcolor(0, 0, 0, a);
 	    g.frect(ameteroff, ametersz);
@@ -143,43 +127,26 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	}
 	try {
 	    Tex img = res.get().flayer(Resource.imgc).tex();
-	    Coord isz = img.sz();
+	    g.image(img, imgoff);
+	    Tex nmeter = nmeteri.get();
 	    String name = res.get().name;
-	    if(CFG.SIMPLE_COMBAT_OPENINGS.get() && OPENINGS.containsKey(name)) {
-		g.chcolor(OPENINGS.get(name));
-		g.frect(imgoff, isz);
-		g.chcolor(Color.WHITE);
-		if(ameteri != nmeter) {
-		    ntext = null;
-		    nmeter = ameteri;
+	    if(nmeter != null)
+	    {
+		if(CFG.SIMPLE_COMBAT_OPENINGS.get() && OPENINGS.containsKey(name)) {
+		    g.chcolor(OPENINGS.get(name));
+		    g.frect(imgoff, img.sz());
+		    g.chcolor(Color.WHITE);
 		}
-	    } else {
-		g.image(img, imgoff);
-		if(rnmeter != nmeter) {
-		    nmeter = rnmeter;
-		    ntext = null;
+		else {
+		    g.aimage(nmeter, imgoff.add(img.sz()).sub(1, 1), 1, 1, nmeter.sz());
 		}
 	    }
-	    if(nmeter >= 0)
-		g.aimage(nmeter(), imgoff.add(isz).sub(1, 1), 1, 1);
-	    
-	    Double cmeter;
-	    if(this.cmeter >= 0) {
-		double m = this.cmeter;
-		if(cmrem >= 0) {
-		    double ot = cmrem;
-		    double pt = Utils.rtime() - gettime;
-		    m *= (ot - pt) / ot;
-		}
-		cmeter = m;
-	    } else {
-		cmeter = cmeteri.get();
-	    }
+	    Double cmeter = cmeteri.get();
 	    if(cmeter != null) {
 		double m = Utils.clip(cmeter, 0.0, 1.0);
 		g.chcolor(255, 255, 255, a / 2);
-		Coord ccc = isz.div(2);
-		g.prect(imgoff.add(ccc), ccc.inv(), isz.sub(ccc), Math.PI * 2 * m);
+		Coord ccc = img.sz().div(2);
+		g.prect(imgoff.add(ccc), ccc.inv(), img.sz().sub(ccc), Math.PI * 2 * m);
 		g.chcolor(255, 255, 255, a);
 	    }
 	} catch(Loading e) {}
@@ -188,11 +155,7 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
     private BufferedImage shorttip() {
 	if(rawinfo != null)
 	    return(ItemInfo.shorttip(info()));
-	if(tt != null)
-	    return(Text.render(tt).img);
 	String ret = res.get().flayer(Resource.tooltip).t;
-	if(ameter >= 0)
-	    ret = ret + " (" + ameter + "%)";
 	return(Text.render(ret).img);
     }
 
@@ -272,14 +235,6 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	}
     }
     
-    public int getNMeter() {return nmeter;}
-    
-    public int ameter() {
-	if(ameter >= 0) {return ameter;}
-	Double v = ameteri.get();
-	if(v == null) {return -1;}
-	return (int) Math.floor(v * 100);
-    }
 
     public boolean mousedown(MouseDownEvent ev) {
 	wdgmsg("cl", ev.c.sub(imgoff), ev.b, ui.modflags());

@@ -1315,10 +1315,6 @@ public class Skeleton {
 		return(Pipe.Op.compose(buf));
 	    });
 	}
-	
-	@Deprecated
-	public Supplier<Pipe.Op> forpose(Pose pose) {
-	    return(from(pose));
-	}
+
     }
 }

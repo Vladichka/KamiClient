@@ -135,11 +135,6 @@ public class ChatUI extends Widget {
 	public boolean process(String msg) {
 	    return !ChatCommands.processCommand(ui, msg);
 	}
-	/* Deprecated? */
-	public final List<Message> msgs = new AbstractList<Message>() {
-		public int size() {return(rmsgs.size());}
-		public Message get(int i) {return(rmsgs.get(i).msg);}
-	    };
 
 	public static abstract class Message {
 	    public final double time = Utils.ntime();
@@ -279,9 +274,6 @@ public class ChatUI extends Widget {
 		this.text = text;
 		this.col = col;
 	    }
-
-	    @Deprecated
-	    public SimpleMessage(String text, Color col, int w) {this(text, col);}
 
 	    public Indir<Text> render(int w) {
 		if(col == null)
@@ -517,10 +509,6 @@ public class ChatUI extends Widget {
 	    if(cb != null) {
 		cb.c = new Coord(sz.x + marg.x - cb.sz.x, -marg.y);
 	    }
-	}
-
-	@Deprecated
-	public void notify(Message msg, int urgency) {
 	}
 
 	public static class CharPos {
@@ -1012,9 +1000,6 @@ public class ChatUI extends Widget {
 	    public MyMessage(String text) {
 		super(text, new Color(192, 192, 255));
 	    }
-
-	    @Deprecated
-	    public MyMessage(String text, int w) {this(text);}
 	}
 
 	public MultiChat(boolean closable, String name, int urgency) {

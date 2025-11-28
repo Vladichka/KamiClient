@@ -144,9 +144,6 @@ public class RUtils {
 		    protected Op state() {return(st.get());}
 		});
 	}
-	@Deprecated public static <R extends RenderTree.Node> StateNode from(R r, Supplier<? extends Op> st) {
-	    return(of(r, st));
-	}
 
 	public String toString() {
 	    return(String.format("#<statenode %s>", r));
@@ -167,9 +164,6 @@ public class RUtils {
 	    return(new StateTickNode<R>(r) {
 		    protected Op state() {return(st.get());}
 		});
-	}
-	@Deprecated public static <R extends RenderTree.Node> StateTickNode from(R r, Supplier<? extends Op> st) {
-	    return(of(r, st));
 	}
     }
 

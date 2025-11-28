@@ -94,7 +94,7 @@ public class Window extends Widget {
     private FragColor gout;
     private Pipe.Op gbasic;
     private UI.Grab dm = null;
-    protected Coord doff;
+    private Coord doff;
     public boolean decohide = false;
     public boolean large = false;
     protected WidgetCfg cfg = null;
@@ -150,7 +150,7 @@ public class Window extends Widget {
     }
     
     private boolean shouldGrabFocusOnAdd() {
-	//If ContentsWindow grabs focus on add, then it steals focus from chat 
+	//If ContentsWindow grabs focus on add, then it steals focus from chat
 	if(this instanceof GItem.ContentsWindow) {
 	    return false;
 	}
@@ -513,17 +513,6 @@ public class Window extends Widget {
 	resize2(sz);
     }
 
-    @Deprecated
-    public void decohide(boolean h) {
-	chdeco(h ? null : makedeco());
-	this.decohide = h;
-    }
-
-    @Deprecated
-    public boolean decohide() {
-	return(decohide);
-    }
-
     public void uimsg(String msg, Object... args) {
 	if(msg == "pack") {
 	    report(ON_PACK);
@@ -532,7 +521,7 @@ public class Window extends Widget {
 	    String cap = (String)args[0];
 	    chcap(cap.equals("") ? null : cap);
 	} else if(msg == "dhide") {
-	    decohide(Utils.bv(args[0]));
+	    chdeco(Utils.bv(args[0]) ? null : makedeco());
 	} else {
 	    super.uimsg(msg, args);
 	}
