@@ -343,7 +343,7 @@ public class MappingClient {
 			long gridId = md.indirGrid.get().id;
 			JSONObject o = new JSONObject();
 			o.put("name", md.m.nm);
-			o.put("gnus", genus);
+			o.put("genus", genus);
 			o.put("gridID", String.valueOf(gridId));
 			Coord gridOffset = md.m.tc.sub(mgc.mul(100));
 			o.put("x", gridOffset.x);
