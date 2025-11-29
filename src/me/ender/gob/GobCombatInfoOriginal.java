@@ -153,7 +153,7 @@ public class GobCombatInfoOriginal extends GAttrib implements RenderTree.Node, P
 	String y = null, g = null, b = null, r = null;
 	
 	for (Buff buff : rel.buffs.children(Buff.class)) {
-	    int value = buff.getNMeter();
+	    int value = buff.ameter();
 	    if(value <= 0) {continue;}
 	    try {
 		String name = buff.res.get().name;
@@ -205,7 +205,7 @@ public class GobCombatInfoOriginal extends GAttrib implements RenderTree.Node, P
 	if(ui == null) {return;}
 	Gob gob = ui.sess.glob.oc.getgob(rel.gobid);
 	if(gob != null) {
-	    gob.delattr(GobCombatInfoOriginal.class);
+	    gob.delattr(GobCombatInfo.class);
 	}
     }
     

@@ -270,7 +270,8 @@ public class WItem extends Widget implements DTarget {
 	if((spr != null) && (spr != lspr)) {
 	    Coord sz = spr.sz();
 	    resize(Coord.of(sqsz.x * ((sz.x + sqsz.x / 2) / sqsz.x),
-			    sqsz.y * ((sz.y + sqsz.y / 2) / sqsz.y)));
+		sqsz.y * ((sz.y + sqsz.y / 2) / sqsz.y)));
+	    lsz = this.sz.div(sqsz);
 	    lspr = spr;
 	}
 	checkDrop();

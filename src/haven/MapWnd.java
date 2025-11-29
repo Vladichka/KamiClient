@@ -818,7 +818,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 			    change("Track");
 			} else {
 			    ui.gui.track(mark);
-			    change("Unrack");
+			    change("Untrack");
 			}
 		    }
 		});

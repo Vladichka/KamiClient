@@ -5,6 +5,8 @@ import haven.res.ui.tt.wear.Wear;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static me.ender.ResName.*;
 
@@ -34,6 +36,14 @@ public class ItemHelpers {
     public static void invalidateIngredientTooltips(UI ui) {
 	Set<WItem> children = ui.root.children(WItem.class);
 	children.forEach(w -> {if(ItemData.hasIngredientInfo(w.item)) {w.clearLongTip();}});
+    }
+    
+    public static Stream<WItem> findAll(UI ui, Predicate<WItem> filter) {
+	return ui.root.children(WItem.class).stream().filter(filter);
+    }
+    
+    public static Optional<WItem> find(UI ui, Predicate<WItem> filter) {
+	return ui.root.children(WItem.class).stream().filter(filter).findFirst();
     }
     
     private static String preserveDishes(WItem item, UI ui) {

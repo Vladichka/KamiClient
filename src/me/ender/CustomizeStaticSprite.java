@@ -12,10 +12,12 @@ public class CustomizeStaticSprite {
 	try {
 	    if (CFG.DISPLAY_DECALS_ON_TOP.get() 
 		&& sprite.res.name.equals(ResName.PARCHMENT_DECAL) 
-		&& ((Gob)sprite.owner).getres().name.equals(ResName.CUPBOARD))
+		&& ((Gob.Overlay)sprite.owner).gob.getres().name.equals(ResName.CUPBOARD))
 	    {
 		slot.cstate(Location.xlate(new Coord3f(-5,-5,17.5f)));
 	    }
-	} catch (Exception ignored) {}
+	} catch (Exception ignored) {
+	    System.out.println(ignored.getMessage());
+	}
     }
 }

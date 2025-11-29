@@ -38,7 +38,7 @@ public interface GLPanel extends UIPanel, UI.Context {
     public Area shape();
     public Pipe basestate();
     public void glswap(GL gl);
-
+    
     public static class Loop implements Console.Directory {
 	public static boolean gldebug = false;
 	public final GLPanel p;
@@ -52,7 +52,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 	protected UI lockedui, ui;
 	private final Dispatcher ed;
 	private final Object uilock = new Object();
-
+	
 	public Loop(GLPanel p) {
 	    this.p = p;
 	    ed = new Dispatcher();
@@ -60,7 +60,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 	    updateForceHWCursor(CFG.FORCE_HW_CURSOR);
 	    CFG.FORCE_HW_CURSOR.observe(this::updateForceHWCursor);
 	}
-
+	
 	private double framedur() {
 	    GSettings gp = this.ui.gprefs;
 	    double hz = gp.hz.val, bghz = gp.bghz.val;
@@ -72,14 +72,14 @@ public interface GLPanel extends UIPanel, UI.Context {
 		return(0.0);
 	    return(1.0 / hz);
 	}
-
+	
 	private class BufferSwap implements BGL.Request {
 	    final int frameno;
-
+	    
 	    BufferSwap(int frameno) {
 		this.frameno = frameno;
 	    }
-
+	    
 	    public void run(GL gl) {
 		long start = System.nanoTime();
 		p.glswap(gl);
@@ -87,7 +87,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 		framelag = Loop.this.frameno - frameno;
 	    }
 	}
-
+	
 	private class GLFinish implements BGL.Request {
 	    public void run(GL gl) {
 		long start = System.nanoTime();
@@ -96,7 +96,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 		ridletime += System.nanoTime() - start;
 	    }
 	}
-
+	
 	private class FrameCycle implements BGL.Request {
 	    public void run(GL gl) {
 		long now = System.nanoTime();
@@ -108,19 +108,19 @@ public interface GLPanel extends UIPanel, UI.Context {
 		ridletime = 0;
 	    }
 	}
-
+	
 	public static class ProfileCycle implements BGL.Request {
 	    final CPUProfile prof;
 	    ProfileCycle prev;
 	    CPUProfile.Frame frame;
 	    Profile.Part curp;
-
+	    
 	    ProfileCycle(CPUProfile prof, ProfileCycle prev, GLRender out) {
 		this.prof = prof;
 		this.prev = prev;
 		out.submit(this);
 	    }
-
+	    
 	    public void run(GL gl) {
 		if(prev != null) {
 		    if(prev.frame != null) {
@@ -134,22 +134,22 @@ public interface GLPanel extends UIPanel, UI.Context {
 		frame = prof.new Frame();
 	    }
 	}
-
+	
 	public static class ProfilePart implements BGL.Request {
 	    final ProfileCycle prof;
 	    final String label;
-
+	    
 	    ProfilePart(ProfileCycle prof, String label) {
 		this.prof = prof;
 		this.label = label;
 	    }
-
+	    
 	    public void run(GL gl) {
 		if((prof != null) && (prof.frame != null))
 		    prof.frame.part(label);
 	    }
 	}
-
+	
 	private Object prevtooltip = null;
 	private Indir<Tex> prevtooltex = null;
 	private Disposable freetooltex = null;
@@ -178,7 +178,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 			tt = () -> t;
 		    } else if(tooltip instanceof Indir<?>) {
 			@SuppressWarnings("unchecked")
-			    Indir<Tex> c = (Indir<Tex>)tooltip;
+			Indir<Tex> c = (Indir<Tex>)tooltip;
 			tt = c;
 		    } else if(tooltip instanceof String) {
 			if(((String)tooltip).length() > 0) {
@@ -211,13 +211,13 @@ public interface GLPanel extends UIPanel, UI.Context {
 	    }
 	    ui.lasttip = tooltip;
 	}
-
+	
 	private static String defaultcurs() {
 	    if(Toolkit.getDefaultToolkit().getMaximumCursorColors() >= 256)
 		return("awt");
 	    return("tex");
 	}
-
+	
 	private String cursmode = defaultcurs();
 	private Object lastcursor = null;
 	private Coord curshotspot = Coord.z;
@@ -235,13 +235,14 @@ public interface GLPanel extends UIPanel, UI.Context {
 	    }
 	    if(curs instanceof Resource) {
 		Resource res = (Resource)curs;
-		if(cursmode == "awt") {
+		if(cursmode == "awt" || forceHW) {
 		    if(curs != lastcursor) {
 			try {
 			    curshotspot = res.flayer(Resource.negc).cc;
 			    p.setCursor(UIPanel.makeawtcurs(res.flayer(Resource.imgc).img, curshotspot));
 			} catch(Exception e) {
 			    cursmode = "tex";
+			    forceHW = false;
 			}
 		    }
 		} else if(cursmode == "tex") {
@@ -260,7 +261,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 	    }
 	    lastcursor = curs;
 	}
-
+	
 	private long prevfree = 0, framealloc = 0;
 	@SuppressWarnings("deprecation")
 	private void drawstats(UI ui, GOut g, GLRender buf) {
@@ -290,9 +291,9 @@ public interface GLPanel extends UIPanel, UI.Context {
 		    FastText.aprint(g, new Coord(10, y -= dy), 0, 1, String.valueOf(line));
 	    }
 	}
-
+	
 	private StreamOut streamout = null;
-
+	
 	private void display(UI ui, GLRender buf) {
 	    Pipe wnd = p.basestate();
 	    buf.clear(wnd, FragColor.fragcol, FColor.BLACK);
@@ -317,7 +318,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 		streamout.accept(buf, state);
 	    }
 	}
-
+	
 	public void run() throws InterruptedException {
 	    GLRender buf = null;
 	    try {
@@ -348,7 +349,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 		    Fence curframe = new Fence();
 		    if(syncmode == SyncMode.FRAME)
 			buf.submit(curframe);
-
+		    
 		    boolean tickwait = (syncmode == SyncMode.FRAME) || (syncmode == SyncMode.TICK);
 		    if(!tickwait) {
 			CPUProfile.phase(curf, "dwait");
@@ -359,13 +360,13 @@ public interface GLPanel extends UIPanel, UI.Context {
 			    fwaited += Utils.rtime() - now;
 			}
 		    }
-
+		    
 		    int cfno = frameno++;
 		    synchronized(ui) {
 			CPUProfile.phase(curf, "dsp");
 			ed.dispatch(ui);
 			ui.mousehover(ui.mc);
-
+			
 			CPUProfile.phase(curf, "stick");
 			if(ui.sess != null) {
 			    ui.sess.glob.ctick();
@@ -380,7 +381,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 			buf.submit(new ProfilePart(rprofc, "draw"));
 			if(curgf != null) curgf.part(buf, "draw");
 		    }
-
+		    
 		    if(tickwait) {
 			CPUProfile.phase(curf, "dwait");
 			if(prevframe != null) {
@@ -390,7 +391,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 			    fwaited += Utils.rtime() - now;
 			}
 		    }
-
+		    
 		    CPUProfile.phase(curf, "draw");
 		    display(ui, buf);
 		    CPUProfile.phase(curf, "aux");
@@ -412,7 +413,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 		    }
 		    env.submit(buf);
 		    buf = null;
-
+		    
 		    CPUProfile.phase(curf, "wait");
 		    double now = Utils.rtime();
 		    double fd = framedur();
@@ -441,7 +442,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 			}
 		    }
 		    framep = (framep + 1) % frames.length;
-
+		    
 		    CPUProfile.end(curf);
 		    prevframe = curframe;
 		}
@@ -454,7 +455,7 @@ public interface GLPanel extends UIPanel, UI.Context {
 		    buf.dispose();
 	    }
 	}
-
+	
 	public UI newui(UI.Runner fun) {
 	    UI prevui, newui = new UI(p, new Coord(p.getSize()), fun);
 	    newui.env = p.env();
@@ -485,24 +486,24 @@ public interface GLPanel extends UIPanel, UI.Context {
 	    }
 	    return(newui);
 	}
-
+	
 	private Map<String, Console.Command> cmdmap = new TreeMap<String, Console.Command>();
 	{
 	    cmdmap.put("gldebug", (cons, args) -> {
-		    gldebug = Utils.parsebool(args[1]);
-		});
+		gldebug = Utils.parsebool(args[1]);
+	    });
 	    cmdmap.put("cursor", new Console.Command() {
-		    public void run(Console cons, String[] args) {
-			cursmode = args[1].intern();
-			lastcursor = null;
-			p.setCursor(null);
-		    }
-		});
+		public void run(Console cons, String[] args) {
+		    cursmode = args[1].intern();
+		    lastcursor = null;
+		    p.setCursor(null);
+		}
+	    });
 	}
 	public Map<String, Console.Command> findcmds() {
 	    return(cmdmap);
 	}
-
+	
 	{
 	    if(Utils.getprefb("glcrash", false)) {
 		Warning.warn("enabling GL debug-mode due to GL crash flag being set");
@@ -513,29 +514,29 @@ public interface GLPanel extends UIPanel, UI.Context {
 		gldebug = true;
 	    }
 	}
-
+	
 	/* XXX: This should be in UIPanel, but Java is dumb and needlessly forbids it. */
 	static {
 	    Console.setscmd("stats", new Console.Command() {
-		    public void run(Console cons, String[] args) {
-			dbtext.set(Utils.parsebool(args[1]));
-		    }
-		});
+		public void run(Console cons, String[] args) {
+		    dbtext.set(Utils.parsebool(args[1]));
+		}
+	    });
 	    Console.setscmd("profile", new Console.Command() {
-		    public void run(Console cons, String[] args) {
-			if(args[1].equals("none") || args[1].equals("off")) {
-			    profile.set(false);
-			    profilegpu.set(false);
-			} else if(args[1].equals("cpu")) {
-			    profile.set(true);
-			} else if(args[1].equals("gpu")) {
-			    profilegpu.set(true);
-			} else if(args[1].equals("all")) {
-			    profile.set(true);
-			    profilegpu.set(true);
-			}
+		public void run(Console cons, String[] args) {
+		    if(args[1].equals("none") || args[1].equals("off")) {
+			profile.set(false);
+			profilegpu.set(false);
+		    } else if(args[1].equals("cpu")) {
+			profile.set(true);
+		    } else if(args[1].equals("gpu")) {
+			profilegpu.set(true);
+		    } else if(args[1].equals("all")) {
+			profile.set(true);
+			profilegpu.set(true);
 		    }
-		});
+		}
+	    });
 	}
     }
 }

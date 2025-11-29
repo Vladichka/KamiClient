@@ -4,6 +4,7 @@ import haven.*;
 import haven.render.Homo3D;
 import haven.render.Pipe;
 import haven.render.RenderTree;
+import me.ender.ClientUtils;
 import me.ender.CustomCursors;
 
 import javax.swing.*;
@@ -34,8 +35,8 @@ public class Minesweeper {
     
     private static final byte COUNT_MASK	= (byte) 0b0000_1111;
     private static final byte FLAGS_MASK	= (byte) 0b1111_0000;
-
-
+    
+    
     public static final byte CLEAR_FLAGS	= (byte) 0b0000_0000;
     public static final byte FLAG_SAFE		= (byte) 0b0001_0000;
     public static final byte FLAG_DANGER	= (byte) 0b0010_0000;
@@ -44,49 +45,49 @@ public class Minesweeper {
     //deprecated values, used for parsing old saved data
     private static final byte DEPRECATED_V2_SAFE = (byte) 0xff;
     private static final byte DEPRECATED_V2_DANGER = (byte) 0xfe;
-
+    
     private final Object lock = new Object();
     private final Set<Long> gridIds = new HashSet<>();
     private final Map<Long, byte[]> values = new HashMap<>();
     private final Map<Long, SweeperNode[]> cuts = new HashMap<>();
     private final MapFile file;
-
+    
     public Minesweeper(MapFile file) {
 	this.file = file;
 	MapFileUtils.load(file, this::loadIndex, INDEX);
     }
-
+    
     public static void markDustSpawn(Sprite.Owner owner, float str) {
-	if(owner instanceof Gob) {addCountAtGob((Gob) owner, (byte) (str / 30f));}
+	ClientUtils.owner2ogob(owner).ifPresent(value -> addCountAtGob(value, (byte) (str / 30f)));
     }
-
+    
     public static void markMinedOutTile(Sprite.Owner owner) {
 	//disabling this for now, as it will mark all tunnel tiles as safe 
 	//if(owner instanceof Gob) {markAtGob((Gob) owner, SAFE);}
     }
-
+    
     public static void markFlagAtPoint(Coord2d rc, byte flags, GameUI gui) {
 	markPoint(rc, NO_COUNT, flags, gui);
     }
-
+    
     private static void addCountAtGob(Gob gob, byte count) {
 	GameUI gui = gob.context(GameUI.class);
 	if(gui == null) {return;}
-
+	
 	markPoint(gob.rc, count, NO_FLAGS, gui);
     }
-
+    
     private static void markPoint(Coord2d rc, byte count, byte flags, GameUI gui) {
 	Coord gc = rc.floor(MCache.tilesz);
 	MCache.Grid grid = gui.ui.sess.glob.map.getgridt(gc);
 	if(grid == null) {return;}
-
+	
 	Coord tc = gc.sub(grid.gc.mul(MCache.cmaps));
 	long id = grid.id;
-
+	
 	gui.minesweeper.addValue(id, tc, count, flags);
     }
-
+    
     public static boolean paginaAction(OwnerContext ctx, MenuGrid.Interaction iact) {
 	boolean was = CFG.SHOW_MINESWEEPER_OVERLAY.get();
 	if(iact != null && iact.modflags == UI.MOD_SHIFT) {
@@ -101,7 +102,7 @@ public class Minesweeper {
 	CFG.SHOW_MINESWEEPER_OVERLAY.set(!was);
 	return true;
     }
-
+    
     private void addValue(long id, Coord tc, byte count, byte flags) {
 	synchronized (lock) {
 	    Map<Long, byte[]> grids = values;
@@ -118,7 +119,7 @@ public class Minesweeper {
 	    storeGrid(id, values);
 	}
     }
-
+    
     private void updateGrid(long grid, byte[] newValues) {
 	if(gridIds.contains(grid) && loadGrid(grid)) {
 	    byte[] curValues = values.get(grid);
@@ -136,7 +137,7 @@ public class Minesweeper {
 	    storeGrid(grid, newValues);
 	}
     }
-
+    
     private static void setValue(byte[] values, int idx, byte count, byte flags) {
 	byte value = values[idx];
 	count = (byte) (count & COUNT_MASK);
@@ -145,21 +146,21 @@ public class Minesweeper {
 	if(flags != NO_FLAGS) {value = (byte) ((value & COUNT_MASK) | flags);}
 	values[idx] = value;
     }
-
+    
     private static int index(Coord tc) {
 	return tc.x + tc.y * MCache.cmaps.x;
     }
-
+    
     public static RenderTree.Node getcut(UI ui, Coord cc) {
 	if(!CFG.SHOW_MINESWEEPER_OVERLAY.get()) {return NIL;}
 	GameUI gui = ui.gui;
 	if(gui == null) {return NIL;}
 	Minesweeper minesweeper = gui.minesweeper;
 	if(minesweeper == null) {return NIL;}
-
+	
 	return minesweeper.getcut(ui.sess.glob.map.getgrid(cc.div(MCache.cutn)), cc.mod(MCache.cutn));
     }
-
+    
     private RenderTree.Node getcut(MCache.Grid grid, Coord cc) {
 	SweeperNode[] nodes;
 	int index = cc.x + cc.y * MCache.cutn.x;
@@ -171,7 +172,7 @@ public class Minesweeper {
 	    } else {
 		nodes = cuts.get(grid.id);
 	    }
-
+	    
 	    if(nodes[index] == null) {
 		byte[] v = values.get(grid.id);
 		if(v == null) {return NIL;}
@@ -180,7 +181,7 @@ public class Minesweeper {
 	}
 	return nodes[index];
     }
-
+    
     public static void trim(Session sess, List<Long> removed) {
 	UI ui = sess.ui;
 	if(ui == null) {return;}
@@ -190,7 +191,7 @@ public class Minesweeper {
 	    gui.minesweeper.trim(removed);
 	}
     }
-
+    
     private void trim(List<Long> removed) {
 	synchronized (lock) {
 	    if(removed == null) {
@@ -204,7 +205,7 @@ public class Minesweeper {
 	    }
 	}
     }
-
+    
     private void storeIndex() {
 	synchronized (lock) {
 	    OutputStream fp;
@@ -221,7 +222,7 @@ public class Minesweeper {
 	    }
 	}
     }
-
+    
     private void storeGrid(long id, byte[] grid) {
 	OutputStream fp;
 	try {
@@ -236,7 +237,7 @@ public class Minesweeper {
 	    zout.finish();
 	}
     }
-
+    
     private boolean loadIndex(StreamMessage data) {
 	synchronized (lock) {
 	    Set<Long> ids = doLoadIndex(data);
@@ -245,7 +246,7 @@ public class Minesweeper {
 	}
 	return true;
     }
-
+    
     private static Set<Long> doLoadIndex(StreamMessage data) {
 	int ver = data.uint8();
 	if(ver == 1) {
@@ -259,12 +260,12 @@ public class Minesweeper {
 	}
 	return null;
     }
-
+    
     private boolean loadGrid(long id) {
 	synchronized (lock) {
 	    if(!gridIds.contains(id)) {return false;}
 	    if(values.containsKey(id)) {return true;}
-
+	    
 	    if(!MapFileUtils.load(file, data -> loadGrid(data, id), GRID_NAME, id)) {
 		cuts.remove(id);
 		values.remove(id);
@@ -275,14 +276,14 @@ public class Minesweeper {
 	}
 	return true;
     }
-
+    
     private boolean loadGrid(StreamMessage data, long id) {
 	byte[] v = doLoadGrid(data, id);
 	if(v == null) {return false;}
 	values.put(id, v);
 	return true;
     }
-
+    
     private static byte[] doLoadGrid(StreamMessage data, long id) {
 	int ver = data.uint8();
 	if(ver == 2 || ver == 3) {
@@ -294,7 +295,7 @@ public class Minesweeper {
 	}
 	return null;
     }
-
+    
     private static void convertToV3(byte[] values) {
 	for (int i = 0; i < values.length; i++) {
 	    byte value = values[i];
@@ -305,7 +306,7 @@ public class Minesweeper {
 	    }
 	}
     }
-
+    
     public static void doExport(MapFile mapFile, UI ui) {
 	java.awt.EventQueue.invokeLater(() -> {
 	    JFileChooser fc = new JFileChooser();
@@ -315,11 +316,11 @@ public class Minesweeper {
 	    Path path = fc.getSelectedFile().toPath();
 	    if(path.getFileName().toString().indexOf('.') < 0)
 		path = path.resolveSibling(path.getFileName() + ".hems");
-
+	    
 	    doExport(mapFile, path, ui);
 	});
     }
-
+    
     private static void doExport(MapFile mapFile, Path path, UI ui) {
 	new HackThread(() -> {
 	    boolean complete = false;
@@ -340,9 +341,9 @@ public class Minesweeper {
 	    }
 	}, "Minesweeper exporter").start();
     }
-
+    
     private static final byte[] EXPORT_SIG = "Haven Minesweeper 1".getBytes(Utils.ascii);
-
+    
     private static boolean doExport(MapFile mapFile, Path path, Set<Long> grids) {
 	if(grids == null || grids.isEmpty()) {return false;}
 	try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(path))) {
@@ -367,7 +368,7 @@ public class Minesweeper {
 	}
 	return true;
     }
-
+    
     public static void doImport(UI ui) {
 	java.awt.EventQueue.invokeLater(() -> {
 	    JFileChooser fc = new JFileChooser();
@@ -377,7 +378,7 @@ public class Minesweeper {
 	    doImport(fc.getSelectedFile().toPath(), ui);
 	});
     }
-
+    
     private static void doImport(Path path, UI ui) {
 	new HackThread(() -> {
 	    boolean complete = false;
@@ -397,7 +398,7 @@ public class Minesweeper {
 	    }
 	}, "Minesweeper exporter").start();
     }
-
+    
     private static boolean doImport(BufferedInputStream input, UI ui) {
 	Message data = new StreamMessage(input);
 	if(!Arrays.equals(EXPORT_SIG, data.bytes(EXPORT_SIG.length))) {return false;}
@@ -410,17 +411,17 @@ public class Minesweeper {
 		    long grid = zdata.int64();
 		    byte[] values = zdata.bytes(TILES);
 		    if(ver == 1) {convertToV3(values);}
-
+		    
 		    m.updateGrid(grid, values);
 		}
 	    }
-
+	    
 	    return true;
 	}
-
+	
 	return false;
     }
-
+    
     private static class SweeperNode implements RenderTree.Node, PView.Render2D {
 	private static final Text.Foundry TEXT_FND = new Text.Foundry(Text.monobold, 12);
 	private static final Color SAFE_COL = new Color(32, 220, 80);
@@ -437,15 +438,15 @@ public class Minesweeper {
 	    new Color(235, 20, 16),
 	};
 	private static final Map<Byte, Tex> CACHE = new HashMap<>();
-
+	
 	private final byte[] values;
 	private final Coord cc;
-
+	
 	public SweeperNode(byte[] values, Coord cc) {
 	    this.values = values;
 	    this.cc = cc;
 	}
-
+	
 	private static Tex getTex(byte val) {
 	    if(val == 0) {return null;}
 	    if(CACHE.containsKey(val)) {return CACHE.get(val);}
@@ -458,7 +459,7 @@ public class Minesweeper {
 	    CACHE.put(val, tex);
 	    return tex;
 	}
-
+	
 	private static BufferedImage flagImg(byte flags) {
 	    flags = (byte) (flags & FLAGS_MASK);
 	    Color color;
@@ -477,36 +478,36 @@ public class Minesweeper {
 	    }
 	    return Text.renderstroked(text, color, Color.BLACK, TEXT_FND).img;
 	}
-
+	
 	private static BufferedImage countImg(byte count) {
 	    count = (byte) (count & COUNT_MASK);
 	    if(count == 0) {return null;}
-
+	    
 	    Color color = COLORS[Utils.clip(count - 1, 0, COLORS.length - 1)];
 	    String text = String.valueOf(count);
-
+	    
 	    return Text.renderstroked(text, color, Color.BLACK, TEXT_FND).img;
 	}
-
+	
 	public Coord3f origin(Coord tc) {
 	    Coord2d mc = tc.mul(MCache.tilesz).add(TILE_CENTER);
 	    return new Coord3f((float) mc.x, (float) -mc.y, 1f);
 	}
-
+	
 	@Override
 	public void draw(GOut g, Pipe state) {
 	    Coord ul = cc.mul(MCache.cutsz);
 	    Coord o = new Coord();
 	    for (o.x = 0; o.x < MCache.cutsz.x; o.x++) {
 		for (o.y = 0; o.y < MCache.cutsz.y; o.y++) {
-
+		    
 		    Tex tex = getTex(values[index(ul.add(o))]);
 		    if(tex == null) {continue;}
-
+		    
 		    Coord sc = Homo3D.obj2sc(origin(o), state, Area.sized(g.sz()));
 		    if(sc == null) {continue;}
 		    if(!sc.isect(Coord.z, g.sz())) {continue;}
-
+		    
 		    g.aimage(tex, sc, 0.5f, 0.5f);
 		}
 	    }

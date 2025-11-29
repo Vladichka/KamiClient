@@ -94,8 +94,7 @@ public class Window extends Widget {
     private FragColor gout;
     private Pipe.Op gbasic;
     private UI.Grab dm = null;
-    private Coord doff;
-    public boolean decohide = false;
+    protected Coord doff;
     public boolean large = false;
     protected WidgetCfg cfg = null;
     public boolean justclose = false;

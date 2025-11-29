@@ -2,6 +2,7 @@ package auto;
 
 import haven.*;
 import me.ender.ClientUtils;
+import me.ender.ItemHelpers;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -23,25 +24,16 @@ public class Actions {
 	}
     }
     
-    public static void pickup(GameUI gui, String filter) {
-	pickup(gui, filter, Integer.MAX_VALUE);
+    public static void pickup(GameUI gui, String filter, boolean pickAll) {
+	pickup(gui, resIdStartsWith(filter), pickAll);
     }
     
-    static void pickup(GameUI gui, String filter, int limit) {
-	pickup(gui, resIdStartsWith(filter), limit);
-    }
-    
-    static void pickup(GameUI gui, Predicate<Gob> filter) {
-	pickup(gui, filter, Integer.MAX_VALUE);
-    }
-    
-    static void pickup(GameUI gui, Predicate<Gob> filter, int limit) {
+    static void pickup(GameUI gui, Predicate<Gob> filter, boolean pickAll) {
 	List<ITarget> targets = gui.ui.sess.glob.oc.stream()
 	    .filter(filter)
-	    .filter(gob -> PositionHelper.distanceToPlayer(gob) <= CFG.AUTO_PICK_RADIUS.get())
-	    .filter(BotUtil::isOnRadar)
+	    .filter(gob -> pickAll || PositionHelper.distanceToPlayer(gob) <= CFG.AUTO_PICK_RADIUS.get())
+	    .filter(g -> pickAll || BotUtil.isOnRadar(g))
 	    .sorted(PositionHelper.byDistanceToPlayer)
-	    .limit(limit)
 	    .map(GobTarget::new)
 	    .collect(Collectors.toList());
 	
@@ -52,7 +44,7 @@ public class Actions {
     }
     
     public static void pickup(GameUI gui) {
-	pickup(gui, gobIs(GobTag.PICKUP));
+	pickup(gui, gobIs(GobTag.PICKUP), false);
     }
     
     public static void openGate(GameUI gui) {
@@ -66,6 +58,19 @@ public class Actions {
 	    .collect(Collectors.toList());
 	
 	Bot.process(targets).actions(ITarget::rclick).start(gui.ui, true);
+    }
+    
+    public static void saltFood(GameUI gui) {
+	List<ITarget> targets = ItemHelpers.findAll(gui.ui, w -> ItemData.hasFoodInfo(w.item) && !ItemData.isSalted(w.item))
+	    .map(ItemTarget::new)
+	    .collect(Collectors.toList());
+	
+	Bot.process(targets)
+	    .actions(
+		(t, b) -> {if(!InvHelper.pickItemOnCursor(b.gui(), "Salt")) {b.cancel("No salt!");}},
+		ITarget::interact
+	    )
+	    .start(gui.ui);
     }
     
     public static void refillDrinks(GameUI gui) {

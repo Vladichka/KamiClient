@@ -56,11 +56,7 @@ public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
 	public Sprite create(Owner owner, Resource res, Message sdt) {
 	    if((res.layer(FastMesh.MeshRes.class) != null) ||
 		(res.layer(RenderLink.Res.class) != null))
-		return(new ModSprite(owner, res, sdt) {
-		    public String toString() {
-			return(String.format("#<mod-sprite %s>", res.name));
-		    }
-		});
+		return(new ModSprite(owner, res, sdt));
 	    return(null);
 	}
     };
@@ -500,7 +496,7 @@ public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
 	public Random mkrandoom() {
 	    return(main.owner.mkrandoom());
 	}
-
+	
 	public int order() {return(2000);}
 	
 	@RMod.Global

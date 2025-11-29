@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 public class BotUtil {
     private static final Object waiter = new Object();
     
-    private static boolean isHeld(GameUI gui, String what) throws Loading {
+    static boolean isHeld(GameUI gui, String what) throws Loading {
 	GameUI.DraggedItem drag = gui.hand();
 	if(drag == null && what == null) {
 	    return true;

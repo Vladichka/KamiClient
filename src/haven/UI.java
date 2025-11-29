@@ -29,6 +29,7 @@ package haven;
 import haven.rx.Reactor;
 import me.ender.WindowDetector;
 
+import java.awt.*;
 import java.awt.event.InputEvent;
 import java.util.*;
 import java.util.function.*;
@@ -575,31 +576,31 @@ public class UI {
 	    return(etype.isInstance(ev) && handler.handle(etype.cast(ev)));
 	}
     }
-
-    public <E extends Event>  Grab<E> grab(Widget owner, Class<E> etype, EventHandler<? super E> handler) {
+    
+    public <E extends Widget.Event>  Grab<E> grab(Widget owner, Class<E> etype, EventHandler<? super E> handler) {
 	if(owner == null)
 	    throw(new NullPointerException());
 	Grab<E> g = new Grab<>(owner, etype, handler);
 	grabs.add(0, g);
 	return(g);
     }
-
-    public static class WidgetGrab implements EventHandler<Event> {
+    
+    public static class WidgetGrab implements EventHandler<Widget.Event> {
 	public final Widget wdg;
-
+	
 	public WidgetGrab(Widget wdg) {
 	    this.wdg = wdg;
 	}
-
-	public boolean handle(Event ev) {
+	
+	public boolean handle(Widget.Event ev) {
 	    return(ev.dispatch(wdg));
 	}
     }
-
+    
     public static class PointerGrab<E extends PointerEvent> implements EventHandler<E> {
 	public final Widget wdg;
 	public final EventHandler<? super E> bk;
-
+	
 	public PointerGrab(Widget wdg, EventHandler<? super E> bk) {
 	    this.wdg = wdg;
 	    this.bk = bk;
@@ -614,15 +615,15 @@ public class UI {
     }
     
     public Grab grabmouse(Widget wdg) {
-	Predicate<Event> sel = ev -> (
+	Predicate<Widget.Event> sel = ev -> (
 	    /* XXX? These are just the traditionally mouse-grabbed events. Is grabmouse() itself obsolete? */
 	    (ev instanceof MouseDownEvent) || (ev instanceof MouseUpEvent) ||
-	    (ev instanceof MouseWheelEvent) || (ev instanceof CursorQuery));
+		(ev instanceof MouseWheelEvent) || (ev instanceof CursorQuery));
 	return(grab(wdg, PointerEvent.class, new PointerGrab<>(wdg, new EventHandler.Filter<>(new WidgetGrab(wdg), sel))));
     }
     
     public Grab grabkeys(Widget wdg) {
-	Predicate<Event> sel = ev -> ((ev instanceof KeyDownEvent) || (ev instanceof KeyUpEvent));
+	Predicate<Widget.Event> sel = ev -> ((ev instanceof KeyDownEvent) || (ev instanceof KeyUpEvent));
 	return(grab(wdg, KbdEvent.class, new EventHandler.Filter<>(new WidgetGrab(wdg), sel)));
     }
     
@@ -649,8 +650,8 @@ public class UI {
 	removeid(wdg);
 	wdg.reqdestroy();
     }
-
-    public boolean dispatch(Widget to, Event ev) {
+    
+    public boolean dispatch(Widget to, Widget.Event ev) {
 	try(CPUProfile.Current prof = CPUProfile.begin(ev)) {
 	    ev.target = to;
 	    ev.grabbed = true;
@@ -953,14 +954,14 @@ public class UI {
 	mc = c;
 	dispatch(root, new Widget.MouseWheelEvent(c, amount));
     }
-
+    
     public static enum Cursor {
 	DEFAULT, POINTER, HAND, MOVE,
 	WAIT, CARET, CROSSHAIR,
 	SIZE_N, SIZE_NE, SIZE_E, SIZE_SE,
 	SIZE_S, SIZE_SW, SIZE_W, SIZE_NW,
     }
-
+    
     public Object getcurs(Coord c) {
 	return(dispatchq(root, new CursorQuery(c)).ret);
     }
@@ -1171,7 +1172,7 @@ public class UI {
     }
     
     public boolean isDefaultCursor() {
-	return RootWidget.defcurs == getcurs(mc);
+	return CursorQuery.defcurs == getcurs(mc);
     }
     
     static {

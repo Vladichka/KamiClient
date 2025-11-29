@@ -14,12 +14,11 @@ public abstract class VarMats extends GAttrib implements Mod {
     public VarMats(Gob gob) {
 	super(gob);
     }
-
+    
     public abstract Material varmat(int id);
-
+    
     public void operate(Cons cons) {
-	if (this.gob != null)
-	    if(CustomizeVarMat.NoMat(this.gob)) {return;}
+	if(CustomizeVarMat.NoMat(this.gob)) {return;}
 	for(Part part : cons.parts) {
 	    if(part.obj instanceof FastMesh.ResourceMesh) {
 		FastMesh.ResourceMesh m = (FastMesh.ResourceMesh)part.obj;
@@ -33,7 +32,7 @@ public abstract class VarMats extends GAttrib implements Mod {
 	    }
 	}
     }
-
+    
     public int order() {return(100);}
 }
 

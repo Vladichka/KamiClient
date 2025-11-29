@@ -2,7 +2,6 @@ package haven;
 
 import me.ender.ContainerInfo;
 import me.ender.ResName;
-import me.ender.gob.GobTimerData;
 import me.ender.gob.KinInfo;
 
 import java.util.*;
@@ -19,6 +18,7 @@ public enum GobTag {
     HORSE, MARE, STALLION, FOAL,
     PIG, SOW, HOG, PIGLET,
     SHEEP, EWE, RAM, LAMB,
+    FLEECE,
     
     GEM, ARROW,
     VEHICLE, PUSHED, //vehicle that is pushed (wheelbarrow, plow)
@@ -158,7 +158,9 @@ public enum GobTag {
         "gfx/kritter/orca/",
         "gfx/kritter/otter/",
         "gfx/kritter/pelican/",
+        "gfx/kritter/rat/blackrat",
         "gfx/kritter/rat/caverat",
+        "gfx/kritter/rat/fatrat",
         "gfx/kritter/reddeer/",
         "gfx/kritter/reindeer/",
         "gfx/kritter/roedeer/",
@@ -245,6 +247,7 @@ public enum GobTag {
                 } else if(domesticated(gob, name, tags)) {
                     tags.add(ANIMAL);
                     tags.add(DOMESTIC);
+                    if(name.contains("-fleece")) {tags.add(FLEECE);}
                 } else if(DBG && !UNKNOWN.contains(name)) {
                     UNKNOWN.add(name);
                     gob.glob.sess.ui.message(name, GameUI.MsgType.ERROR);
@@ -408,47 +411,53 @@ public enum GobTag {
     }
     
     private static boolean domesticated(Gob gob, String name, Set<GobTag> tags) {
-        if(name.contains("/cattle/")) {
+        if(name.contains("/cattle/") && !name.contains("/aurochs")) {
             tags.add(CATTLE);
-            //TODO: add distinction between cow and bull
-            if(name.endsWith("/calf")) {
+            if(name.contains("/cattle/bull")) {
+                tags.add(BULL);
+            } else if(name.contains("/cattle/cow")) {
+                tags.add(COW);
+            } else if(name.contains("/cattle/calf")) {
                 tags.add(CALF);
             }
             return true;
         } else if(name.contains("/goat/")) {
             tags.add(GOAT);
-            if(name.endsWith("/billy")) {
+            if(name.contains("/goat/billy")) {
                 tags.add(BILLY);
-            } else if(name.endsWith("/nanny")) {
+            } else if(name.contains("/goat/nanny")) {
                 tags.add(NANNY);
-            } else if(name.endsWith("/kid")) {
+            } else if(name.contains("/goat/kid")) {
                 tags.add(KID);
             }
             return true;
         } else if(name.contains("/horse/")) {
             tags.add(HORSE);
-            if(name.endsWith("/foal")) {
+            if(name.contains("/foal")) {
                 tags.add(FOAL);
-            } else if(name.endsWith("/mare")) {
+            } else if(name.contains("/mare")) {
                 tags.add(MARE);
-            } else if(name.endsWith("/stallion")) {
+            } else if(name.contains("/stallion")) {
                 tags.add(STALLION);
             }
             return true;
         } else if(name.contains("/pig/")) {
             tags.add(PIG);
-            if(name.endsWith("/hog")) {
+            if(name.contains("/hog")) {
                 tags.add(HOG);
-            } else if(name.endsWith("/piglet")) {
+            } else if(name.contains("/piglet")) {
                 tags.add(PIGLET);
-            } else if(name.endsWith("/sow")) {
+            } else if(name.contains("/sow")) {
                 tags.add(SOW);
             }
             return true;
         } else if(name.contains("/sheep/")) {
             tags.add(SHEEP);
-            //TODO: add distinction between ewe and ram
-            if(name.endsWith("/lamb")) {
+            if(name.contains("/sheep/ram")) {
+                tags.add(RAM);
+            } else if(name.contains("/sheep/ewe")) {
+                tags.add(EWE);
+            } else if(name.contains("/sheep/lamb")) {
                 tags.add(LAMB);
             }
             return true;

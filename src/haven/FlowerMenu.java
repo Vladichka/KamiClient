@@ -390,7 +390,7 @@ public class FlowerMenu extends Widget {
 		Gob gob = Targets.gob(target);
 		if(gob != null) {
 		    try {
-			Actions.pickup(ui.gui, gob.resid());
+			Actions.pickup(ui.gui, gob.resid(), true);
 		    } catch (Exception ignored) {}
 		}
 		num = -1;

@@ -516,24 +516,24 @@ public class MapView extends PView implements DTarget, Console.Directory, Widget
 	    PosixArgs opt = PosixArgs.getopt(args, "enift:Z:");
 	    for(char c : opt.parsed()) {
 		switch(c) {
-		case 'e':
-		    exact = true;
-		    break;
-		case 'n':
-		    exact = false;
-		    break;
-		case 'i':
-		    isometric = true;
-		    break;
-		case 'f':
-		    isometric = false;
-		    break;
-		case 't':
-		    tf = Double.parseDouble(opt.arg);
-		    break;
-		case 'Z':
-		    field = tfield = dfield = Float.parseFloat(opt.arg);
-		    break;
+		    case 'e':
+			exact = true;
+			break;
+		    case 'n':
+			exact = false;
+			break;
+		    case 'i':
+			isometric = true;
+			break;
+		    case 'f':
+			isometric = false;
+			break;
+		    case 't':
+			tf = Double.parseDouble(opt.arg);
+			break;
+		    case 'Z':
+			field = tfield = dfield = Float.parseFloat(opt.arg);
+			break;
 		}
 	    }
 	}
@@ -2442,6 +2442,7 @@ public class MapView extends PView implements DTarget, Console.Directory, Widget
 	    if(selection.tt != null)
 		return(selection.tt);
 	}
+	String stip = this.stip;
 	if(stip != null) {
 	    if(fullTip != ui.modshift) {
 		fullTip = ui.modshift;
@@ -2500,16 +2501,16 @@ public class MapView extends PView implements DTarget, Console.Directory, Widget
     }
     
     public static final OverlayInfo selol = new OverlayInfo() {
-	    final Material mat = new Material(new BaseColor(255, 255, 0, 32), States.maskdepth);
-
-	    public Collection<String> tags() {
-		return(Arrays.asList("show"));
-	    }
-
-	    public Material mat() {return(mat);}
-	};
+	final Material mat = new Material(new BaseColor(255, 255, 0, 32), States.maskdepth);
+	
+	public Collection<String> tags() {
+	    return(Arrays.asList("show"));
+	}
+	
+	public Material mat() {return(mat);}
+    };
     public class Selector implements Grabber {
-	public Coord max;
+	public final Coord max;
 	public Coord sc;
 	public int modflags;
 	private MCache.Overlay ol;
@@ -2529,11 +2530,11 @@ public class MapView extends PView implements DTarget, Console.Directory, Widget
 	{
 	    grab(xl);
 	}
-
+	
 	public Selector(Coord max) {
 	    this.max = max;
 	}
-
+	
 	public boolean mmousedown(Coord mc, int button) {
 	    synchronized(MapView.this) {
 		if(selection != this)
@@ -2550,17 +2551,17 @@ public class MapView extends PView implements DTarget, Console.Directory, Widget
 		return(true);
 	    }
 	}
-
+	
 	public Coord getec(Coord mc) {
 	    Coord tc = mc.div(MCache.tilesz2);
 	    if(max != null) {
 		Coord dc = tc.sub(sc);
 		tc = sc.add(Utils.clip(dc.x, -(max.x - 1), (max.x - 1)),
-			    Utils.clip(dc.y, -(max.y - 1), (max.y - 1)));
+		    Utils.clip(dc.y, -(max.y - 1), (max.y - 1)));
 	    }
 	    return(tc);
 	}
-
+	
 	public boolean mmouseup(Coord mc, int button) {
 	    synchronized(MapView.this) {
 		if(sc != null) {

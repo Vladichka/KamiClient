@@ -48,6 +48,7 @@
   "gfx/terobjs/trees/willow": {Bark: "gfx/invobjs/bark-willow"},
   "gfx/terobjs/trees/yew": {Bough: "gfx/invobjs/small/bough-yew"},
   "tag/smelter": {"Ready":  "gfx/invobjs/bar-lead", Cold: "gfx/hud/gob/cold"},
+  "tag/animal": {"Fleece": "gfx/invobjs/shears"},
   "gfx/terobjs/chickencoop": {"Water":  "gfx/invobjs/water", Food: "gfx/invobjs/straw"},
   "gfx/terobjs/trough": {Food: "gfx/invobjs/straw"},
   "gfx/terobjs/gardenpot": {"Water":  "gfx/invobjs/water", "Soil":  "gfx/invobjs/soil", "Flower":  "gfx/invobjs/flower", "NotPlanted":  "gfx/invobjs/gardenpot"}

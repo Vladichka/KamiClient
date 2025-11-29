@@ -14,6 +14,7 @@ public class GobInfoOpts extends WindowX {
 	PLANT_GROWTH("Plant growth"),
 	TREE_GROWTH("Tree growth"),
 	TREE_CONTENTS("Tree contents"),
+	ANIMAL_FLEECE("Shearable animals"),
 	COOPS("Coop Needs"),
 	TROUGH("Food troughs"),
 	GARDEN_POT("Garden pots"),

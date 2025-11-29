@@ -58,7 +58,7 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
     protected boolean dest = false;
     private ItemInfo.Raw rawinfo = null;
     private List<ItemInfo> info = Collections.emptyList();
-
+    
     @RName("buff")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
@@ -66,12 +66,12 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	    return(new Buff(res));
 	}
     }
-
+    
     public Buff(Indir<Resource> res) {
 	super(cframe.sz());
 	this.res = res;
     }
-
+    
     public Resource resource() {
 	return(res.get());
     }
@@ -80,7 +80,7 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	.add(Glob.class, wdg -> wdg.ui.sess.glob)
 	.add(Session.class, wdg -> wdg.ui.sess);
     public <T> T context(Class<T> cl) {return(ctxr.context(cl, this));}
-
+    
     public List<ItemInfo> info() {
 	if(info == null) {
 	    info = ItemInfo.buildinfo(this, rawinfo);
@@ -90,29 +90,32 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	}
 	return(info);
     }
-
+    
     public interface AMeterInfo {
 	public double ameter();
     }
-
+    
     public static abstract class AMeterTip extends ItemInfo.Tip implements AMeterInfo {
 	public AMeterTip(Owner owner) {
 	    super(owner);
 	}
-
+	
 	public void layout(Layout l) {
 	    int n = (int)Math.floor(ameter() * 100);
 	    l.cmp.add(Text.render(" (" + n + "%)").img, new Coord(l.cmp.sz.x, 0));
 	}
-
+	
 	public int order() {return(10);}
 	public Tip shortvar() {return(this);}
     }
-
+    
     private final AttrCache<Double> ameteri = new AttrCache<>(this::info, AttrCache.map1(AMeterInfo.class, minf -> minf::ameter));
     private final AttrCache<Tex> nmeteri = new AttrCache<>(this::info, AttrCache.map1s(GItem.NumberInfo.class, ninf -> new TexI(GItem.NumberInfo.numrender(ninf.itemnum(), ninf.numcolor()))));
     private final AttrCache<Double> cmeteri = new AttrCache<>(this::info, AttrCache.map1(GItem.MeterInfo.class, minf -> minf::meter));
-
+    private final AttrCache<Integer> nmeterv = new AttrCache<>(this::info, AttrCache.map1s(GItem.NumberInfo.class, GItem.NumberInfo::itemnum));
+    private final AttrCache<Tex> ametert = new AttrCache<>(this::info, AttrCache.map1s(AMeterInfo.class, minf -> new TexI(Utils.outline2(nfnd.render(Integer.toString((int) (100 * minf.ameter())), Color.WHITE).img, Color.BLACK))));
+    
+    
     public void draw(GOut g) {
 	g.chcolor(255, 255, 255, a);
 	Double ameter = ameteri.get();
@@ -127,39 +130,43 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	}
 	try {
 	    Tex img = res.get().flayer(Resource.imgc).tex();
+	    Coord isz = img.sz();
 	    g.image(img, imgoff);
-	    Tex nmeter = nmeteri.get();
+	    Tex meteri;
 	    String name = res.get().name;
-	    if(nmeter != null)
-	    {
-		if(CFG.SIMPLE_COMBAT_OPENINGS.get() && OPENINGS.containsKey(name)) {
-		    System.out.println("draw simple openenings.");
-		    g.chcolor(OPENINGS.get(name));
-		    g.frect(imgoff, img.sz());
-		    g.chcolor(Color.WHITE);
-		}
-		else {
-		    g.aimage(nmeter, imgoff.add(img.sz()).sub(1, 1), 1, 1, nmeter.sz());
+	    if(CFG.SIMPLE_COMBAT_OPENINGS.get() && OPENINGS.containsKey(name)) {
+		g.chcolor(OPENINGS.get(name));
+		g.frect(imgoff, isz);
+		g.chcolor(Color.WHITE);
+		meteri = ametert.get();
+		if(meteri != null) {
+		    g.aimage(meteri, imgoff.add(isz).sub(1, 1), 1, 1, meteri.sz());
 		}
 	    }
+	    
+	    meteri = nmeteri.get();
+	    if(meteri != null) {
+		g.aimage(meteri, imgoff.add(isz).sub(1, 1), 1, 1, meteri.sz());
+	    }
+	    
 	    Double cmeter = cmeteri.get();
 	    if(cmeter != null) {
 		double m = Utils.clip(cmeter, 0.0, 1.0);
 		g.chcolor(255, 255, 255, a / 2);
-		Coord ccc = img.sz().div(2);
-		g.prect(imgoff.add(ccc), ccc.inv(), img.sz().sub(ccc), Math.PI * 2 * m);
+		Coord ccc = isz.div(2);
+		g.prect(imgoff.add(ccc), ccc.inv(), isz.sub(ccc), Math.PI * 2 * m);
 		g.chcolor(255, 255, 255, a);
 	    }
 	} catch(Loading e) {}
     }
-
+    
     private BufferedImage shorttip() {
 	if(rawinfo != null)
 	    return(ItemInfo.shorttip(info()));
 	String ret = res.get().flayer(Resource.tooltip).t;
 	return(Text.render(ret).img);
     }
-
+    
     private BufferedImage longtip() {
 	BufferedImage img;
 	if(rawinfo != null) {
@@ -172,7 +179,7 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	}
 	return(img);
     }
-
+    
     private double hoverstart;
     private Tex shorttip, longtip;
     private List<ItemInfo> ttinfo = null;
@@ -190,7 +197,7 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	    return(longtip);
 	}
     }
-
+    
     public void reqdestroy() {
 	anims.clear();
 	final Coord o = this.c;
@@ -204,7 +211,7 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	    }
 	};
     }
-
+    
     public void move(Coord c, double off) {
 	if(dest)
 	    return;
@@ -219,11 +226,11 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	    }
 	};
     }
-
+    
     public void move(Coord c) {
 	move(c, 0);
     }
-
+    
     public void uimsg(String msg, Object... args) {
 	if(msg == "ch") {
 	    this.res = ui.sess.getresv(args[0]);
@@ -241,7 +248,7 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	if(v == null) {return -1;}
 	return (int) Math.floor(v * 100);
     }
-
+    
     public boolean mousedown(MouseDownEvent ev) {
 	wdgmsg("cl", ev.c.sub(imgoff), ev.b, ui.modflags());
 	return(true);

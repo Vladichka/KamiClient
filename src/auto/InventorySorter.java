@@ -14,12 +14,12 @@ public class InventorySorter implements Defer.Callable<Void> {
     public static final String[] EXCLUDE = new String[]{
 	"Character Sheet",
 	"Study",
-
+	
 	"Chicken Coop",
 	"Belt",
 	"Pouch",
 	"Purse",
-
+	
 	"Cauldron",
 	"Finery Forge",
 	"Fireplace",
@@ -36,7 +36,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	"Steelbox",
 	"Tub"
     };
-
+    
     private static final Object lock = new Object();
     public static final Comparator<WItem> ITEM_COMPARATOR = Comparator.comparing(WItem::sortName)
 	.thenComparing(w -> w.item.resname())
@@ -44,18 +44,18 @@ public class InventorySorter implements Defer.Callable<Void> {
 	.thenComparing(WItem::quality, Comparator.reverseOrder());
     private static InventorySorter current;
     private Defer.Future<Void> task;
-
+    
     private final List<Inventory> inventories;
-
+    
     private InventorySorter(List<Inventory> inv) {
 	this.inventories = inv;
     }
-
+    
     public static void sort(Inventory inv) {
 	if(invalidCursor(inv.ui)) {return;}
 	start(new InventorySorter(Collections.singletonList(inv)), inv.ui.gui);
     }
-
+    
     public static void sortAll(GameUI gui) {
 	if(invalidCursor(gui.ui)) {return;}
 	List<Inventory> targets = new ArrayList<>();
@@ -71,7 +71,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    start(new InventorySorter(targets), gui);
 	}
     }
-
+    
     private static boolean invalidCursor(UI ui) {
 	if(ui.isDefaultCursor()) {
 	    return false;
@@ -94,9 +94,18 @@ public class InventorySorter implements Defer.Callable<Void> {
 	}
 	return null;
     }
-
+    
     private void doSort(Inventory inv) {
 	boolean[][] grid = new boolean[inv.isz.x][inv.isz.y];
+	boolean[] mask = inv.sqmask;
+	if(mask != null) {
+	    int mo = 0;
+	    for (int y = 0; y < inv.isz.y; y++) {
+		for (int x = 0; x < inv.isz.x; x++) {
+		    grid[x][y] = mask[mo++];
+		}
+	    }
+	}
 	List<WItem> items = new ArrayList<>();
 	for (Widget wdg = inv.lchild; wdg != null; wdg = wdg.prev) {
 	    if(wdg.visible && wdg instanceof WItem) {
@@ -119,7 +128,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    .sorted(ITEM_COMPARATOR)
 	    .map(witem -> new Object[]{witem, witem.c.sub(1, 1).div(Inventory.sqsz), new Coord(0, 0)})
 	    .collect(Collectors.toList());
-
+	
 	int cur_x = -1, cur_y = 0;
 	for (Object[] a : sorted) {
 	    while (true) {
@@ -136,7 +145,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    }
 	    if(cur_y == inv.isz.y) {break;}
 	}
-
+	
 	Object[] handu;
 	for (Object[] a : sorted) {
 	    if(a[1].equals(a[2])) // item in right place
@@ -160,12 +169,12 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    }
 	}
     }
-
+    
     private void run(Consumer<String> callback) {
 	task = Defer.later(this);
 	task.callback(() -> callback.accept(task.cancelled() ? "cancelled" : "complete"));
     }
-
+    
     public static void cancel() {
 	synchronized (lock) {
 	    if(current != null) {
@@ -174,9 +183,9 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    }
 	}
     }
-
+    
     private static final Audio.Clip sfx_done = Audio.resclip(Resource.remote().loadwait("sfx/hud/on"));
-
+    
     private static void start(InventorySorter inventorySorter, GameUI gui) {
 	cancel();
 	synchronized (lock) {current = inventorySorter;}

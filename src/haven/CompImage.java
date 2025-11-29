@@ -62,6 +62,7 @@ public class CompImage {
     }
     
     public static Image mk(final BufferedImage img) {
+	if(img == null) {return new NullImg();}
 	return(new Image() {
 	    public void draw(Graphics g, Coord c) {
 		g.drawImage(img, c.x, c.y, null);
@@ -168,5 +169,13 @@ public class CompImage {
     
     public static Image[][] transpose(Collection<Image[]> rows) {
 	return(transpose(rows.toArray(new Image[0][])));
+    }
+    
+    public static class NullImg implements Image{
+	@Override
+	public void draw(Graphics g, Coord c) {}
+	
+	@Override
+	public Coord sz() {return Coord.z;}
     }
 }

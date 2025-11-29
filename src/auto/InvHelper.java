@@ -2,6 +2,7 @@ package auto;
 
 import haven.*;
 import haven.res.ui.tt.level.Level;
+import me.ender.ItemHelpers;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -126,6 +127,18 @@ public class InvHelper {
 	return where.get().stream()
 	    .filter(wItem -> wItem.is(what))
 	    .findFirst();
+    }
+    
+    static boolean pickItemOnCursor(GameUI gui, String what) {
+	if(BotUtil.isHeld(gui, what)) {return true;}
+	
+	Optional<WItem> item = ItemHelpers.find(gui.ui, w -> w.item.is2(what));
+	
+	if(item.isPresent()) {
+	    item.get().take();
+	    return BotUtil.waitHeld(gui, what);
+	}
+	return false;
     }
     
     public static Supplier<List<WItem>> INVENTORY(GameUI gui) {
