@@ -109,8 +109,8 @@ public class OptWnd extends WindowX {
 	    if(ui.gui != null) {act.run(ui.gui);}
 	}
 	
-	public boolean keydown(java.awt.event.KeyEvent ev) {
-	    if((this.key != -1) && (ev.getKeyChar() == this.key)) {
+	public boolean keydown(KeyDownEvent ev) {
+	    if((this.key != -1) && (ev.c == this.key)) {
 		click();
 		return (true);
 	    }
@@ -1591,7 +1591,7 @@ public class OptWnd extends WindowX {
 	}
 	TextEntry map_url = new TextEntry(UI.scale(250), automapEndpoint) {
 	    @Override
-	    public boolean keyup(KeyEvent ev) {
+	    public boolean keyup(KeyUpEvent ev) {
 		if(!parent.visible)
 		    return false;
 		CFG.AUTOMAP_ENDPOINT.set(text());
@@ -1674,6 +1674,7 @@ public class OptWnd extends WindowX {
 			setUsername = true;
 		    }
 		    MappingClient automapper = MappingClient.getInstance();
+		    automapper.setGenus(ui.sess.user.genus);
 		    if (setUsername)
 			automapper.SetPlayerName(ui.sess.user.name);
 		    automapper.SetEndpoint(CFG.AUTOMAP_ENDPOINT.get());

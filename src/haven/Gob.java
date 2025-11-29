@@ -112,7 +112,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	
 	public Overlay(Gob gob, int id, Indir<Resource> res, Message sdt) {
-	    this(gob, id, owner -> Sprite.create(owner, res.get(), sdt));
+	    this(gob, id, Sprite.Mill.of(res, sdt));
 	}
 	
 	public Overlay(Gob gob, Sprite spr) {
@@ -194,8 +194,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    .add(Overlay.class, o -> o);
 	public <T> T context(Class<T> cl) {return(OwnerContext.orparent(cl, ctxr.context(cl, this, false), gob));}
 	public Random mkrandoom() {return(gob.mkrandoom());}
-	@Deprecated
-	public Resource getres() {return(gob.getres());}
 	
 	public String name() {
 	    Sprite spr = this.spr;
@@ -1135,14 +1133,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	return(Utils.mkrandoom(id));
     }
     
-    @Deprecated
-    public Resource getres() {
-	Drawable d = drawable;
-	if(d != null)
-	    return(d.getres());
-	return(null);
-    }
-    
     public String resid() {
 	Drawable d = drawable;
 	if(d != null)
@@ -1554,6 +1544,14 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     public static void gobTagsUpdated(UI ui, long gobId) {updateStatus(ui, gobId, StatusType.tags);}
     
     public static void gobTagsUpdated(Gob gob) {if(gob != null) {gob.tagsUpdated();}}
+    
+    public Resource getres() {
+	Drawable d = drawable;
+	if(d != null) {
+	    return(d.getres());
+	}
+	return(null);
+    }
     
     private void updateState() {
 	if(updateseq == 0 || !status.updated()) {return;}

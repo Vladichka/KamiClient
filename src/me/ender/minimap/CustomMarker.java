@@ -110,15 +110,7 @@ public class CustomMarker extends Marker {
 		PUtils.alphablit(buf, PUtils.coercergba(fg.img).getRaster(), fg.o);
 	    }
 	    
-	    Tex newTex = null;
-	    try
-	    {
-		newTex= new TexI(PUtils.uiscale(PUtils.rasterimg(buf), new Coord(iconsz, iconsz)));
-	    } catch (Exception ex)
-	    {
-		newTex= new TexI((PUtils.rasterimg(buf)));
-	    }
-	    this.tex = newTex;
+	    this.tex = new TexI(PUtils.uiscale(PUtils.rasterimg(buf), new Coord(iconsz, iconsz)));
 	    this.cc = tex.sz().div(2);
 	}
     }

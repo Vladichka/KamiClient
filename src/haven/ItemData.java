@@ -77,6 +77,14 @@ public class ItemData {
 	return false;
     }
     
+    public static boolean isSalted(GItem item) {
+	try {
+	    return item.info().stream().anyMatch(i -> i instanceof ItemInfo.AdHoc
+		&& "Salted".equals(((ItemInfo.AdHoc) i).str.text));
+	} catch (Loading ignored) {}
+	return false;
+    }
+    
     public static boolean hasIngredientInfo(GItem item) {
 	try {
 	    return item.info().stream().anyMatch(i -> i instanceof Effect);

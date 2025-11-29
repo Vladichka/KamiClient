@@ -30,8 +30,6 @@ public class MappingClient {
     
     private static volatile MappingClient INSTANCE = null;
     
-    private int spamPreventionVal = 3;
-    private int spamCount = 0;
     private Glob glob;
     
     public static void init(Glob glob) {
@@ -89,7 +87,7 @@ public class MappingClient {
     
     private MappingClient(Glob glob) {
 	this.glob = glob;
-	scheduler.scheduleAtFixedRate(pu, 2L, 2L, TimeUnit.SECONDS);
+	scheduler.scheduleAtFixedRate(pu, 5L, 5L, TimeUnit.SECONDS);
     }
     
     private String endpoint;
@@ -112,6 +110,16 @@ public class MappingClient {
 	playerName = name;
     }
     
+    private String genus;
+    
+    /***
+     * Set the world genus (version)
+     * @param genus
+     */
+    public void setGenus(String genus) {
+	this.genus = genus;
+    }
+    
     /***
      * Checks that the endpoint is functional and matches the version of this mapping client.
      * @return
@@ -121,7 +129,7 @@ public class MappingClient {
 	    if (INSTANCE == null)
 		return false;
 	    HttpURLConnection connection =
-		(HttpURLConnection) new URL(endpoint + "/checkVersion?version=4").openConnection();
+		(HttpURLConnection) new URL(endpoint + "/checkVersion?version=4&genus=" + genus).openConnection();
 	    connection.setRequestMethod("GET");
 	    return connection.getResponseCode() == 200;
 	} catch (Exception ex) {
@@ -129,16 +137,27 @@ public class MappingClient {
 	}
     }
     
+    private Coord2d playerCoord = new Coord2d(0,0);
+    private long playerGridId = 0;
+    
     /***
      * Track a gob at a location.  Typically called in Gob.move
+     * Note, current implementation in gob is actually only tracking the player and nothing else
      * @param id
      * @param coordinates
      */
     public void Track(long id, Coord2d coordinates) {
 	try {
+	    playerCoord = coordinates;
 	    MCache.Grid g = glob.map.getgrid(toGC(coordinates));
-	    pu.Track(id, coordinates, g.id);
+	    playerGridId = g.id;
+	    pu.Track(id, coordinates, g.id, genus);
 	} catch (Exception ex) {}
+    }
+    
+    public void SetTimerToNearestRes(String inspectResult)
+    {
+	scheduler.execute(new UploadInspectResult(playerGridId, playerCoord, inspectResult, genus));
     }
     
     private Coord lastGC = null;
@@ -149,7 +168,7 @@ public class MappingClient {
      */
     public void EnterGrid(Coord gc) {
 	lastGC = gc;
-	scheduler.execute(new GenerateGridUpdateTask(gc));
+	scheduler.execute(new GenerateGridUpdateTask(gc, genus));
     }
     
     /***
@@ -233,7 +252,7 @@ public class MappingClient {
      * @param uploadCheck
      */
     public void ProcessMap(MapFile mapfile, Predicate<Marker> uploadCheck) {
-	scheduler.schedule(new ExtractMapper(mapfile, uploadCheck), 1, TimeUnit.SECONDS);
+	scheduler.schedule(new ExtractMapper(mapfile, uploadCheck, genus), 1, TimeUnit.SECONDS);
 	
     }
     
@@ -241,10 +260,12 @@ public class MappingClient {
 	MapFile mapfile;
 	Predicate<Marker> uploadCheck;
 	int retries = 5;
+	String genus;
 	
-	ExtractMapper(MapFile mapfile, Predicate<Marker> uploadCheck) {
+	ExtractMapper(MapFile mapfile, Predicate<Marker> uploadCheck, String genus) {
 	    this.mapfile = mapfile;
 	    this.uploadCheck = uploadCheck;
+	    this.genus = genus;
 	}
 	
 	@Override
@@ -258,7 +279,7 @@ public class MappingClient {
 		    }).collect(Collectors.toList());
 		    System.out.println("collected " + markers.size() + " markers");
 		    
-		    scheduler.schedule(new ProcessMapper(mapfile, markers), 15, TimeUnit.SECONDS);
+		    scheduler.schedule(new ProcessMapper(mapfile, markers, genus), 15, TimeUnit.SECONDS);
 		} catch (Exception ex)
 		{
 		    System.out.println("Error while collection markers: " +ex);
@@ -286,10 +307,12 @@ public class MappingClient {
     private class ProcessMapper implements Runnable {
 	MapFile mapfile;
 	List<MarkerData> markers;
+	String genus;
 	
-	ProcessMapper(MapFile mapfile, List<MarkerData> markers) {
+	ProcessMapper(MapFile mapfile, List<MarkerData> markers, String genus) {
 	    this.mapfile = mapfile;
 	    this.markers = markers;
+	    this.genus = genus;
 	}
 	
 	@Override
@@ -320,6 +343,7 @@ public class MappingClient {
 			long gridId = md.indirGrid.get().id;
 			JSONObject o = new JSONObject();
 			o.put("name", md.m.nm);
+			o.put("gnus", genus);
 			o.put("gridID", String.valueOf(gridId));
 			Coord gridOffset = md.m.tc.sub(mgc.mul(100));
 			o.put("x", gridOffset.x);
@@ -392,6 +416,7 @@ public class MappingClient {
     private class PositionUpdates implements Runnable {
 	private class Tracking {
 	    public String name;
+	    public String genus;
 	    public String type;
 	    public long gridId;
 	    public Coord2d coords;
@@ -399,6 +424,7 @@ public class MappingClient {
 	    public JSONObject getJSON() {
 		JSONObject j = new JSONObject();
 		j.put("name", name);
+		j.put("genus", genus);
 		j.put("type", type);
 		j.put("gridID", String.valueOf(gridId));
 		JSONObject c = new JSONObject();
@@ -414,7 +440,7 @@ public class MappingClient {
 	private PositionUpdates() {
 	}
 	
-	private void Track(long id, Coord2d coordinates, long gridId) {
+	private void Track(long id, Coord2d coordinates, long gridId, String genus) {
 	    Tracking t = tracking.get(id);
 	    if(t == null) {
 		t = new Tracking();
@@ -430,45 +456,41 @@ public class MappingClient {
 		    t.type = "white";
 		}
 	    }
+	    t.genus = genus;
 	    t.gridId = gridId;
 	    t.coords = gridOffset(coordinates);
 	}
 	
 	@Override
 	public void run() {
-	    if(spamCount == spamPreventionVal) {
-		spamCount = 0;
-		if(trackingEnabled) {
-		    Glob g = glob;
-		    Iterator<Map.Entry<Long, Tracking>> i = tracking.entrySet().iterator();
-		    JSONObject upload = new JSONObject();
-		    while (i.hasNext()) {
-			Map.Entry<Long, Tracking> e = i.next();
-			if(g.oc.getgob(e.getKey()) == null) {
-			    i.remove();
-			} else {
-			    upload.put(String.valueOf(e.getKey()), e.getValue().getJSON());
-			}
-		    }
-		    
-		    try {
-			final HttpURLConnection connection =
-			    (HttpURLConnection) new URL(endpoint + "/positionUpdate").openConnection();
-			connection.setRequestMethod("POST");
-			connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-			connection.setDoOutput(true);
-			try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
-			    final String json = upload.toString();
-			    //System.out.println(json);
-			    out.write(json.getBytes(StandardCharsets.UTF_8));
-			} catch (Exception e) {
-			}
-			connection.getResponseCode();
-		    } catch (final Exception ex) {
+	    if(trackingEnabled) {
+		Glob g = glob;
+		Iterator<Map.Entry<Long, Tracking>> i = tracking.entrySet().iterator();
+		JSONObject upload = new JSONObject();
+		while (i.hasNext()) {
+		    Map.Entry<Long, Tracking> e = i.next();
+		    if(g.oc.getgob(e.getKey()) == null) {
+			i.remove();
+		    } else {
+			upload.put(String.valueOf(e.getKey()), e.getValue().getJSON());
 		    }
 		}
-	    } else {
-		spamCount++;
+		
+		try {
+		    final HttpURLConnection connection =
+			(HttpURLConnection) new URL(endpoint + "/positionUpdate").openConnection();
+		    connection.setRequestMethod("POST");
+		    connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+		    connection.setDoOutput(true);
+		    try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
+			final String json = upload.toString();
+			//System.out.println(json);
+			out.write(json.getBytes(StandardCharsets.UTF_8));
+		    } catch (Exception e) {
+		    }
+		    connection.getResponseCode();
+		} catch (final Exception ex) {
+		}
 	    }
 	}
     }
@@ -490,10 +512,12 @@ public class MappingClient {
     
     private class GenerateGridUpdateTask implements Runnable {
 	Coord coord;
+	String genus;
 	int retries = 3;
 	
-	GenerateGridUpdateTask(Coord c) {
+	GenerateGridUpdateTask(Coord c, String genus) {
 	    this.coord = c;
+	    this.genus = genus;
 	}
 	
 	@Override
@@ -509,7 +533,7 @@ public class MappingClient {
 			    gridRefs.put(String.valueOf(subg.id), new WeakReference<MCache.Grid>(subg));
 			}
 		    }
-		    scheduler.execute(new UploadGridUpdateTask(new GridUpdate(gridMap, gridRefs)));
+		    scheduler.execute(new UploadGridUpdateTask(new GridUpdate(gridMap, gridRefs), genus));
 		} catch (LoadingMap lm) {
 		    retries--;
 		    if(retries >= 0) {
@@ -525,9 +549,10 @@ public class MappingClient {
     
     private class UploadGridUpdateTask implements Runnable {
 	private final GridUpdate gridUpdate;
-	
-	UploadGridUpdateTask(final GridUpdate gridUpdate) {
+	private final String genus;
+	UploadGridUpdateTask(final GridUpdate gridUpdate, String genus) {
 	    this.gridUpdate = gridUpdate;
+	    this.genus = genus;
 	}
 	
 	@Override
@@ -536,6 +561,7 @@ public class MappingClient {
 		HashMap<String, Object> dataToSend = new HashMap<>();
 		
 		dataToSend.put("grids", this.gridUpdate.grids);
+		dataToSend.put("genus", this.genus);
 		try {
 		    HttpURLConnection connection =
 			(HttpURLConnection) new URL(endpoint + "/gridUpdate").openConnection();
@@ -562,12 +588,12 @@ public class MappingClient {
 			    cache.put(Long.valueOf(gridUpdate.grids[1][1]), new MapRef(jo.getLong("map"), new Coord(jo.getJSONObject("coords").getInt("x"), jo.getJSONObject("coords").getInt("y"))));
 			}
 			for (int i = 0; reqs != null && i < reqs.length(); i++) {
-			    gridsUploader.execute(new GridUploadTask(reqs.getString(i), gridUpdate.gridRefs.get(reqs.getString(i))));
+			    gridsUploader.execute(new GridUploadTask(reqs.getString(i), gridUpdate.gridRefs.get(reqs.getString(i)), genus));
 			}
 			try {
 			    JSONArray reqs2 = jo.optJSONArray("gridOverlayRequests");
 			    for (int i = 0; reqs2 != null && i < reqs2.length(); i++) {
-				gridsUploader.execute(new GridOverlayUploadTask(reqs2.getString(i), gridUpdate.gridRefs.get(reqs2.getString(i))));
+				gridsUploader.execute(new GridOverlayUploadTask(reqs2.getString(i), gridUpdate.gridRefs.get(reqs2.getString(i)), genus));
 			    }
 			}
 			catch (Exception ex) {}
@@ -583,10 +609,12 @@ public class MappingClient {
     private class GridUploadTask implements Runnable {
 	private final String gridID;
 	private final WeakReference<MCache.Grid> grid;
+	private final String genus;
 	
-	GridUploadTask(String gridID, WeakReference<MCache.Grid> grid) {
-	    this.gridID = gridID;
+	GridUploadTask(String gridId, WeakReference<MCache.Grid> grid, String genus) {
+	    this.gridID = gridId;
 	    this.grid = grid;
+	    this.genus = genus;
 	}
 	
 	@Override
@@ -605,6 +633,7 @@ public class MappingClient {
 			ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
 			MultipartUtility multipart = new MultipartUtility(endpoint + "/gridUpload", "utf-8");
 			multipart.addFormField("id", this.gridID);
+			multipart.addFormField("genus", this.genus);
 			multipart.addFilePart("file", inputStream, "minimap.png");
 			extraData.put("season", glob.ast.is);
 			multipart.addFormField("extraData", extraData.toString());
@@ -627,10 +656,12 @@ public class MappingClient {
     private class GridOverlayUploadTask implements Runnable {
 	private final String gridID;
 	private final WeakReference<MCache.Grid> grid;
+	private final String genus;
 	
-	GridOverlayUploadTask(String gridID, WeakReference<MCache.Grid> grid) {
+	GridOverlayUploadTask(String gridID, WeakReference<MCache.Grid> grid, String genus) {
 	    this.gridID = gridID;
 	    this.grid = grid;
+	    this.genus = genus;
 	}
 	
 	@Override
@@ -649,6 +680,7 @@ public class MappingClient {
 			ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
 			MultipartUtility multipart = new MultipartUtility(endpoint + "/gridOverlayUpload", "utf-8");
 			multipart.addFormField("id", this.gridID);
+			multipart.addFormField("genus", this.genus);
 			multipart.addFilePart("file", inputStream, "minimap.png");
 			extraData.put("season", glob.ast.is);
 			multipart.addFormField("extraData", extraData.toString());
@@ -692,6 +724,57 @@ public class MappingClient {
 	
 	public String toString() {
 	    return (gc.toString() + " in map space " + mapID);
+	}
+    }
+    
+    private class UploadInspectResult implements Runnable {
+	Coord2d coord;
+	long gridId;
+	String inspectResult;
+	String genus;
+	
+	UploadInspectResult(long gridId, Coord2d coords, String inspectResult, String genus) {
+	    this.coord = gridOffset(coords);
+	    this.gridId = gridId;
+	    this.inspectResult = inspectResult;
+	    this.genus = genus;
+	}
+	
+	public JSONObject getJSON() {
+	    JSONObject j = new JSONObject();
+	    j.put("genus", genus);
+	    j.put("inspectResult", inspectResult);
+	    j.put("gridId", String.valueOf(gridId));
+	    JSONObject c = new JSONObject();
+	    c.put("x", (int) (coord.x / 11));
+	    c.put("y", (int) (coord.y / 11));
+	    j.put("coords", c);
+	    return j;
+	}
+	
+	@Override
+	public void run() {
+	    if (trackingEnabled)
+	    {
+		try {
+		    HttpURLConnection connection =
+			(HttpURLConnection) new URL(endpoint + "/inspectUpdate").openConnection();
+		    connection.setRequestMethod("POST");
+		    connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+		    connection.setDoOutput(true);
+		    try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
+			String json = getJSON().toString();
+			out.write(json.getBytes(StandardCharsets.UTF_8));
+		    } catch (IOException e) {
+		    
+		    }
+		    connection.getResponseCode();
+		} catch (Exception ex)
+		{
+		    System.out.println("Cannot upload inspect result: " + ex.getMessage());
+		}
+		
+	    }
 	}
     }
 }

@@ -39,7 +39,7 @@ import me.ender.ui.DrinkMeter;
 
 import static haven.PUtils.*;
 
-public class CharWnd extends Window {
+public class CharWnd extends WindowX {
     public static final RichText.Foundry ifnd = new RichText.Foundry(RichText.ImageSource.res(Resource.remote()), java.awt.font.TextAttribute.FAMILY, "SansSerif", java.awt.font.TextAttribute.SIZE, UI.scale(9)).aa(true);
     public static final Text.Furnace catf = new BlurFurn(new TexFurn(new Text.Foundry(Text.fraktur, 25).aa(true), Window.ctex), UI.scale(3), UI.scale(2), new Color(96, 48, 0));
     public static final Text.Furnace failf = new BlurFurn(new TexFurn(new Text.Foundry(Text.fraktur, 25).aa(true), Resource.loadimg("gfx/hud/fontred")), UI.scale(3), UI.scale(2), new Color(96, 48, 0));

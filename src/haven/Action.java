@@ -67,6 +67,7 @@ public enum Action {
     TOGGLE_GOB_INFO_PLANTS(gui -> GobInfoOpts.toggle(GobInfoOpts.InfoPart.PLANT_GROWTH)),
     TOGGLE_GOB_INFO_TREE_GROWTH(gui -> GobInfoOpts.toggle(GobInfoOpts.InfoPart.TREE_GROWTH)),
     TOGGLE_GOB_INFO_TREE_CONTENT(gui -> GobInfoOpts.toggle(GobInfoOpts.InfoPart.TREE_CONTENTS)),
+    TOGGLE_GOB_INFO_ANIMAL_FLEECE(gui -> GobInfoOpts.toggle(GobInfoOpts.InfoPart.ANIMAL_FLEECE)),
     TOGGLE_GOB_INFO_HEALTH(gui -> GobInfoOpts.toggle(GobInfoOpts.InfoPart.HEALTH)),
     TOGGLE_GOB_INFO_BARREL(gui -> GobInfoOpts.toggle(GobInfoOpts.InfoPart.BARREL)),
     TOGGLE_GOB_INFO_SIGN(gui -> GobInfoOpts.toggle(GobInfoOpts.InfoPart.DISPLAY_SIGN)),

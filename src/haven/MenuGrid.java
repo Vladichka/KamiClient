@@ -906,6 +906,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	makeLocal("paginae/add/info/plant-growth", Action.TOGGLE_GOB_INFO_PLANTS, () -> GobInfoOpts.enabled(InfoPart.PLANT_GROWTH));
 	makeLocal("paginae/add/info/tree-growth", Action.TOGGLE_GOB_INFO_TREE_GROWTH, () -> GobInfoOpts.enabled(InfoPart.TREE_GROWTH));
 	makeLocal("paginae/add/info/tree-content", Action.TOGGLE_GOB_INFO_TREE_CONTENT, () -> GobInfoOpts.enabled(InfoPart.TREE_CONTENTS));
+	makeLocal("paginae/add/info/animal-fleece", Action.TOGGLE_GOB_INFO_ANIMAL_FLEECE, () -> GobInfoOpts.enabled(InfoPart.ANIMAL_FLEECE));
 	makeLocal("paginae/add/info/health", Action.TOGGLE_GOB_INFO_HEALTH, () -> GobInfoOpts.enabled(InfoPart.HEALTH));
 	makeLocal("paginae/add/info/barrel", Action.TOGGLE_GOB_INFO_BARREL, () -> GobInfoOpts.enabled(InfoPart.BARREL));
 	makeLocal("paginae/add/info/sign", Action.TOGGLE_GOB_INFO_SIGN, () -> GobInfoOpts.enabled(InfoPart.DISPLAY_SIGN));

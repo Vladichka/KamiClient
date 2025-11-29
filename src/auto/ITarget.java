@@ -13,8 +13,10 @@ public interface ITarget {
     default void rclick_shift(Bot b) {rclick_shift();}
     
     default void rclick_shift() {
-	rclick(UI.MOD_SHIFT);
+        rclick(UI.MOD_SHIFT);
     }
+    
+    default void interact(Bot b) {interact();}
     
     void rclick(int modflags);
     

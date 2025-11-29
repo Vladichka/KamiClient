@@ -108,7 +108,7 @@ public class FoodService {
     /**
      * Check item info and determine if it is food and we need to send it
      */
-    public static void checkFood(List<ItemInfo> infoList, Resource res, double itemQ) {
+    public static void checkFood(List<ItemInfo> infoList, Resource res, double itemQ, String genus) {
 //        if (!Resource.language.equals("en")) {
 //            // Do not process localized items
 //            return;
@@ -126,6 +126,7 @@ public class FoodService {
 		parsedFoodInfo.energy = (int) (Math.round(foodInfo.end * 100));
 		parsedFoodInfo.hunger = round2Dig(foodInfo.glut * 1000 / Math.sqrt(multiplier));
 		parsedFoodInfo.quality = quality;
+		parsedFoodInfo.genus = genus;
 		
 		for (int i = 0; i < foodInfo.evs.length; i++) {
 		    parsedFoodInfo.feps.add(new FoodFEP(foodInfo.evs[i].ev.nm, round2Dig(foodInfo.evs[i].a / multiplier)));
@@ -301,6 +302,7 @@ public class FoodService {
     }
     
     public static class ParsedFoodInfo {
+	public String genus;
 	public String itemName;
 	public String resourceName;
 	public Integer energy;

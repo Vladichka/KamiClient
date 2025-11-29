@@ -341,7 +341,11 @@ public class GeneralGobInfo extends GobInfo {
 		GobInfoOpts.enabled(TreeSubPart.BOUGH) ? getIcon(data.get(BOUGH)) : null,
 	    };
 	    
-	}else if (gob.is(GobTag.COOP)) {
+	}else if(gob.is(GobTag.FLEECE) && GobInfoOpts.enabled(InfoPart.ANIMAL_FLEECE)) {
+	    parts = new BufferedImage[]{
+		getIcon(data.get(FLEECE)),
+	    };
+	} else if (gob.is(GobTag.COOP)) {
 	    int sdt = gob.sdt();
 	    boolean water = (sdt & 0b0001) != 0;
 	    boolean food = (sdt & 0b0000_0010) != 0;

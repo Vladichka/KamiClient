@@ -84,11 +84,13 @@ public class FoodInfo extends ItemInfo.Tip {
 	if(cons != 0)
 	    head += String.format(", Satiation: $col[192,192,128]{%s%%}", Utils.odformat2(cons * 100, 2));
 	l.cmp.add(RichText.render(head, 0).img, Coord.of(0, l.cmp.sz.y));
+	double fepSum = 0;
+	for (Event ev : evs) {fepSum += ev.a;}
 	for(int i = 0; i < evs.length; i++) {
 	    Color col = Utils.blendcol(evs[i].ev.col, Color.WHITE, 0.5);
 	    String fepStr = Utils.odformat2(evs[i].a, 2);
-	    if(sev > 0) {
-		double probability = 100 * evs[i].a / sev;
+	    if(fepSum > 0) {
+		double probability = 100 * evs[i].a / fepSum;
 		fepStr += String.format(" (%s%%)", Utils.odformat2(probability, 2));
 	    }
 	    l.cmp.add(catimgsh(5, evs[i].img, RichText.render(String.format("%s: %s{%s}", evs[i].ev.nm, RichText.Parser.col2a(col), fepStr), 0).img),
@@ -105,6 +107,6 @@ public class FoodInfo extends ItemInfo.Tip {
 		efi = catimgsh(5, efi, RichText.render(String.format("$i{($col[192,192,255]{%d%%} chance)}", (int)Math.round(efs[i].p * 100)), 0).img);
 	    l.cmp.add(efi, Coord.of(UI.scale(5), l.cmp.sz.y));
 	}
-	ItemData.modifyFoodTooltip(owner, l.cmp, types, glut, sev);
+	ItemData.modifyFoodTooltip(owner, l.cmp, types, glut, fepSum);
     }
 }

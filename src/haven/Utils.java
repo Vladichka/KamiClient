@@ -55,11 +55,11 @@ public class Utils {
     public static final java.nio.charset.Charset ascii = java.nio.charset.Charset.forName("US-ASCII");
     public static final java.awt.image.ColorModel rgbm = java.awt.image.ColorModel.getRGBdefault();
     private static Preferences prefs = null;
-
+    
     static Coord imgsz(BufferedImage img) {
 	return(new Coord(img.getWidth(), img.getHeight()));
     }
-
+    
     public static boolean checkhit(BufferedImage img, Coord c, int thres) {
 	if(!c.isect(Coord.z, imgsz(img)))
 	    return(false);
@@ -70,16 +70,16 @@ public class Utils {
     public static boolean checkhit(BufferedImage img, Coord c) {
 	return(checkhit(img, c, 128));
     }
-
+    
     public static void defer(final Runnable r) {
 	Defer.later(new Defer.Callable<Object>() {
-		public Object call() {
-		    r.run();
-		    return(null);
-		}
-	    });
+	    public Object call() {
+		r.run();
+		return(null);
+	    }
+	});
     }
-
+    
     public static URI uri(String uri) {
 	try {
 	    return(new URI(uri));
@@ -87,7 +87,7 @@ public class Utils {
 	    throw(new IllegalArgumentException(uri, e));
 	}
     }
-
+    
     public static URL url(URI uri) {
 	try {
 	    return(uri.toURL());
@@ -95,23 +95,23 @@ public class Utils {
 	    throw(new IllegalArgumentException(uri.toString(), e));
 	}
     }
-
+    
     public static URL url(String url) {
 	return(url(uri(url)));
     }
-
+    
     public static Path path(String path) {
 	if(path == null)
 	    return(null);
 	return(FileSystems.getDefault().getPath(path));
     }
-
+    
     public static Path pj(Path base, String... els) {
 	for(String el : els)
 	    base = base.resolve(el);
 	return(base);
     }
-
+    
     public static Path srcpath(Class<?> cl) {
 	java.security.ProtectionDomain d = cl.getProtectionDomain();
 	if(d == null) throw(new IllegalArgumentException(String.valueOf(cl) + " has no prortection domain"));
@@ -125,7 +125,7 @@ public class Utils {
 	    throw(new IllegalArgumentException(String.valueOf(cl) + " has a malformed location", e));
 	}
     }
-
+    
     public static SocketChannel connect(String host, int port) throws IOException {
 	IOException lerr = null;
 	for(InetAddress haddr : InetAddress.getAllByName(host)) {
@@ -150,25 +150,25 @@ public class Utils {
 	    throw(lerr);
 	throw(new UnknownHostException(host));
     }
-
+    
     public static int drawtext(Graphics g, String text, Coord c) {
 	java.awt.FontMetrics m = g.getFontMetrics();
 	g.drawString(text, c.x, c.y + m.getAscent());
 	return(m.getHeight());
     }
-
+    
     static Coord textsz(Graphics g, String text) {
 	java.awt.FontMetrics m = g.getFontMetrics();
 	java.awt.geom.Rectangle2D ts = m.getStringBounds(text, g);
 	return(new Coord((int)ts.getWidth(), (int)ts.getHeight()));
     }
-
+    
     static void aligntext(Graphics g, String text, Coord c, double ax, double ay) {
 	java.awt.FontMetrics m = g.getFontMetrics();
 	java.awt.geom.Rectangle2D ts = m.getStringBounds(text, g);
 	g.drawString(text, (int)(c.x - ts.getWidth() * ax), (int)(c.y + m.getAscent() - ts.getHeight() * ay));
     }
-
+    
     public static String fpformat(int num, int div, int dec) {
 	StringBuilder buf = new StringBuilder();
 	boolean s = false;
@@ -194,11 +194,11 @@ public class Utils {
 	    buf.append('-');
 	return(buf.reverse().toString());
     }
-
+    
     public static String thformat(long num) {
 	return(String.format("%,d", num));
     }
-
+    
     /* These are horribly imprecise and ugly technically speaking, but
      * they should do for these simple purposes. */
     public static String odformat(double num, int md) {
@@ -219,7 +219,7 @@ public class Utils {
 	buf.append(dp);
 	return(buf.toString());
     }
-
+    
     public static String odformat2(double num, int md) {
 	if(num < 0)
 	    return("-" + odformat2(-num, md));
@@ -244,16 +244,16 @@ public class Utils {
 	buf.append(dp);
 	return(buf.toString());
     }
-
+    
     static void line(Graphics g, Coord c1, Coord c2) {
 	g.drawLine(c1.x, c1.y, c2.x, c2.y);
     }
-
+    
     static void AA(Graphics g) {
 	java.awt.Graphics2D g2 = (java.awt.Graphics2D)g;
-	g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);		
+	g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
     }
-
+    
     public static Random mkrandoom(long seed) {
 	long rev = 0;
 	for(int i = 0; i < 32; i++) {
@@ -264,7 +264,7 @@ public class Utils {
 	seed = (seed & 0x0000ffffffffffffl) ^ ((rev & 0xffffffffffff0000l) >>> 16);
 	return(new Random(seed));
     }
-
+    
     public static double fgrandoom(Random rnd) {
 	long raw = rnd.nextLong();
 	// 0000 bbbb baaa aabb bbba aaaa bbbb baaa aabb bbba aaaa bbbb baaa aabb bbba aaaa
@@ -275,7 +275,7 @@ public class Utils {
 	raw = ((raw & 0x00007f0000000000l) >> 40) + ((raw & 0x0000000007f00000l) >> 20) + (raw & 0x000000000000007fl);
 	return((raw - 186) * (1.0 / 31.0));
     }
-
+    
     private static Map<Object, Object> sysprefs() {
 	try {
 	    Properties buf = new Properties();
@@ -289,7 +289,7 @@ public class Utils {
 	    }
 	    for(Map.Entry<?, ?> ent : System.getProperties().entrySet()) {
 		if((ent.getKey() instanceof String) && (ent.getValue() instanceof String) &&
-		   ((String)ent.getKey()).startsWith("haven.prefs."))
+		    ((String)ent.getKey()).startsWith("haven.prefs."))
 		{
 		    buf.put(((String)ent.getKey()).substring(12), (String)ent.getValue());
 		}
@@ -299,7 +299,7 @@ public class Utils {
 	    return(Collections.emptyMap());
 	}
     }
-
+    
     public static final Config.Variable<String> prefspec = Config.Variable.prop("haven.prefspec", "hafen");
     public static Preferences prefs() {
 	if(prefs == null) {
@@ -319,7 +319,7 @@ public class Utils {
 	}
 	return(prefs);
     }
-
+    
     public static String getpref(String prefname, String def) {
 	try {
 	    return(prefs().get(prefname, def));
@@ -327,7 +327,7 @@ public class Utils {
 	    return(def);
 	}
     }
-
+    
     public static void setpref(String prefname, String val) {
 	try {
 	    if(val == null)
@@ -337,7 +337,7 @@ public class Utils {
 	} catch(SecurityException e) {
 	}
     }
-
+    
     public static int getprefi(String prefname, int def) {
 	try {
 	    return(prefs().getInt(prefname, def));
@@ -345,14 +345,14 @@ public class Utils {
 	    return(def);
 	}
     }
-
+    
     public static void setprefi(String prefname, int val) {
 	try {
 	    prefs().putInt(prefname, val);
 	} catch(SecurityException e) {
 	}
     }
-
+    
     public static double getprefd(String prefname, double def) {
 	try {
 	    return(prefs().getDouble(prefname, def));
@@ -360,14 +360,14 @@ public class Utils {
 	    return(def);
 	}
     }
-
+    
     public static void setprefd(String prefname, double val) {
 	try {
 	    prefs().putDouble(prefname, val);
 	} catch(SecurityException e) {
 	}
     }
-
+    
     public static boolean getprefb(String prefname, boolean def) {
 	try {
 	    return(prefs().getBoolean(prefname, def));
@@ -375,14 +375,14 @@ public class Utils {
 	    return(def);
 	}
     }
-
+    
     public static void setprefb(String prefname, boolean val) {
 	try {
 	    prefs().putBoolean(prefname, val);
 	} catch(SecurityException e) {
 	}
     }
-
+    
     public static Coord getprefc(String prefname, Coord def) {
 	try {
 	    String val = prefs().get(prefname, null);
@@ -396,7 +396,7 @@ public class Utils {
 	    return(def);
 	}
     }
-
+    
     public static void setprefc(String prefname, Coord val) {
 	try {
 	    String enc = (val == null) ? "" : val.x + "x" + val.y;
@@ -404,7 +404,7 @@ public class Utils {
 	} catch(SecurityException e) {
 	}
     }
-
+    
     public static byte[] getprefb(String prefname, byte[] def) {
 	try {
 	    return(prefs().getByteArray(prefname, def));
@@ -412,14 +412,14 @@ public class Utils {
 	    return(def);
 	}
     }
-
+    
     public static void setprefb(String prefname, byte[] val) {
 	try {
 	    prefs().putByteArray(prefname, val);
 	} catch(SecurityException e) {
 	}
     }
-
+    
     public static List<String> getprefsl(String prefname, String[] def) {
 	byte[] enc = getprefb(prefname, null);
 	if(enc == null)
@@ -439,7 +439,7 @@ public class Utils {
 	ret.trimToSize();
 	return(ret);
     }
-
+    
     public static void setprefsl(String prefname, Iterable<? extends CharSequence> val) {
 	ByteBuffer buf = ByteBuffer.allocate(1024);
 	for(CharSequence str : val) {
@@ -453,7 +453,7 @@ public class Utils {
 	buf.get(enc);
 	setprefb(prefname, enc);
     }
-
+    
     public static String getprop(String propname, String def) {
 	try {
 	    String ret;
@@ -464,16 +464,16 @@ public class Utils {
 	    return(def);
 	}
     }
-
+    
     public static class ArgumentFormatException extends RuntimeException {
 	public final String expected;
 	public final Object got;
-
+	
 	public ArgumentFormatException(String expected, Object got) {
 	    this.expected = expected;
 	    this.got = got;
 	}
-
+	
 	public String getMessage() {
 	    String got;
 	    try {
@@ -483,22 +483,22 @@ public class Utils {
 	    }
 	    return(String.format("expected %s, got %s", expected, got));
 	}
-
+	
 	public static <T> T check(Object x, Class<T> expected, String fname) {
 	    if(!expected.isInstance(x))
 		throw(new ArgumentFormatException(fname, x));
 	    return(expected.cast(x));
 	}
-
+	
 	public static <T> T check(Object x, Class<T> expected) {
 	    return(check(x, expected, expected.getSimpleName()));
 	}
     }
-
+    
     public static String sv(Object arg) {
 	return(ArgumentFormatException.check(arg, String.class));
     }
-
+    
     public static List<?> olv(Object arg) {
 	if(arg instanceof Object[])
 	    return(Arrays.asList((Object[])arg));
@@ -506,34 +506,34 @@ public class Utils {
 	    return((List<?>)arg);
 	throw(new ArgumentFormatException("object-list", arg));
     }
-
+    
     public static int iv(Object arg) {
 	return(ArgumentFormatException.check(arg, Number.class, "int").intValue());
     }
-
+    
     public static long uiv(Object arg) {
 	return(uint32(iv(arg)));
     }
-
+    
     public static float fv(Object arg) {
 	return(ArgumentFormatException.check(arg, Number.class, "float").floatValue());
     }
-
+    
     public static double dv(Object arg) {
 	return(ArgumentFormatException.check(arg, Number.class, "double").doubleValue());
     }
-
+    
     public static boolean bv(Object arg) {
 	if(arg instanceof Boolean)
 	    return((Boolean)arg);
 	return(ArgumentFormatException.check(arg, Number.class, "bool").intValue() != 0);
     }
-
+    
     public static Indir<Resource> irv(Object arg) {
 	Indir s = ArgumentFormatException.check(arg, Indir.class);
 	return(() -> (Resource)s.get());
     }
-
+    
     public static Resource resv(Object arg) {
 	if(arg instanceof Resource)
 	    return((Resource)arg);
@@ -541,7 +541,7 @@ public class Utils {
 	Resource ret = ArgumentFormatException.check(s.get(), Resource.class);
 	return(ret);
     }
-
+    
     /* Nested format: [[KEY, VALUE], [KEY, VALUE], ...] */
     public static <K, V> Map<K, V> mapdecn(Object ob, Class<K> kt, Class<V> vt) {
 	Map<K, V> ret = new HashMap<>();
@@ -562,7 +562,7 @@ public class Utils {
 	    ret[a++] = new Object[] {ent.getKey(), ent.getValue()};
 	return(ret);
     }
-
+    
     /* Flat format: [KEY, VALUE, KEY, VALUE, ...] */
     public static <K, V> Map<K, V> mapdecf(Object ob, Class<K> kt, Class<V> vt) {
 	Map<K, V> ret = new HashMap<>();
@@ -583,99 +583,99 @@ public class Utils {
 	}
 	return(ret);
     }
-
+    
     public static int sb(int n, int b) {
 	return((n << (32 - b)) >> (32 - b));
     }
-
+    
     public static long sb(long n, int b) {
 	return((n << (64 - b)) >> (64 - b));
     }
-
+    
     public static int ub(byte b) {
 	return(((int)b) & 0xff);
     }
-
+    
     public static byte sb(int b) {
 	return((byte)b);
     }
-
+    
     public static byte f2s8(float v) {
 	return((byte)Math.max(Math.min(Math.round(v * 127f), 127), -127));
     }
-
+    
     public static byte f2u8(float v) {
 	return((byte)Math.max(Math.min(Math.round(v * 255f), 255), 0));
     }
-
+    
     public static long uint32(int n) {
 	return(n & 0xffffffffl);
     }
-
+    
     public static int uint16d(byte[] buf, int off) {
 	return(ub(buf[off]) | (ub(buf[off + 1]) << 8));
     }
-
+    
     public static int int16d(byte[] buf, int off) {
 	return((int)(short)uint16d(buf, off));
     }
-
+    
     public static long uint32d(byte[] buf, int off) {
 	return((long)ub(buf[off]) | ((long)ub(buf[off + 1]) << 8) | ((long)ub(buf[off + 2]) << 16) | ((long)ub(buf[off + 3]) << 24));
     }
-
+    
     public static void uint32e(long num, byte[] buf, int off) {
 	buf[off] = (byte)(num & 0xff);
 	buf[off + 1] = (byte)((num & 0x0000ff00) >> 8);
 	buf[off + 2] = (byte)((num & 0x00ff0000) >> 16);
 	buf[off + 3] = (byte)((num & 0xff000000) >> 24);
     }
-
+    
     public static int int32d(byte[] buf, int off) {
 	return((int)uint32d(buf, off));
     }
-
+    
     public static long int64d(byte[] buf, int off) {
 	long b = 0;
 	for(int i = 0; i < 8; i++)
 	    b |= ((long)ub(buf[off + i])) << (i * 8);
 	return(b);
     }
-
+    
     public static int intvard(byte[] buf, int off) {
 	int len = buf.length - off;
 	switch(len) {
-	case 4:
-	    return(int32d(buf, off));
-	case 2:
-	    return(int16d(buf, off));
-	case 1:
-	    return(buf[off]);
-	default:
-	    throw(new IllegalArgumentException(Integer.toString(len)));
+	    case 4:
+		return(int32d(buf, off));
+	    case 2:
+		return(int16d(buf, off));
+	    case 1:
+		return(buf[off]);
+	    default:
+		throw(new IllegalArgumentException(Integer.toString(len)));
 	}
     }
-
+    
     public static void int64e(long num, byte[] buf, int off) {
 	for(int i = 0; i < 8; i++) {
 	    buf[off++] = (byte)(num & 0xff);
 	    num >>>= 8;
 	}
     }
-
+    
     public static void int32e(int num, byte[] buf, int off) {
 	uint32e(((long)num) & 0xffffffff, buf, off);
     }
-
+    
     public static void uint16e(int num, byte[] buf, int off) {
 	buf[off] = sb(num & 0xff);
 	buf[off + 1] = sb((num & 0xff00) >> 8);
     }
-
+    
     public static void int16e(short num, byte[] buf, int off) {
 	uint16e(((int)num) & 0xffff, buf, off);
     }
-
+    
     public static String strd(byte[] buf, int[] off) {
 	int i;
 	for(i = off[0]; buf[i] != 0; i++);
@@ -688,7 +688,7 @@ public class Utils {
 	off[0] = i + 1;
 	return(ret);
     }
-
+    
     public static double floatd(byte[] buf, int off) {
 	int e = buf[off];
 	long t = uint32d(buf, off + 1);
@@ -704,23 +704,23 @@ public class Utils {
 	    v = -v;
 	return(Math.pow(2.0, e) * v);
     }
-
+    
     public static float float32d(byte[] buf, int off) {
 	return(Float.intBitsToFloat(int32d(buf, off)));
     }
-
+    
     public static double float64d(byte[] buf, int off) {
 	return(Double.longBitsToDouble(int64d(buf, off)));
     }
-
+    
     public static void float32e(float num, byte[] buf, int off) {
 	int32e(Float.floatToIntBits(num), buf, off);
     }
-
+    
     public static void float64e(double num, byte[] buf, int off) {
 	int64e(Double.doubleToLongBits(num), buf, off);
     }
-
+    
     public static void float9995d(int word, float[] ret) {
 	int xb = (word & 0x7f800000) >> 23, xs = ((word & 0x80000000) >> 31) & 1,
 	    yb = (word & 0x003fc000) >> 14, ys = ((word & 0x00400000) >> 22) & 1,
@@ -733,12 +733,12 @@ public class Utils {
 	if(ye == 8) ret[1] = 0; else ret[1] = Float.intBitsToFloat((ys << 31) | ((me - ye + 127) << 23) | ((yb << (ye + 16)) & 0x007fffff));
 	if(ze == 8) ret[2] = 0; else ret[2] = Float.intBitsToFloat((zs << 31) | ((me - ze + 127) << 23) | ((zb << (ze + 16)) & 0x007fffff));
     }
-
+    
     public static float hfdec(short bits) {return(HalfFloat.bits(bits));}
     public static short hfenc(float f)    {return(HalfFloat.bits(f));}
     public static float mfdec(byte bits)  {return(MiniFloat.bits(bits));}
     public static byte  mfenc(float f)    {return(MiniFloat.bits(f));}
-
+    
     public static void uvec2oct(float[] buf, float x, float y, float z) {
 	float m = 1.0f / (Math.abs(x) + Math.abs(y) + Math.abs(z));
 	float hx = x * m, hy = y * m;
@@ -750,7 +750,7 @@ public class Utils {
 	    buf[1] = (1 - Math.abs(hx)) * Math.copySign(1, hy);
 	}
     }
-
+    
     public static void oct2uvec(float[] buf, float x, float y) {
 	float z = 1 - (Math.abs(x) + Math.abs(y));
 	if(z < 0) {
@@ -763,25 +763,25 @@ public class Utils {
 	buf[1] = y * f;
 	buf[2] = z * f;
     }
-
+    
     public static Coord3f oct2uvec(float x, float y) {
 	float[] buf = new float[3];
 	oct2uvec(buf, x, y);
 	return(Coord3f.of(buf[0], buf[1], buf[2]));
     }
-
+    
     public static interface BinAscii {
 	public String enc(byte[] data);
 	public byte[] dec(String data);
     }
-
+    
     public static char num2hex(int num, boolean upper) {
 	if(num < 10)
 	    return((char)('0' + num));
 	else
 	    return((char)((upper ? 'A' : 'a') + num - 10));
     }
-
+    
     public static int hex2num(char hex) {
 	if((hex >= '0') && (hex <= '9'))
 	    return(hex - '0');
@@ -792,69 +792,69 @@ public class Utils {
 	else
 	    throw(new IllegalArgumentException());
     }
-
+    
     public static final BinAscii hex = new BinAscii() {
-	    public String enc(byte[] in) {
-		StringBuilder buf = new StringBuilder();
-		for(byte b : in) {
-		    buf.append(num2hex((b & 0xf0) >> 4, true));
-		    buf.append(num2hex(b & 0x0f, true));
-		}
-		return(buf.toString());
+	public String enc(byte[] in) {
+	    StringBuilder buf = new StringBuilder();
+	    for(byte b : in) {
+		buf.append(num2hex((b & 0xf0) >> 4, true));
+		buf.append(num2hex(b & 0x0f, true));
 	    }
-
-	    public byte[] dec(String hex) {
-		if(hex.length() % 2 != 0)
-		    throw(new IllegalArgumentException("Invalid hex-encoded string"));
-		byte[] ret = new byte[hex.length() / 2];
-		for(int i = 0, o = 0; i < hex.length(); i += 2, o++)
-		    ret[o] = (byte)((hex2num(hex.charAt(i)) << 4) | hex2num(hex.charAt(i + 1)));
-		return(ret);
-	    }
-	};
-
+	    return(buf.toString());
+	}
+	
+	public byte[] dec(String hex) {
+	    if(hex.length() % 2 != 0)
+		throw(new IllegalArgumentException("Invalid hex-encoded string"));
+	    byte[] ret = new byte[hex.length() / 2];
+	    for(int i = 0, o = 0; i < hex.length(); i += 2, o++)
+		ret[o] = (byte)((hex2num(hex.charAt(i)) << 4) | hex2num(hex.charAt(i + 1)));
+	    return(ret);
+	}
+    };
+    
     public static final BinAscii bprint = new BinAscii() {
-	    public String enc(byte[] in) {
-		StringBuilder buf = new StringBuilder();
-		for(byte b : in) {
-		    if((char)b == '\\') {
-			buf.append("\\\\'");
-		    } else if((b >= 33) && (b < 127)) {
-			buf.append((char)b);
-		    } else {
-			buf.append('\\');
-			buf.append(num2hex((b & 0xf0) >> 4, false));
-			buf.append(num2hex(b & 0x0f, false));
-		    }
+	public String enc(byte[] in) {
+	    StringBuilder buf = new StringBuilder();
+	    for(byte b : in) {
+		if((char)b == '\\') {
+		    buf.append("\\\\'");
+		} else if((b >= 33) && (b < 127)) {
+		    buf.append((char)b);
+		} else {
+		    buf.append('\\');
+		    buf.append(num2hex((b & 0xf0) >> 4, false));
+		    buf.append(num2hex(b & 0x0f, false));
 		}
-		return(buf.toString());
 	    }
-
-	    public byte[] dec(String in) {
-		byte[] buf = new byte[in.length()];
-		int n = 0;
-		for(int i = 0; i < in.length();) {
-		    char c = in.charAt(i++);
-		    if(c == '\\') {
-			if(in.charAt(i) == '\\') {
-			    buf[n++] = '\\';
-			    i++;
-			} else {
-			    buf[n++] = (byte)((hex2num(in.charAt(i++)) << 4) | hex2num(in.charAt(i++)));
-			}
+	    return(buf.toString());
+	}
+	
+	public byte[] dec(String in) {
+	    byte[] buf = new byte[in.length()];
+	    int n = 0;
+	    for(int i = 0; i < in.length();) {
+		char c = in.charAt(i++);
+		if(c == '\\') {
+		    if(in.charAt(i) == '\\') {
+			buf[n++] = '\\';
+			i++;
 		    } else {
-			buf[n++] = (byte)c;
+			buf[n++] = (byte)((hex2num(in.charAt(i++)) << 4) | hex2num(in.charAt(i++)));
 		    }
+		} else {
+		    buf[n++] = (byte)c;
 		}
-		return(Utils.splice(buf, 0, n));
 	    }
-	};
-
+	    return(Utils.splice(buf, 0, n));
+	}
+    };
+    
     public static class Base64 implements BinAscii {
 	public final String set;
 	public final char pad;
 	private final byte[] rev;
-
+	
 	public Base64(String set, char pad) {
 	    this.set = set;
 	    rev = new byte[128];
@@ -863,7 +863,7 @@ public class Utils {
 		rev[set.charAt(i)] = (byte)i;
 	    this.pad = pad;
 	}
-
+	
 	public String enc(byte[] in) {
 	    StringBuilder buf = new StringBuilder();
 	    int p = 0;
@@ -890,7 +890,7 @@ public class Utils {
 	    }
 	    return(buf.toString());
 	}
-
+	
 	public byte[] dec(String in) {
 	    ByteArrayOutputStream buf = new ByteArrayOutputStream();
 	    int cur = 0, b = 8;
@@ -915,16 +915,14 @@ public class Utils {
 	    return(buf.toByteArray());
 	}
     }
-
+    
     public static final Base64 b64 = new Base64("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", '=');
     public static final Base64 b64np = new Base64(b64.set, '\0');
     public static final Base64 ub64 = new Base64("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", '\0');
-
-    @Deprecated public static String byte2hex(byte[] in) {return(hex.enc(in));}
-    @Deprecated public static byte[] hex2byte(String in) {return(hex.dec(in));}
-    @Deprecated public static String base64enc(byte[] in) {return(b64.enc(in));}
-    @Deprecated public static byte[] base64dec(String in) {return(b64.dec(in));}
-
+    
+    public static String byte2hex(byte[] in) {return(hex.enc(in));}
+    public static byte[] hex2byte(String in) {return(hex.dec(in));}
+    
     public static String[] splitwords(String text) {
 	ArrayList<String> words = new ArrayList<String>();
 	StringBuilder buf = new StringBuilder();
@@ -979,7 +977,7 @@ public class Utils {
 	    return(null);
 	return(words.toArray(new String[0]));
     }
-
+    
     public static String[] splitlines(String text) {
 	ArrayList<String> ret = new ArrayList<String>();
 	int p = 0;
@@ -994,7 +992,7 @@ public class Utils {
 	}
 	return(ret.toArray(new String[0]));
     }
-
+    
     static int atoi(String a) {
 	try {
 	    return(Integer.parseInt(a));
@@ -1002,15 +1000,15 @@ public class Utils {
 	    return(0);
 	}
     }
-
+    
     static void readtileof(InputStream in) throws IOException {
-        byte[] buf = new byte[4096];
-        while(true) {
-            if(in.read(buf, 0, buf.length) < 0)
-                return;
-        }
+	byte[] buf = new byte[4096];
+	while(true) {
+	    if(in.read(buf, 0, buf.length) < 0)
+		return;
+	}
     }
-
+    
     public static byte[] readall(InputStream in) throws IOException {
 	byte[] buf = new byte[4096];
 	int off = 0;
@@ -1029,12 +1027,12 @@ public class Utils {
 	    off += ret;
 	}
     }
-
+    
     public static interface IOFunction<T> {
 	/* Checked exceptions banzai :P */
 	public T run() throws IOException;
     }
-
+    
     /* XXX: Sometimes, the client is getting strange and weird OS
      * errors on Windows. For example, file sharing violations are
      * sometimes returned even though Java always opens
@@ -1073,7 +1071,7 @@ public class Utils {
 		Thread.currentThread().interrupt();
 	}
     }
-
+    
     private static void dumptg(ThreadGroup tg, PrintWriter out, int indent) {
 	for(int o = 0; o < indent; o++)
 	    out.print("    ");
@@ -1093,7 +1091,7 @@ public class Utils {
 	    dumptg(cg, out, indent + 1);
 	}
     }
-
+    
     public static void dumptg(ThreadGroup tg, PrintWriter out) {
 	if(tg == null) {
 	    tg = Thread.currentThread().getThreadGroup();
@@ -1103,7 +1101,7 @@ public class Utils {
 	dumptg(tg, out, 0);
 	out.flush();
     }
-
+    
     public static void dumparr(Object[] arr, PrintStream out, boolean term) {
 	out.print('[');
 	boolean f = true;
@@ -1117,7 +1115,7 @@ public class Utils {
 	out.print(']');
 	if(term) out.println();
     }
-
+    
     public static void dumparr(double[] arr, PrintStream out, boolean term) {
 	if(arr == null) {
 	    out.print("null");
@@ -1132,7 +1130,7 @@ public class Utils {
 	}
 	if(term) out.println();
     }
-
+    
     public static void dumparr(float[] arr, PrintStream out, boolean term) {
 	if(arr == null) {
 	    out.print("null");
@@ -1147,7 +1145,7 @@ public class Utils {
 	}
 	if(term) out.println();
     }
-
+    
     public static void dumparr(long[] arr, PrintStream out, boolean term) {
 	if(arr == null) {
 	    out.print("null");
@@ -1162,7 +1160,7 @@ public class Utils {
 	}
 	if(term) out.println();
     }
-
+    
     public static void dumparr(int[] arr, PrintStream out, boolean term) {
 	if(arr == null) {
 	    out.print("null");
@@ -1177,7 +1175,7 @@ public class Utils {
 	}
 	if(term) out.println();
     }
-
+    
     public static void dumparr(short[] arr, PrintStream out, boolean term) {
 	if(arr == null) {
 	    out.print("null");
@@ -1192,7 +1190,7 @@ public class Utils {
 	}
 	if(term) out.println();
     }
-
+    
     public static void hexdump(byte[] arr, PrintStream out, int width) {
 	if(arr == null) {
 	    out.println("null");
@@ -1218,7 +1216,7 @@ public class Utils {
 	    out.print('\n');
 	}
     }
-
+    
     public static void hexdump(ByteBuffer arr, PrintStream out, int width) {
 	if(arr == null) {
 	    out.println("null");
@@ -1244,11 +1242,11 @@ public class Utils {
 	    out.print('\n');
 	}
     }
-
+    
     public static String titlecase(String str) {
 	return(Character.toTitleCase(str.charAt(0)) + str.substring(1));
     }
-
+    
     public static final Color[] vgapal;
     static {
 	vgapal = new Color[16];
@@ -1261,7 +1259,7 @@ public class Utils {
 	    vgapal[i] = new Color(r, g, b);
 	}
     }
-
+    
     public static Color contrast(Color col) {
 	int max = Math.max(col.getRed(), Math.max(col.getGreen(), col.getBlue()));
 	if(max > 128) {
@@ -1273,7 +1271,7 @@ public class Utils {
 	    return(new Color((col.getRed() * f) / 255, (col.getGreen() * f) / 255, (col.getBlue() * f) / 255, col.getAlpha()));
 	}
     }
-
+    
     public static Color clipcol(int r, int g, int b, int a) {
 	if(r < 0)   r = 0;
 	if(r > 255) r = 255;
@@ -1285,18 +1283,18 @@ public class Utils {
 	if(a > 255) a = 255;
 	return(new Color(r, g, b, a));
     }
-
+    
     public static Color col16(int col) {
-        return(new Color(((col & 0xf000) >> 12) * 17,
-                         ((col & 0x0f00) >>  8) * 17,
-                         ((col & 0x00f0) >>  4) * 17,
-                         ((col & 0x000f) >>  0) * 17));
+	return(new Color(((col & 0xf000) >> 12) * 17,
+	    ((col & 0x0f00) >>  8) * 17,
+	    ((col & 0x00f0) >>  4) * 17,
+	    ((col & 0x000f) >>  0) * 17));
     }
-
+    
     public static BufferedImage outline(BufferedImage img, Color col) {
 	return outline(img, col, false);
     }
-
+    
     public static BufferedImage outline(BufferedImage img, Color col, boolean thick) {
 	Coord sz = imgsz(img).add(2, 2);
 	BufferedImage ol = TexI.mkbuf(sz);
@@ -1314,9 +1312,9 @@ public class Utils {
 		if(!t)
 		    continue;
 		if(((x > 1) && (y > 0) && (y < sz.y - 1) && (src.getSample(x - 2, y - 1, 3) >= 250)) ||
-		   ((x > 0) && (y > 1) && (x < sz.x - 1) && (src.getSample(x - 1, y - 2, 3) >= 250)) ||
-		   ((x < sz.x - 2) && (y > 0) && (y < sz.y - 1) && (src.getSample(x, y - 1, 3) >= 250)) ||
-		   ((x > 0) && (y < sz.y - 2) && (x < sz.x - 1) && (src.getSample(x - 1, y, 3) >= 250)))
+		    ((x > 0) && (y > 1) && (x < sz.x - 1) && (src.getSample(x - 1, y - 2, 3) >= 250)) ||
+		    ((x < sz.x - 2) && (y > 0) && (y < sz.y - 1) && (src.getSample(x, y - 1, 3) >= 250)) ||
+		    ((x > 0) && (y < sz.y - 2) && (x < sz.x - 1) && (src.getSample(x - 1, y, 3) >= 250)))
 		    dst.setDataElements(x, y, fcol);
 		if(thick) {
 		    if(((x > 1) && (y > 1) && (src.getSample(x - 2, y - 2, 3)) >= 250) ||
@@ -1329,11 +1327,11 @@ public class Utils {
 	}
 	return(ol);
     }
-
+    
     public static BufferedImage outline2(BufferedImage img, Color col) {
 	return outline2(img, col, false);
     }
-
+    
     public static BufferedImage outline2(BufferedImage img, Color col, boolean thick) {
 	BufferedImage ol = outline(img, col, thick);
 	Graphics g = ol.getGraphics();
@@ -1341,21 +1339,21 @@ public class Utils {
 	g.dispose();
 	return(ol);
     }
-
+    
     public static int floordiv(int a, int b) {
 	if(a < 0)
 	    return(((a + 1) / b) - 1);
 	else
 	    return(a / b);
     }
-
+    
     public static int floormod(int a, int b) {
 	int r = a % b;
 	if(r < 0)
 	    r += b;
 	return(r);
     }
-
+    
     /* Note: Math.floor has historically been surprisingly slow to the
      * extent that it has required a floordiv implementation that
      * avoids using it. That doesn't seem to be the case any longer,
@@ -1366,14 +1364,14 @@ public class Utils {
     public static int floordiv(double a, double b) {
 	return((int)Math.floor(a / b));
     }
-
+    
     public static float floormod(float a, float b) {
 	return(a - (floordiv(a, b) * b));
     }
     public static double floormod(double a, double b) {
 	return(a - (floordiv(a, b) * b));
     }
-
+    
     public static double cangle(double a) {
 	while(a > Math.PI)
 	    a -= Math.PI * 2;
@@ -1381,7 +1379,7 @@ public class Utils {
 	    a += Math.PI * 2;
 	return(a);
     }
-
+    
     public static double cangle2(double a) {
 	while(a > Math.PI * 2)
 	    a -= Math.PI * 2;
@@ -1389,7 +1387,7 @@ public class Utils {
 	    a += Math.PI * 2;
 	return(a);
     }
-
+    
     public static double clip(double d, double min, double max) {
 	if(d < min)
 	    return(min);
@@ -1397,7 +1395,7 @@ public class Utils {
 	    return(max);
 	return(d);
     }
-
+    
     public static float clip(float d, float min, float max) {
 	if(d < min)
 	    return(min);
@@ -1405,7 +1403,7 @@ public class Utils {
 	    return(max);
 	return(d);
     }
-
+    
     public static int clip(int i, int min, int max) {
 	if(i < min)
 	    return(min);
@@ -1413,7 +1411,7 @@ public class Utils {
 	    return(max);
 	return(i);
     }
-
+    
     public static double clipnorm(double d, double min, double max) {
 	if(d < min)
 	    return(0.0);
@@ -1421,7 +1419,7 @@ public class Utils {
 	    return(1.0);
 	return((d - min) / (max - min));
     }
-
+    
     public static <E, O extends Comparable<? super O>> E max(Collection<E> from, Function<? super E, O> key) {
 	E ret = null;
 	O max = null;
@@ -1434,7 +1432,7 @@ public class Utils {
 	}
 	return(ret);
     }
-
+    
     public static <E, O extends Comparable<? super O>> E min(Collection<E> from, Function<? super E, O> key) {
 	E ret = null;
 	O max = null;
@@ -1447,10 +1445,10 @@ public class Utils {
 	}
 	return(ret);
     }
-
+    
     public static <E extends Comparable<? super E>> E max(Collection<E> from) {return(max(from, Function.identity()));}
     public static <E extends Comparable<? super E>> E min(Collection<E> from) {return(min(from, Function.identity()));}
-
+    
     public static float gcd(float x, float y, float E) {
 	float a = Math.max(x, y), b = Math.min(x, y);
 	while(b > E) {
@@ -1460,38 +1458,38 @@ public class Utils {
 	}
 	return(a);
     }
-
+    
     public static float smoothstep(float d) {
 	return(d * d * (3 - (2 * d)));
     }
-
+    
     public static double smoothstep(double d) {
 	return(d * d * (3 - (2 * d)));
     }
-
+    
     public static Color blendcol(Color in, Color bl) {
 	int f1 = bl.getAlpha();
 	int f2 = 255 - bl.getAlpha();
 	return(new Color(((in.getRed() * f2) + (bl.getRed() * f1)) / 255,
-			 ((in.getGreen() * f2) + (bl.getGreen() * f1)) / 255,
-			 ((in.getBlue() * f2) + (bl.getBlue() * f1)) / 255,
-			 in.getAlpha()));
+	    ((in.getGreen() * f2) + (bl.getGreen() * f1)) / 255,
+	    ((in.getBlue() * f2) + (bl.getBlue() * f1)) / 255,
+	    in.getAlpha()));
     }
-
+    
     public static Color blendcol(Color x, Color y, double a) {
 	a = clip(a, 0, 1);
 	int f1 = (int)(a * 255), f2 = 255 - f1;
 	return(new Color(((x.getRed()   * f2) + (y.getRed()   * f1)) / 255,
-			 ((x.getGreen() * f2) + (y.getGreen() * f1)) / 255,
-			 ((x.getBlue()  * f2) + (y.getBlue()  * f1)) / 255,
-			 ((x.getAlpha() * f2) + (y.getAlpha() * f1)) / 255));
+	    ((x.getGreen() * f2) + (y.getGreen() * f1)) / 255,
+	    ((x.getBlue()  * f2) + (y.getBlue()  * f1)) / 255,
+	    ((x.getAlpha() * f2) + (y.getAlpha() * f1)) / 255));
     }
-
+    
     public static Color colmul(Color a, Color b) {
 	return(new Color((a.getRed()  * b.getRed() ) / 255, (a.getGreen() * b.getGreen()) / 255,
-			 (a.getBlue() * b.getBlue()) / 255, (a.getAlpha() * b.getAlpha()) / 255));
+	    (a.getBlue() * b.getBlue()) / 255, (a.getAlpha() * b.getAlpha()) / 255));
     }
-
+    
     public static Color blendcol(double a, Color... cols) {
 	a = clip(a, 0, 1);
 	if(cols.length > 2) {
@@ -1518,17 +1516,17 @@ public class Utils {
 	 * express in some simpler form, but I can't see how. */
 	double ac = a1 + a2 - (a1 * a2);
 	return(new Color((int)Math.round((((c2.getRed()   * a2) - (c1.getRed()   * a2)) / ac) + c1.getRed()),
-			 (int)Math.round((((c2.getGreen() * a2) - (c1.getGreen() * a2)) / ac) + c1.getGreen()),
-			 (int)Math.round((((c2.getBlue()  * a2) - (c1.getBlue()  * a2)) / ac) + c1.getBlue()),
-			 (int)Math.round(ac * 255)));
+	    (int)Math.round((((c2.getGreen() * a2) - (c1.getGreen() * a2)) / ac) + c1.getGreen()),
+	    (int)Math.round((((c2.getBlue()  * a2) - (c1.getBlue()  * a2)) / ac) + c1.getBlue()),
+	    (int)Math.round(ac * 255)));
     }
-
+    
     public static void serialize(Object obj, OutputStream out) throws IOException {
 	ObjectOutputStream oout = new ObjectOutputStream(out);
 	oout.writeObject(obj);
 	oout.flush();
     }
-
+    
     public static byte[] serialize(Object obj) {
 	ByteArrayOutputStream out = new ByteArrayOutputStream();
 	try {
@@ -1538,7 +1536,7 @@ public class Utils {
 	}
 	return(out.toByteArray());
     }
-
+    
     public static Object deserialize(InputStream in) throws IOException {
 	ObjectInputStream oin = new ObjectInputStream(in);
 	try {
@@ -1547,7 +1545,7 @@ public class Utils {
 	    return(null);
 	}
     }
-
+    
     public static Object deserialize(byte[] buf) {
 	if(buf == null)
 	    return(null);
@@ -1558,7 +1556,7 @@ public class Utils {
 	    return(null);
 	}
     }
-
+    
     public static boolean parsebool(String s) {
 	if(s == null)
 	    throw(new IllegalArgumentException(s));
@@ -1568,11 +1566,11 @@ public class Utils {
 	    return(false);
 	throw(new IllegalArgumentException(s));
     }
-
+    
     public static boolean eq(Object a, Object b) {
 	return((a == b) || ((a != null) && a.equals(b)));
     }
-
+    
     public static boolean parsebool(String s, boolean def) {
 	try {
 	    return(parsebool(s));
@@ -1580,7 +1578,7 @@ public class Utils {
 	    return(def);
 	}
     }
-
+    
     /* Just in case anyone doubted that Java is stupid. :-/ */
     public static FloatBuffer bufcp(float[] a) {
 	FloatBuffer b = mkfbuf(a.length);
@@ -1626,7 +1624,7 @@ public class Utils {
     public static IntBuffer mkibuf(int n) {
 	return(mkbbuf(n * 4).asIntBuffer());
     }
-
+    
     /*
     public static ByteBuffer wbbuf(int n) {
 	return(mkbbuf(n));
@@ -1665,7 +1663,7 @@ public class Utils {
 	((Buffer)ret.put(a.slice())).rewind();
 	return(ret);
     }
-
+    
     public static ByteBuffer growbuf(ByteBuffer buf, int req) {
 	if(buf.remaining() >= req)
 	    return(buf);
@@ -1674,21 +1672,21 @@ public class Utils {
 	    sz <<= 1;
 	return(ByteBuffer.allocate(sz).order(buf.order()).put((ByteBuffer)((Buffer)buf).flip()));
     }
-
+    
     public static float[] c2fa(Color c) {
 	return(new float[] {
-		((float)c.getRed() / 255.0f),
-		((float)c.getGreen() / 255.0f),
-		((float)c.getBlue() / 255.0f),
-		((float)c.getAlpha() / 255.0f)
-	    });
+	    ((float)c.getRed() / 255.0f),
+	    ((float)c.getGreen() / 255.0f),
+	    ((float)c.getBlue() / 255.0f),
+	    ((float)c.getAlpha() / 255.0f)
+	});
     }
-
+    
     @SuppressWarnings("unchecked")
     public static <T> T[] mkarray(Class<T> cl, int len) {
 	return((T[])Array.newInstance(cl, len));
     }
-
+    
     @SuppressWarnings("unchecked")
     public static <T> T[] splice(T[] src, int off, int len) {
 	T[] dst = (T[])Array.newInstance(src.getClass().getComponentType(), len);
@@ -1698,7 +1696,7 @@ public class Utils {
     public static <T> T[] splice(T[] src, int off) {
 	return(splice(src, off, src.length - off));
     }
-
+    
     public static byte[] splice(byte[] src, int off, int len) {
 	byte[] dst = new byte[len];
 	System.arraycopy(src, off, dst, 0, len);
@@ -1707,7 +1705,7 @@ public class Utils {
     public static byte[] splice(byte[] src, int off) {
 	return(splice(src, off, src.length - off));
     }
-
+    
     public static float[] splice(float[] src, int off, int len) {
 	float[] dst = new float[len];
 	System.arraycopy(src, off, dst, 0, len);
@@ -1716,7 +1714,7 @@ public class Utils {
     public static float[] splice(float[] src, int off) {
 	return(splice(src, off, src.length - off));
     }
-
+    
     public static double[] splice(double[] src, int off, int len) {
 	double[] dst = new double[len];
 	System.arraycopy(src, off, dst, 0, len);
@@ -1725,7 +1723,7 @@ public class Utils {
     public static double[] splice(double[] src, int off) {
 	return(splice(src, off, src.length - off));
     }
-
+    
     public static int[] splice(int[] src, int off, int len) {
 	int[] dst = new int[len];
 	System.arraycopy(src, off, dst, 0, len);
@@ -1734,7 +1732,7 @@ public class Utils {
     public static int[] splice(int[] src, int off) {
 	return(splice(src, off, src.length - off));
     }
-
+    
     @SuppressWarnings("unchecked")
     public static <T> T[] cast(Object[] a, Class<T> cl) {
 	T[] d = (T[])Array.newInstance(cl, a.length);
@@ -1742,54 +1740,54 @@ public class Utils {
 	    d[i] = cl.cast(a[i]);
 	return(d);
     }
-
+    
     @SuppressWarnings("unchecked")
     public static <T> T[] extend(T[] src, int off, int nl) {
 	T[] dst = (T[])Array.newInstance(src.getClass().getComponentType(), nl);
 	System.arraycopy(src, off, dst, 0, Math.min(src.length - off, dst.length));
 	return(dst);
     }
-
+    
     public static <T> T[] extend(T[] src, int nl) {
 	return(extend(src, 0, nl));
     }
-
+    
     public static <T, E extends T> T[] extend(T[] src, E ne) {
 	T[] ret = extend(src, 0, src.length + 1);
 	ret[src.length] = ne;
 	return(ret);
     }
-
+    
     public static <T, E extends T> T[] extend(T[] src, E[] ne) {
 	T[] ret = extend(src, 0, src.length + ne.length);
 	System.arraycopy(ne, 0, ret, src.length, ne.length);
 	return(ret);
     }
-
+    
     public static int[] extend(int[] src, int nl) {
 	int[] dst = new int[nl];
 	System.arraycopy(src, 0, dst, 0, Math.min(src.length, dst.length));
 	return(dst);
     }
-
+    
     public static double[] extend(double[] src, int nl) {
 	double[] dst = new double[nl];
 	System.arraycopy(src, 0, dst, 0, Math.min(src.length, dst.length));
 	return(dst);
     }
-
+    
     public static float[] extend(float[] src, int nl) {
 	float[] dst = new float[nl];
 	System.arraycopy(src, 0, dst, 0, Math.min(src.length, dst.length));
 	return(dst);
     }
-
+    
     public static short[] extend(short[] src, int nl) {
 	short[] dst = new short[nl];
 	System.arraycopy(src, 0, dst, 0, Math.min(src.length, dst.length));
 	return(dst);
     }
-
+    
     public static byte[] concat(byte[]... parts) {
 	int n = 0;
 	for(byte[] p : parts)
@@ -1802,13 +1800,13 @@ public class Utils {
 	}
 	return(rv);
     }
-
+    
     public static <T> T el(Iterable<T> c) {
 	Iterator<T> i = c.iterator();
 	if(!i.hasNext()) return(null);
 	return(i.next());
     }
-
+    
     public static <T> T take(Iterable<T> c) {
 	Iterator<T> i = c.iterator();
 	if(!i.hasNext()) return(null);
@@ -1816,60 +1814,60 @@ public class Utils {
 	i.remove();
 	return(ret);
     }
-
+    
     public static <K, V> V pop(Map<K, V> map, K key, V def) {
 	if(!map.containsKey(key))
 	    return(def);
 	return(map.remove(key));
     }
-
+    
     public static <T> List<T> reversed(List<T> ls) {
 	return(new AbstractList<T>() {
-		public int size() {
-		    return(ls.size());
-		}
-
-		public T get(int i) {
-		    return(ls.get(ls.size() - 1 - i));
-		}
-
-		public ListIterator<T> listIterator(int first) {
-		    ListIterator<T> bk = ls.listIterator(ls.size() - first);
-		    return(new ListIterator<T>() {
-			    public boolean hasNext() {return(bk.hasPrevious());}
-			    public boolean hasPrevious() {return(bk.hasNext());}
-			    public T next() {return(bk.previous());}
-			    public T previous() {return(bk.next());}
-			    public int nextIndex() {return(ls.size() - bk.previousIndex() - 1);}
-			    public int previousIndex() {return(ls.size() - bk.nextIndex() - 1);}
-
-			    public void set(T el) {bk.set(el);}
-			    public void remove() {bk.remove();}
-			    public void add(T el) {bk.add(el);}
-			});
-		}
-
-		public ListIterator<T> listIterator() {return(listIterator(0));}
-		public Iterator<T> iterator() {return(listIterator());}
-
-		public T set(int i, T el) {
-		    return(ls.set(ls.size() - 1 - i, el));
-		}
-
-		public void add(int i, T el) {
-		    ls.add(ls.size() - i, el);
-		}
-
-		public T remove(int i) {
-		    return(ls.remove(ls.size() - 1 - i));
-		}
-
-		public String toString() {
-		    return(String.format("#<reversed %s>", ls));
-		}
-	    });
+	    public int size() {
+		return(ls.size());
+	    }
+	    
+	    public T get(int i) {
+		return(ls.get(ls.size() - 1 - i));
+	    }
+	    
+	    public ListIterator<T> listIterator(int first) {
+		ListIterator<T> bk = ls.listIterator(ls.size() - first);
+		return(new ListIterator<T>() {
+		    public boolean hasNext() {return(bk.hasPrevious());}
+		    public boolean hasPrevious() {return(bk.hasNext());}
+		    public T next() {return(bk.previous());}
+		    public T previous() {return(bk.next());}
+		    public int nextIndex() {return(ls.size() - bk.previousIndex() - 1);}
+		    public int previousIndex() {return(ls.size() - bk.nextIndex() - 1);}
+		    
+		    public void set(T el) {bk.set(el);}
+		    public void remove() {bk.remove();}
+		    public void add(T el) {bk.add(el);}
+		});
+	    }
+	    
+	    public ListIterator<T> listIterator() {return(listIterator(0));}
+	    public Iterator<T> iterator() {return(listIterator());}
+	    
+	    public T set(int i, T el) {
+		return(ls.set(ls.size() - 1 - i, el));
+	    }
+	    
+	    public void add(int i, T el) {
+		ls.add(ls.size() - i, el);
+	    }
+	    
+	    public T remove(int i) {
+		return(ls.remove(ls.size() - 1 - i));
+	    }
+	    
+	    public String toString() {
+		return(String.format("#<reversed %s>", ls));
+	    }
+	});
     }
-
+    
     public static <T> int index(T[] arr, T el) {
 	for(int i = 0; i < arr.length; i++) {
 	    if(Objects.equals(arr[i], el))
@@ -1877,7 +1875,7 @@ public class Utils {
 	}
 	return(-1);
     }
-
+    
     public static boolean strcheck(String str, IntPredicate p) {
 	for(int i = 0; i < str.length(); i++) {
 	    if(!p.test(str.charAt(i)))
@@ -1885,7 +1883,7 @@ public class Utils {
 	}
 	return(true);
     }
-
+    
     public static <T> T find(Iterable<? extends T> in, Predicate<? super T> p) {
 	for(T obj : in) {
 	    if(p.test(obj))
@@ -1893,7 +1891,7 @@ public class Utils {
 	}
 	return(null);
     }
-
+    
     @SafeVarargs
     public static <T> T or(Supplier<T>... vals) {
 	for(Supplier<T> val : vals) {
@@ -1903,13 +1901,13 @@ public class Utils {
 	}
 	return(null);
     }
-
+    
     public static <T> void clean(Collection<T> c, Consumer<? super T> clean) {
 	for(T item : c)
 	    clean.accept(item);
 	c.clear();
     }
-
+    
     public static <T> T construct(Constructor<T> cons, Object... args) {
 	try {
 	    return(cons.newInstance(args));
@@ -1923,7 +1921,7 @@ public class Utils {
 	    throw(new RuntimeException(e.getCause()));
 	}
     }
-
+    
     public static <T> T construct(Class<T> cl) {
 	try {
 	    return(construct(cl.getConstructor()));
@@ -1931,7 +1929,7 @@ public class Utils {
 	    throw(new RuntimeException(e));
 	}
     }
-
+    
     public static Object invoke(Method mth, Object ob, Object... args) {
 	try {
 	    return(mth.invoke(ob, args));
@@ -1943,12 +1941,12 @@ public class Utils {
 	    throw(new RuntimeException(e.getCause()));
 	}
     }
-
+    
     public static <R> Function<Object[], R> consfun(Class<R> cl, Class<?>... args) throws NoSuchMethodException {
 	Constructor<R> cons = cl.getConstructor(args);
 	return(iargs -> construct(cons, iargs));
     }
-
+    
     public static <R> Function<Object[], R> smthfun(Class<?> cl, String name, Class<R> rtype, Class<?>...args) throws NoSuchMethodException {
 	Method mth = cl.getDeclaredMethod(name, args);
 	if(!rtype.isAssignableFrom(mth.getReturnType()))
@@ -1958,7 +1956,7 @@ public class Utils {
 	    throw(new NoSuchMethodException("expected public static method"));
 	return(iargs -> rtype.cast(invoke(mth, null, iargs)));
     }
-
+    
     public static String urlencode(String in) {
 	StringBuilder buf = new StringBuilder();
 	byte[] enc;
@@ -1970,7 +1968,7 @@ public class Utils {
 	}
 	for(byte c : enc) {
 	    if(((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')) ||
-	       ((c >= '0') && (c <= '9')) || (c == '.')) {
+		((c >= '0') && (c <= '9')) || (c == '.')) {
 		buf.append((char)c);
 	    } else {
 		buf.append("%" + Utils.num2hex((c & 0xf0) >> 4, true) + Utils.num2hex(c & 0x0f, true));
@@ -1978,7 +1976,7 @@ public class Utils {
 	}
 	return(buf.toString());
     }
-
+    
     public static URI uriparam(URI base, Object... pars) {
 	StringBuilder buf = new StringBuilder();
 	if(base.getRawQuery() != null)
@@ -2004,7 +2002,7 @@ public class Utils {
 	    throw(new RuntimeException(e));
 	}
     }
-
+    
     public static <C> C hascause(Throwable t, Class<C> c) {
 	while(t != null) {
 	    if(c.isInstance(t))
@@ -2013,57 +2011,57 @@ public class Utils {
 	}
 	return(null);
     }
-
+    
     public static double ntime() {
 	return(System.currentTimeMillis() / 1e3);
     }
-
+    
     private static final long rtimeoff = System.nanoTime();
     public static double rtime() {
 	return((System.nanoTime() - rtimeoff) / 1e9);
     }
-
+    
     public static class MapBuilder<K, V> {
 	private final Map<K, V> bk;
-
+	
 	public MapBuilder(Map<K, V> bk) {
 	    this.bk = bk;
 	}
-
+	
 	public MapBuilder<K, V> put(K k, V v) {
 	    bk.put(k, v);
 	    return(this);
 	}
-
+	
 	public Map<K, V> map() {
 	    return(Collections.unmodifiableMap(bk));
 	}
     }
-
+    
     public static <K, V> MapBuilder<K, V> map() {
 	return(new MapBuilder<K, V>(new HashMap<K, V>()));
     }
-
+    
     public static <K, V> Map<K, V> index(Collection<? extends V> values, Function<? super V, ? extends K> key) {
 	Map<K, V> ret = new HashMap<>();
 	for(V val : values)
 	    ret.put(key.apply(val), val);
 	return(ret);
     }
-
+    
     public static class Range extends AbstractList<Integer> {
 	public final int min, max, step;
-
+	
 	public Range(int min, int max, int step) {
 	    if(step == 0)
 		throw(new IllegalArgumentException());
 	    this.min = min; this.max = max; this.step = step;
 	}
-
+	
 	public int size() {
 	    return(Math.max((max - min + step - 1) / step, 0));
 	}
-
+	
 	public Integer get(int idx) {
 	    int rv = min + (step * idx);
 	    if((rv < min) || (rv >= max))
@@ -2071,116 +2069,116 @@ public class Utils {
 	    return(rv);
 	}
     }
-
+    
     public static List<Integer> range(int min, int max, int step) {return(new Range(min, max, step));}
     public static List<Integer> range(int min, int max) {return(range(min, max, 1));}
     public static List<Integer> range(int max) {return(range(0, max));}
-
+    
     public static <T> Indir<T> cache(Indir<T> src) {
 	return(new Indir<T>() {
-		private T val;
-		private boolean has = false;
-
-		public T get() {
-		    if(!has) {
-			val = src.get();
-			has = true;
-		    }
-		    return(val);
+	    private T val;
+	    private boolean has = false;
+	    
+	    public T get() {
+		if(!has) {
+		    val = src.get();
+		    has = true;
 		}
-	    });
+		return(val);
+	    }
+	});
     }
-
+    
     public static <V, R> Indir<R> transform(Supplier<? extends V> val, Function<? super V, ? extends R> xf) {
 	return(new Indir<R>() {
-		private V last;
-		private R res;
-		private boolean has = false;
-
-		public R get() {
-		    V v = val.get();
-		    if(!has || !Utils.eq(last, v)) {
-			res = xf.apply(v);
-			last = v;
-		    }
-		    return(res);
+	    private V last;
+	    private R res;
+	    private boolean has = false;
+	    
+	    public R get() {
+		V v = val.get();
+		if(!has || !Utils.eq(last, v)) {
+		    res = xf.apply(v);
+		    last = v;
 		}
-	    });
+		return(res);
+	    }
+	});
     }
-
+    
     public static <F, T> Iterator<T> map(Iterator<F> from, Function<? super F, ? extends T> fn) {
 	return(new Iterator<T>() {
-		boolean h = false;
-		T n;
-
-		public boolean hasNext() {
-		    if(h)
-			return(true);
-		    if(!from.hasNext())
-			return(false);
-		    n = fn.apply(from.next());
-		    h = true;
+	    boolean h = false;
+	    T n;
+	    
+	    public boolean hasNext() {
+		if(h)
 		    return(true);
-		}
-
-		public T next() {
-		    if(!hasNext())
-			throw(new NoSuchElementException());
-		    T ret = n;
-		    h = false;
-		    n = null;
-		    return(ret);
-		}
-
-		public void remove() {
-		    from.remove();
-		}
-	    });
+		if(!from.hasNext())
+		    return(false);
+		n = fn.apply(from.next());
+		h = true;
+		return(true);
+	    }
+	    
+	    public T next() {
+		if(!hasNext())
+		    throw(new NoSuchElementException());
+		T ret = n;
+		h = false;
+		n = null;
+		return(ret);
+	    }
+	    
+	    public void remove() {
+		from.remove();
+	    }
+	});
     }
-
+    
     public static <E> Iterator<E> filter(Iterator<E> from, Predicate<? super E> filter) {
 	return(new Iterator<E>() {
-		boolean h = false;
-		E n;
-
-		public boolean hasNext() {
-		    while(!h) {
-			if(!from.hasNext())
-			    return(false);
-			E g = from.next();
-			if(filter.test(g)) {
-			    n = g;
-			    h = true;
-			    break;
-			}
+	    boolean h = false;
+	    E n;
+	    
+	    public boolean hasNext() {
+		while(!h) {
+		    if(!from.hasNext())
+			return(false);
+		    E g = from.next();
+		    if(filter.test(g)) {
+			n = g;
+			h = true;
+			break;
 		    }
-		    return(true);
 		}
-
-		public E next() {
-		    if(!hasNext())
-			throw(new NoSuchElementException());
-		    E ret = n;
-		    h = false;
-		    n = null;
-		    return(ret);
-		}
-
-		public void remove() {
-		    from.remove();
-		}
-	    });
+		return(true);
+	    }
+	    
+	    public E next() {
+		if(!hasNext())
+		    throw(new NoSuchElementException());
+		E ret = n;
+		h = false;
+		n = null;
+		return(ret);
+	    }
+	    
+	    public void remove() {
+		from.remove();
+	    }
+	});
     }
-
+    
     public static void checkirq() throws InterruptedException {
 	if(Thread.interrupted())
 	    throw(new InterruptedException());
     }
-
+    
     public static <T, F> Iterator<T> filter(Iterator<F> from, Class<T> filter) {
 	return(map(filter(from, filter::isInstance), filter::cast));
     }
-
+    
     public static <E, T extends Collection<E>> T merge(T dst, Iterable<? extends E> a, Iterable<? extends E> b, Comparator<? super E> cmp) {
 	Iterator<? extends E> i = a.iterator(), o = b.iterator();
 	if(i.hasNext() && o.hasNext()) {
@@ -2211,13 +2209,13 @@ public class Utils {
 	    dst.add(o.next());
 	return(dst);
     }
-
+    
     public static <T> Optional<T> ocast(Object x, Class<T> cl) {
 	if(cl.isInstance(x))
 	    return(Optional.of(cl.cast(x)));
 	return(Optional.empty());
     }
-
+    
     public static int sidcmp(Object a, Object b) {
 	int ah = System.identityHashCode(a);
 	int bh = System.identityHashCode(b);
@@ -2227,43 +2225,43 @@ public class Utils {
 	    return(1);
 	return(0);
     }
-
+    
     public static Object formatter(String fmt, Object... args) {
 	return(new Object() {
-		public String toString() {
-		    return(String.format(fmt, args));
-		}
-	    });
+	    public String toString() {
+		return(String.format(fmt, args));
+	    }
+	});
     }
-
+    
     public static Object formatter(Supplier<String> str) {
 	return(new Object() {
-		public String toString() {
-		    return(str.get());
-		}
-	    });
+	    public String toString() {
+		return(str.get());
+	    }
+	});
     }
-
+    
     public static class AddressFormatException extends IllegalArgumentException {
 	public final String addr, type;
-
+	
 	public AddressFormatException(String message, CharSequence addr, String type) {
 	    super(message);
 	    this.addr = addr.toString();
 	    this.type = type;
 	}
-
+	
 	public AddressFormatException(String message, CharSequence addr, String type, Throwable cause) {
 	    super(message, cause);
 	    this.addr = addr.toString();
 	    this.type = type;
 	}
-
+	
 	public String getMessage() {
 	    return(super.getMessage() + ": " + addr + " (" + type + ")");
 	}
     }
-
+    
     public static Inet4Address in4_pton(CharSequence as) {
 	int dbuf = -1, o = 0;
 	byte[] abuf = new byte[4];
@@ -2295,7 +2293,7 @@ public class Utils {
 	    throw(new RuntimeException(e));
 	}
     }
-
+    
     public static InetAddress in6_pton(CharSequence as) {
 	int hbuf = -1, dbuf = -1, p = 0, v4map = -1;
 	int[] o = {0, 0};
@@ -2413,7 +2411,7 @@ public class Utils {
 	    throw(new RuntimeException(e));
 	}
     }
-
+    
     public static InetAddress inet_pton(CharSequence as) {
 	try {
 	    return(in4_pton(as));
@@ -2426,7 +2424,7 @@ public class Utils {
 	    }
 	}
     }
-
+    
     @SuppressWarnings("unchecked")
     public static int compare(Object[] a, Object[] b) {
 	int i = 0;
@@ -2453,24 +2451,24 @@ public class Utils {
 	    return(1);
 	return(0);
     }
-
+    
     public static final Comparator<Object> idcmp = new Comparator<Object>() {
 	int eid = 0;
 	final Map<Ref, Long> emerg = new HashMap<Ref, Long>();
 	final ReferenceQueue<Object> cleanq = new ReferenceQueue<Object>();
-
+	
 	class Ref extends WeakReference<Object> {
 	    final int h;
-
+	    
 	    Ref(Object o, ReferenceQueue<Object> queue) {
 		super(o, queue);
 		this.h = System.identityHashCode(o);
 	    }
-
+	    
 	    public int hashCode() {
 		return(h);
 	    }
-
+	    
 	    public boolean equals(Object o) {
 		if(o == this)
 		    return(true);
@@ -2481,13 +2479,13 @@ public class Utils {
 		return((or != null) && (sr != null) && (or == sr));
 	    }
 	}
-
+	
 	private void clean() {
 	    Reference<? extends Object> ref;
 	    while((ref = cleanq.poll()) != null)
 		emerg.remove(ref);
 	}
-
+	
 	public int compare(Object a, Object b) {
 	    if(a == b)
 		return(0);
@@ -2501,7 +2499,7 @@ public class Utils {
 		return(-1);
 	    else if(ah > bh)
 		return(1);
-
+	    
 	    synchronized(emerg) {
 		if(eid == 0)
 		    Warning.warn("could not impose ordering in idcmp, using slow-path");
@@ -2523,52 +2521,35 @@ public class Utils {
     
     static {
 	Console.setscmd("die", new Console.Command() {
-		public void run(Console cons, String[] args) {
-		    throw(new Error("Triggered death"));
-		}
-	    });
+	    public void run(Console cons, String[] args) {
+		throw(new Error("Triggered death"));
+	    }
+	});
 	Console.setscmd("sleep", new Console.Command() {
-		public void run(Console cons, String[] args) {
-		    long ms = (long)(Double.parseDouble(args[1]) * 1000);
-		    try {
-			Thread.sleep(ms);
-		    } catch(InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw(new RuntimeException(e));
-		    }
+	    public void run(Console cons, String[] args) {
+		long ms = (long)(Double.parseDouble(args[1]) * 1000);
+		try {
+		    Thread.sleep(ms);
+		} catch(InterruptedException e) {
+		    Thread.currentThread().interrupt();
+		    throw(new RuntimeException(e));
 		}
-	    });
+	    }
+	});
 	Console.setscmd("lockdie", new Console.Command() {
-		public void run(Console cons, String[] args) {
-		    Object m1 = new Object(), m2 = new Object();
-		    int[] sync = {0};
-		    new HackThread(() -> {
-			    try {
-				synchronized(m2) {
-				    synchronized(sync) {
-					while(sync[0] != 1)
-					    sync.wait();
-					sync[0] = 2;
-					sync.notifyAll();
-				    }
-				    synchronized(m1) {
-					synchronized(sync) {
-					    sync[0] = 3;
-					    sync.notifyAll();
-					}
-				    }
-				}
-			    } catch(InterruptedException e) {}
-		    }, "Deadlocker").start();
+	    public void run(Console cons, String[] args) {
+		Object m1 = new Object(), m2 = new Object();
+		int[] sync = {0};
+		new HackThread(() -> {
 		    try {
-			synchronized(m1) {
+			synchronized(m2) {
 			    synchronized(sync) {
-				sync[0] = 1;
-				sync.notifyAll();
-				while(sync[0] != 2)
+				while(sync[0] != 1)
 				    sync.wait();
+				sync[0] = 2;
+				sync.notifyAll();
 			    }
-			    synchronized(m2) {
+			    synchronized(m1) {
 				synchronized(sync) {
 				    sync[0] = 3;
 				    sync.notifyAll();
@@ -2576,18 +2557,35 @@ public class Utils {
 			    }
 			}
 		    } catch(InterruptedException e) {}
-		}
-	    });
+		}, "Deadlocker").start();
+		try {
+		    synchronized(m1) {
+			synchronized(sync) {
+			    sync[0] = 1;
+			    sync.notifyAll();
+			    while(sync[0] != 2)
+				sync.wait();
+			}
+			synchronized(m2) {
+			    synchronized(sync) {
+				sync[0] = 3;
+				sync.notifyAll();
+			    }
+			}
+		    }
+		} catch(InterruptedException e) {}
+	    }
+	});
 	Console.setscmd("threads", new Console.Command() {
-		public void run(Console cons, String[] args) {
-		    Utils.dumptg(null, cons.out);
-		}
-	    });
+	    public void run(Console cons, String[] args) {
+		Utils.dumptg(null, cons.out);
+	    }
+	});
 	Console.setscmd("gc", new Console.Command() {
-		public void run(Console cons, String[] args) {
-		    System.gc();
-		}
-	    });
+	    public void run(Console cons, String[] args) {
+		System.gc();
+	    }
+	});
     }
     
     public static <T> Iterator<T> circularIterator(List<T> list) {
@@ -2605,8 +2603,8 @@ public class Utils {
 	    }
 	};
     }
-
-/* KamiClient Additions*/
+    
+    /* KamiClient Additions*/
     public static Color hex2color(String hex, Color def){
 	Color c = def;
 	if (hex != null) {

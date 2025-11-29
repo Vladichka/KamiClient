@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.function.*;
 import java.lang.reflect.Constructor;
 import haven.render.*;
+import me.ender.ClientUtils;
 
 public abstract class Sprite implements RenderTree.Node, PView.Render2D {
     public final Resource res;
@@ -50,71 +51,112 @@ public abstract class Sprite implements RenderTree.Node, PView.Render2D {
 	factories.add(StaticSprite.fact);
 	factories.add(AudioSprite.fact);
     }
-
+    
     public interface Owner extends OwnerContext {
 	public Random mkrandoom();
-	@Deprecated public Resource getres();
     }
-
+    
     public class RecOwner implements Owner {
 	public Random mkrandoom() {return(owner.mkrandoom());}
 	public <T> T context(Class<T> cl) {return(owner.context(cl));}
-
+	
 	public Resource getres() {return(res);}
-
+	
 	public String toString() {
 	    return(String.format("#<rec-owner of %s, owned by %s>", Sprite.this, owner));
 	}
     }
-
+    
+    public static class UIOwner implements Owner {
+	public final Widget wdg;
+	
+	public UIOwner(Widget wdg) {
+	    this.wdg = wdg;
+	}
+	
+	public Random mkrandoom() {return(new Random());}
+	public <T> T context(Class<T> cl) {return(Widget.wdgctx.context(cl, wdg));}
+    }
+    
     public static interface CDel {
 	public void delete();
     }
-
+    
     public static interface CUpd {
 	public void update(Message sdt);
     }
-
+    
     public static class FactMaker extends Resource.PublishedCode.Instancer.Chain<Factory> {
 	public FactMaker() {super(Factory.class);}
 	{
 	    add(new Direct<>(Factory.class));
 	    add(new StaticCall<>(Factory.class, "mksprite", Sprite.class, new Class<?>[] {Owner.class, Resource.class, Message.class},
-				 (make) -> (owner, res, sdt) -> make.apply(new Object[] {owner, res, sdt})));
+		(make) -> (owner, res, sdt) -> make.apply(new Object[] {owner, res, sdt})));
 	    add(new Construct<>(Factory.class, Sprite.class, new Class<?>[] {Owner.class, Resource.class, Message.class},
-				(cons) -> (owner, res, sdt) -> cons.apply(new Object[] {owner, res, sdt})));
+		(cons) -> (owner, res, sdt) -> cons.apply(new Object[] {owner, res, sdt})));
 	    add(new Construct<>(Factory.class, Sprite.class, new Class<?>[] {Owner.class, Resource.class},
-				(cons) -> (owner, res, sdt) -> cons.apply(new Object[] {owner, res})));
+		(cons) -> (owner, res, sdt) -> cons.apply(new Object[] {owner, res})));
 	}}
-
+    
     @Resource.PublishedCode(name = "spr", instancer = FactMaker.class)
     public interface Factory {
 	public Sprite create(Owner owner, Resource res, Message sdt);
     }
-
+    
     public interface Mill<S extends Sprite> {
 	public S create(Owner owner);
+	
+	public static class FromRes implements Mill<Sprite> {
+	    public final Indir<Resource> res;
+	    public final byte[] sdt;
+	    
+	    public FromRes(Indir<Resource> res, byte[] sdt) {
+		this.res = res;
+		this.sdt = sdt;
+	    }
+	    
+	    public Sprite create(Owner owner) {
+		return(Sprite.create(owner, res.get(), new MessageBuf(sdt)));
+	    }
+	    
+	    public String toString() {
+		return(String.format("#<res-mill %s %s>", res, Utils.hex.enc(sdt)));
+	    }
+	}
+	
+	public static Mill<Sprite> of(Indir<Resource> res, byte[] sdt) {
+	    return(new FromRes(res, sdt));
+	}
+	public static Mill<Sprite> of(Indir<Resource> res, Message sdt) {
+	    return(new FromRes(res, sdt.bytes()));
+	}
+	public static Mill<Sprite> of(Resource res, Message sdt) {
+	    return(new FromRes(res.indir(), sdt.bytes()));
+	}
+	public static Mill<Sprite> of(ResData dat) {
+	    return(new FromRes(dat.res, dat.sdt.bytes()));
+	}
     }
-
+    
     public static class ResourceException extends RuntimeException {
 	public Resource res;
-
+	
 	public ResourceException(String msg, Resource res) {
 	    super(msg + " (" + res + ", from " + res.source + ")");
 	    this.res = res;
 	}
-
+	
 	public ResourceException(String msg, Throwable cause, Resource res) {
 	    super(msg + " (" + res + ", from " + res.source + ")", cause);
 	    this.res = res;
 	}
     }
-
+    
     protected Sprite(Owner owner, Resource res) {
 	this.res = res;
 	this.owner = owner;
     }
-
+    
     public static int decnum(Message sdt) {
 	if(sdt == null)
 	    return(0);
@@ -125,7 +167,7 @@ public abstract class Sprite implements RenderTree.Node, PView.Render2D {
 	}
 	return(ret);
     }
-
+    
     public static Sprite create(Owner owner, Resource res, Message sdt) {
 	{
 	    Factory f = res.getcode(Factory.class, false);
@@ -147,7 +189,7 @@ public abstract class Sprite implements RenderTree.Node, PView.Render2D {
 	*/
 	return(new Sprite(owner, res) {});
     }
-
+    
     public void draw(GOut g) {}
     
     public void setTex2d(Tex t) {
@@ -163,7 +205,7 @@ public abstract class Sprite implements RenderTree.Node, PView.Render2D {
 	if(tex2d == null) {return;} //quick check, since most sprites don't have 2d textures
 	synchronized (texLock) {
 	    if(tex2d == null) {return;}
-	    if(owner instanceof Gob && !((Gob) owner).info.enabled()) {return;}
+	    if(ClientUtils.owner2ogob(owner).map(x -> !x.info.enabled()).orElse(false)) {return;}
 	    Coord sc = Homo3D.obj2sc(pos2d, state, Area.sized(g.sz()));
 	    if(sc == null) {return;}
 	    if(sc.isect(Coord.z, g.sz())) {
@@ -171,20 +213,20 @@ public abstract class Sprite implements RenderTree.Node, PView.Render2D {
 	    }
 	}
     }
-
+    
     public boolean tick(double dt) {
 	return(false);
     }
-
+    
     public void gtick(Render g) {
     }
-
+    
     public void age() {
     }
-
+    
     public void dispose() {
     }
-
+    
     public String toString() {
 	return(String.format("#<%s %s of %s>", this.getClass().getSimpleName(), (res == null) ? null : res.name, owner));
     }

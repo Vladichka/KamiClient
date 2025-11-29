@@ -27,7 +27,7 @@ public class ItemTarget implements ITarget {
     @Override
     public void interact() {
 	if(disposed()) {return;}
-	//TODO: implement
+	item.itemact(0);
     }
     
     @Override

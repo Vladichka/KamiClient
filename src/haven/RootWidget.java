@@ -26,6 +26,7 @@
 
 package haven;
 
+import integrations.mapv4.MappingClient;
 import me.ender.gob.GobEffects;
 
 import java.util.*;
@@ -123,6 +124,9 @@ public class RootWidget extends ConsoleHost implements UI.Notice.Handler, Widget
 	    }
 	} else if(msg == "msg2") {
 	    Resource res = ui.sess.getresv(args[0]).get();
+	    System.out.println(args[2]);
+	    if (res.name.equals("ui/inspect") && MappingClient.initialized())
+		MappingClient.getInstance().SetTimerToNearestRes(args[2].toString());
 	    UI.Notice.Factory fac = res.getcode(UI.Notice.Factory.class, true);
 	    ui.msg(fac.format(new OwnerContext() {
 		    public <T> T context(Class<T> cl) {

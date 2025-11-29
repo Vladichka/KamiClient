@@ -337,7 +337,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    this.info = info;
 	    try {
 		if (CFG.AUTOFOOD_TRACK.get()) {
-		    FoodService.checkFood(info, getres(), itemq.get().single().value);
+		    FoodService.checkFood(info, getres(), itemq.get().single().value, ui.sess.user.genus);
 		}
 	    } catch (Exception ex) {}
 	}
