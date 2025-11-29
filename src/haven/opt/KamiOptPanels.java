@@ -93,7 +93,7 @@ public interface KamiOptPanels {
 
 		x = 0;
 		y = START;
-		panel.add(new CFGBox("Enable autodrink", CFG.AUTO_DRINK_ENABLED, "Use action \"drink\" automatically when reaching certain thirst level."), x, y);
+		panel.add(new CFGBox("Enable autodrink", CFG.AUTO_DRINK_ENABLED, "Use action \"drink\" automatically when reaching certain thirst level.", true), x, y);
 
 		y += STEP;
 		y = addSlider(CFG.AUTO_DRINK_THRESHOLD, 0, 100, "Auto drink threshold: %d%%", "Start drinking when stamina drops below this value.", panel, x, y, STEP);
