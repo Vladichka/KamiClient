@@ -42,6 +42,8 @@ import me.ender.ui.CFGBox;
 import me.ender.ui.CFGSlider;
 import me.ender.ui.DrinkMeter;
 import me.ender.ui.TabStrip;
+import haven.opt.KamiOptPanels;
+import static haven.opt.KamiOptPanels.addSlider;
 
 import java.awt.event.KeyEvent;
 import java.util.Set;
@@ -51,7 +53,8 @@ import static haven.Text.*;
 public class OptWnd extends WindowX {
     public static final Coord PANEL_POS = new Coord(220, 30);
     private final Panel display, general, camera, shortcuts, mapping, uipanel, combat, minimap, experimental;
-    private final Panel color;
+	private final Panel color;
+	private final Panel automation;
     public final Panel main;
     public static final Text.Foundry LBL_FNT = new Text.Foundry(sans, 14);
     public Panel current;
@@ -799,6 +802,7 @@ public class OptWnd extends WindowX {
 	shortcuts = add(new Panel());
 	mapping = add(new Panel());
 	color = add(new Panel());
+	automation = add(new Panel());
 	minimap = add(new Panel());
 	experimental = add(new Panel());
 
@@ -817,6 +821,7 @@ public class OptWnd extends WindowX {
 	if (LoginScreen.authmech.get() == "native") {
 	    addPanelButton("log out to steam", 'q', Action.LOGOUT_AND_SWITCH_AUTH_METHOD, colum, row++);
 	}
+	addPanelButton("Automation settings", 't', automation, colum, row++);
     
 	colum++;
 	mrow = Math.max(mrow, row);
@@ -865,8 +870,9 @@ public class OptWnd extends WindowX {
 	initCameraPanel();
 	initMappingPanel(mapping);
 	CustomOptPanels.initColorPanel(this, color);
-	initMinimapPanel(minimap);
-	initExperimentalPanel(experimental);
+	KamiOptPanels.initMinimapPanel(this, minimap);
+	KamiOptPanels.initExperimentalPanel(this, experimental);
+	KamiOptPanels.initAutomationPanel(this, automation);
 	main.pack();
 	chpanel(main);
     }
@@ -1003,7 +1009,7 @@ public class OptWnd extends WindowX {
 	y += STEP;
 	Coord tsz = panel.add(new Label("Default speed:"), x, y).sz;
 	panel.adda(new Speedget.SpeedSelector(UI.scale(100)), new Coord(x + tsz.x + UI.scale(5), y + tsz.y / 2), 0, 0.5);
-    
+
 	y += 2 * STEP;
 	Label label = panel.add(new Label(""), x, y);
 	y += UI.scale(15);
@@ -1246,16 +1252,6 @@ public class OptWnd extends WindowX {
 	title.c.x = (panel.sz.x - title.sz.x) / 2;
     }
 
-    private int addSlider(CFG<Integer> cfg, int min, int max, String format, String tip, Panel panel, int x, int y, int STEP) {
-	final Label label = panel.add(new Label(""), x, y);
-	label.settip(tip);
-	
-	y += STEP;
-	panel.add(new CFGSlider(UI.scale(200), min, max, cfg, label, format), x, y).settip(tip);
-	
-	return y;
-    }
-    
     private void initUIPanel(Panel panel) {
 	int STEP = UI.scale(25);
 	int START;
@@ -1470,73 +1466,6 @@ public class OptWnd extends WindowX {
 	shortcuts.pack();
 	shortcuts.add(new PButton(UI.scale(200), "Back", 27, main), shortcuts.sz.x / 2 - 100, shortcuts.sz.y + 35);
 	shortcuts.pack();
-    }
-    
-    private void initMinimapPanel(Panel panel) {
-	int STEP = UI.scale(25);
-	int START;
-	int x, y;
-	int my = 0, tx;
-	
-	Widget title = panel.add(new Label("Minimap / Map settings", LBL_FNT), 0, 0);
-	START = title.sz.y + UI.scale(10);
-	
-	x = 0;
-	y = START;
-	//first row
-	panel.add(new CFGBox("Enable PVP Map Mode", CFG.PVP_MAP, "Simplyfies the Map towards PVP."), x, y);
-	
-	y += STEP;
-	panel.add(new CFGBox("Remove Biome Border from Minimap", CFG.REMOVE_BIOME_BORDER_FROM_MINIMAP), x, y);
-	
-//	y += STEP;
-//	panel.add(new CFGBox("Show names of party members", CFG.SHOW_PARTY_NAMES), x, y);
-//
-//	y += STEP;
-//	panel.add(new CFGBox("Show names of kinned players", CFG.SHOW_PLAYER_NAME), x, y);
-//
-//	y += STEP;
-//	panel.add(new CFGBox("Show names of red players", CFG.SHOW_RED_NAME), x, y);
-	
-	//second row
-	my = Math.max(my, y);
-	x += UI.scale(265);
-	y = START;
-	
-	
-	my = Math.max(my, y);
-	
-	panel.add(new PButton(UI.scale(200), "Back", 27, main), new Coord(0, my + UI.scale(35)));
-	panel.pack();
-	title.c.x = (panel.sz.x - title.sz.x) / 2;
-    }
-    
-    
-    private void initExperimentalPanel(Panel panel) {
-	int STEP = UI.scale(25);
-	int START;
-	int x, y;
-	int my = 0, tx;
-	
-	Widget title = panel.add(new Label("Experimental settings", LBL_FNT), 0, 0);
-	START = title.sz.y + UI.scale(10);
-	
-	x = 0;
-	y = START;
-	//first row
-	panel.add(new CFGBox("Disable certain remote UI calls", CFG.IGNORE_CERTAIN_REMOTE_UI, "RemoteUI's of the type 'ui/rinit:3' are ignored if the first parameter matches the character name. Prevents the display of Realm invites. Might prevent other things too."), x, y);
-	
-	//second row
-	my = Math.max(my, y);
-	x += UI.scale(265);
-	y = START;
-	
-	
-	my = Math.max(my, y);
-	
-	panel.add(new PButton(UI.scale(200), "Back", 27, main), new Coord(0, my + UI.scale(35)));
-	panel.pack();
-	title.c.x = (panel.sz.x - title.sz.x) / 2;
     }
     
     private void initMappingPanel(Panel panel) {
