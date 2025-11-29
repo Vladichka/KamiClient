@@ -133,6 +133,7 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	    if(nmeter != null)
 	    {
 		if(CFG.SIMPLE_COMBAT_OPENINGS.get() && OPENINGS.containsKey(name)) {
+		    System.out.println("draw simple openenings.");
 		    g.chcolor(OPENINGS.get(name));
 		    g.frect(imgoff, img.sz());
 		    g.chcolor(Color.WHITE);
@@ -235,6 +236,11 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
 	}
     }
     
+    public int ameter() {
+	Double v = ameteri.get();
+	if(v == null) {return -1;}
+	return (int) Math.floor(v * 100);
+    }
 
     public boolean mousedown(MouseDownEvent ev) {
 	wdgmsg("cl", ev.c.sub(imgoff), ev.b, ui.modflags());

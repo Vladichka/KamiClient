@@ -1420,6 +1420,11 @@ public class Widget {
 	    tooltip = new KeyboundTip();
 	return(this);
     }
+    
+    public Widget allowGlobalKeysWhenHidden(boolean value) {
+	allowGlobalKeysWhenHidden = value;
+	return(this);
+    }
 
     public Area area() {
 	return(Area.sized(c, sz));
