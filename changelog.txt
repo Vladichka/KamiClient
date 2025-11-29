@@ -1,3 +1,11 @@
+$size[14]{$u{update on 29.11.2025:}
+* Merged with all the changes of the past year.
+* Merged remaining stuff from ender.
+* fixed occurring bugs during the last month (forgot to post changelogs)
+* updated mapping client for upcoming mapper changes (Multiworld support)
+* mapper will send inspect information on localized resources if tracking is enabled
+* Added autodrink function (Thanks to Vladichka)
+
 $size[14]{$u{update on 22.12.2024:}
   * Fixed (tree) log size.
   * Fixed log out to native / steam buttons for steam.
