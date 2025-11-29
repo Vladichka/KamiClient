@@ -32,12 +32,18 @@ public class AutoDrink {
     public void tick(Gob gob) {
         if (gui == null)
             return;
+        if (!CFG.AUTO_DRINK_ENABLED.get())
+            return;
         int autoDrinkThreshold = CFG.AUTO_DRINK_THRESHOLD.get();
+        // ignore if threshold is unreachable
         if (autoDrinkThreshold == 0)
             return;
+        // ignore if already in drinking state
         if (gob.is(GobTag.DRINKING))
             return;
+        // this apparently is a rather cheap call
         long currentTime = System.currentTimeMillis();
+        // ignore if the action was triggered recently, to address the network delay and avoid spamming drink actions
         if (currentTime - lastDrinkTime > CFG.AUTO_DRINK_DELAY.get()) {
             IMeter meter = gui.getIMeter("stam");
             if (meter != null) {
