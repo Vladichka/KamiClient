@@ -2,10 +2,22 @@ package haven.opt;
 
 import haven.*;
 import me.ender.ui.CFGBox;
+import me.ender.ui.CFGSlider;
+
 import static haven.OptWnd.*;
 
 
 public interface KamiOptPanels {
+	static int addSlider(CFG<Integer> cfg, int min, int max, String format, String tip, OptWnd.Panel panel, int x, int y, int STEP) {
+		final Label label = panel.add(new Label(""), x, y);
+		label.settip(tip);
+
+		y += STEP;
+		panel.add(new CFGSlider(UI.scale(200), min, max, cfg, label, format), x, y).settip(tip);
+
+		return y;
+	}
+
 	static void initMinimapPanel(OptWnd wnd, OptWnd.Panel panel) {
 		int STEP = UI.scale(25);
 		int START;
@@ -43,7 +55,6 @@ public interface KamiOptPanels {
 		title.c.x = (panel.sz.x - title.sz.x) / 2;
 	}
 
-
 	static void initExperimentalPanel(OptWnd wnd, OptWnd.Panel panel) {
 		int STEP = UI.scale(25);
 		int START;
@@ -71,4 +82,26 @@ public interface KamiOptPanels {
 		title.c.x = (panel.sz.x - title.sz.x) / 2;
 	}
 
+	static void initAutomationPanel(OptWnd wnd, OptWnd.Panel panel) {
+		int STEP = UI.scale(25);
+		int START;
+		int x, y;
+		int my = 0, tx;
+
+		Widget title = panel.add(new Label("Automation settings", LBL_FNT), 0, 0);
+		START = title.sz.y + UI.scale(10);
+
+		x = 0;
+		y = START;
+		y = addSlider(CFG.AUTO_DRINK_THRESHOLD, 0, 100, "Auto drink threshold: %d%%", "Start drinking when stamina drops below this value.", panel, x, y, STEP);
+
+		y += STEP;
+		y = addSlider(CFG.AUTO_DRINK_DELAY, 0, 1000, "Auto drink prevention window: %d ms", "Auto drink will not be triggered repeatedly during this period. Adjust according to your latency.", panel, x, y, STEP);
+
+		my = Math.max(my, y);
+
+		panel.add(wnd.new PButton(UI.scale(200), "Back", 27, wnd.main), new Coord(0, my + UI.scale(35)));
+		panel.pack();
+		title.c.x = (panel.sz.x - title.sz.x) / 2;
+	}
 }

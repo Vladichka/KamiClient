@@ -43,6 +43,7 @@ import me.ender.ui.CFGSlider;
 import me.ender.ui.DrinkMeter;
 import me.ender.ui.TabStrip;
 import haven.opt.KamiOptPanels;
+import static haven.opt.KamiOptPanels.addSlider;
 
 import java.awt.event.KeyEvent;
 import java.util.Set;
@@ -52,7 +53,8 @@ import static haven.Text.*;
 public class OptWnd extends WindowX {
     public static final Coord PANEL_POS = new Coord(220, 30);
     private final Panel display, general, camera, shortcuts, mapping, uipanel, combat, minimap, experimental;
-    private final Panel color, automation;
+	private final Panel color;
+	private final Panel automation;
     public final Panel main;
     public static final Text.Foundry LBL_FNT = new Text.Foundry(sans, 14);
     public Panel current;
@@ -870,6 +872,7 @@ public class OptWnd extends WindowX {
 	CustomOptPanels.initColorPanel(this, color);
 	KamiOptPanels.initMinimapPanel(this, minimap);
 	KamiOptPanels.initExperimentalPanel(this, experimental);
+	KamiOptPanels.initAutomationPanel(this, automation);
 	main.pack();
 	chpanel(main);
     }
@@ -1006,12 +1009,6 @@ public class OptWnd extends WindowX {
 	y += STEP;
 	Coord tsz = panel.add(new Label("Default speed:"), x, y).sz;
 	panel.adda(new Speedget.SpeedSelector(UI.scale(100)), new Coord(x + tsz.x + UI.scale(5), y + tsz.y / 2), 0, 0.5);
-    
-	y += STEP;
-	y = addSlider(CFG.AUTO_DRINK_THRESHOLD, 0, 100, "Auto drink threshold: %d%%", "Start drinking when stamina drops below this value.", panel, x, y, STEP);
-
-	y += STEP;
-	y = addSlider(CFG.AUTO_DRINK_DELAY, 0, 1000, "Auto drink prevention window: %d ms", "Auto drink will not be triggered repeatedly during this period. Adjust according to your latency.", panel, x, y, STEP);
 
 	y += 2 * STEP;
 	Label label = panel.add(new Label(""), x, y);
@@ -1255,16 +1252,6 @@ public class OptWnd extends WindowX {
 	title.c.x = (panel.sz.x - title.sz.x) / 2;
     }
 
-    private int addSlider(CFG<Integer> cfg, int min, int max, String format, String tip, Panel panel, int x, int y, int STEP) {
-	final Label label = panel.add(new Label(""), x, y);
-	label.settip(tip);
-	
-	y += STEP;
-	panel.add(new CFGSlider(UI.scale(200), min, max, cfg, label, format), x, y).settip(tip);
-	
-	return y;
-    }
-    
     private void initUIPanel(Panel panel) {
 	int STEP = UI.scale(25);
 	int START;
