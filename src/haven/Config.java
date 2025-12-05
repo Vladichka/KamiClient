@@ -454,7 +454,6 @@ public class Config {
     
     public static void setUserName(String username) {
 	Config.username = username;
-	Config.playername = null;
     }
     
     public static void setPlayerName(String playername) {

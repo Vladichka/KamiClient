@@ -99,7 +99,7 @@ public class Charlist extends Widget {
 	    {
 		Charlist.this.wdgmsg("play", chr.name);
 		Config.setPlayerName(chr.name);
-		Config.initAutomapper(ui);
+		//Config.initAutomapper(ui);  // This apparently is bullshit
 	    });
 	}
 
