@@ -1788,7 +1788,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    }
 	}
 	setVehicle(drives);
-	glob.sess.ui.pathQueue().ifPresent(pathQueue -> pathQueue.movementChange(this, prev, a));
+	if (glob.sess.ui != null)
+	    glob.sess.ui.pathQueue().ifPresent(pathQueue -> pathQueue.movementChange(this, prev, a));
     }
     
     public long vehicleId() {return vehicleId;}
