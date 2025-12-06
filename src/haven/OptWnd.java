@@ -1480,18 +1480,7 @@ public class OptWnd extends WindowX {
 	x = 0;
 	y = START;
 	
-	Label mappingLabel = new Label("Mapping URL: Re-Enable options");;
-	MappingClient automapper = null;
-	try {
-	    automapper = MappingClient.getInstance();
-	    mappingLabel.settext("Mapping URL: " + (automapper.CheckEndpoint() ? "Valid" : "Invalid"));
-	} catch (Exception ex) {
-	    CFG.AUTOMAP_UPLOAD.set(false);
-	    CFG.AUTOMAP_UPLOAD_MARKERS.set(false);
-	    CFG.AUTOMAP_TRACK.set(false);
-	    CFG.AUTOFOOD_TRACK.set(false);
-	}
-	
+	Label mappingLabel = new Label("Mapping URL: ");;
 	
 	panel.add(new CFGBox("Upload enabled", CFG.AUTOMAP_UPLOAD), x, y);
 	y += STEP;
