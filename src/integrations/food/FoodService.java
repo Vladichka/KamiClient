@@ -35,7 +35,7 @@ public class FoodService {
     public static final String API_ENDPOINT = CFG.AUTOMAP_ENDPOINT.get();
     private static final String FOOD_DATA_URL = "/data/food-info.json";
     private static final File FOOD_DATA_CACHE_FILE = new File("food_data.json");
-    private static String token = "KamiClient";  //Config.confid maybe ArdClient also works
+    private static String token = "KamiClient";
     
     private static final Map<String, ParsedFoodInfo> cachedItems = new ConcurrentHashMap<>();
     private static final Queue<HashedFoodInfo> sendQueue = new ConcurrentLinkedQueue<>();
@@ -225,6 +225,7 @@ public class FoodService {
 	try {
 	    StringBuilder stringBuilder = new StringBuilder();
 	    stringBuilder.append(foodInfo.itemName).append(";")
+		.append(foodInfo.genus).append(";")
 		.append(foodInfo.resourceName).append(";");
 	    foodInfo.ingredients.forEach(it -> {
 		stringBuilder.append(it.name).append(";").append(it.percentage).append(";");
@@ -338,6 +339,10 @@ public class FoodService {
 	
 	public String getResourceName() {
 	    return resourceName;
+	}
+	
+	public String getGenus() {
+	    return genus;
 	}
 	
 	public double getHunger() {
