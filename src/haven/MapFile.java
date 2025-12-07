@@ -40,6 +40,8 @@ import integrations.mapv4.MappingClient;
 import me.ender.IDPool;
 import me.ender.minimap.*;
 
+import javax.imageio.ImageIO;
+
 import static haven.MCache.cmaps;
 import static me.ender.minimap.AutoMarkers.*;
 
@@ -538,6 +540,7 @@ public class MapFile {
 	{
 	    return render(off, false);
 	}
+	
 	private static final Coord[] tccs = {new Coord(0, 0), new Coord(1, 0), new Coord(1, 1), new Coord(0, 1)};
 	public BufferedImage render(Coord off, boolean forUpload) {
 	    BufferedImage[] texes = new BufferedImage[tilesets.length];
@@ -604,11 +607,11 @@ public class MapFile {
 	    if ((!CFG.PVP_MAP.get() && !CFG.REMOVE_BIOME_BORDER_FROM_MINIMAP.get()) || forUpload)
 		for(c.y = 1; c.y < cmaps.y - 1; c.y++) {
 		    for(c.x = 1; c.x < cmaps.x - 1; c.x++) {
-			int p = tilesets[gettile(c)].prio;
-			if((tilesets[gettile(c.add(-1, 0))].prio > p) ||
-			   (tilesets[gettile(c.add( 1, 0))].prio > p) ||
-			   (tilesets[gettile(c.add(0, -1))].prio > p) ||
-			   (tilesets[gettile(c.add(0,  1))].prio > p))
+			int p = gettile(c);
+			if((gettile(c.add(-1, 0)) > p) ||
+			   (gettile(c.add( 1, 0)) > p) ||
+			   (gettile(c.add(0, -1)) > p) ||
+			   (gettile(c.add(0,  1)) > p))
 			{
 			    buf.setSample(c.x, c.y, 0, 0);
 			    buf.setSample(c.x, c.y, 1, 0);
@@ -1877,6 +1880,8 @@ public class MapFile {
 		{
 		    try {
 			b = grid.render(gd.a, true);
+			File f = new File("G:\\tmp\\" + gd.b + ".png");
+			ImageIO.write(b, "png", f);
 			MappingClient.getInstance().UploadCacheImage(grid.id, genus, b);
 		    } catch(Exception ex)
 		    {
