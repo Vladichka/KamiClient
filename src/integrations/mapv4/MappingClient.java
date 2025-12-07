@@ -777,4 +777,54 @@ public class MappingClient {
 	    }
 	}
     }
+    
+    public void UploadCacheGrid(String genus, long segmentId, ArrayList<GridInfo> grids)
+    {
+	try {
+	    HttpURLConnection connection =
+		(HttpURLConnection) new URL(endpoint + "/gridCacheUpdate").openConnection();
+	    connection.setRequestMethod("POST");
+	    connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+	    connection.setDoOutput(true);
+	    JSONObject o = new JSONObject();
+	    o.put("genus", genus);
+	    o.put("segmentId", segmentId);
+	    o.put("grids", grids);
+	    try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
+		out.write(o.toString().getBytes(StandardCharsets.UTF_8));
+	    }
+	    int code = connection.getResponseCode();
+	    if (code != 200)
+		throw new Exception("Couldn't upload Cache. Errorcode: " + code);
+	}
+	catch (Exception ex)
+	{
+		System.out.println(ex.getMessage());
+	}
+    }
+    
+    public void UploadCacheImage(long gridId, String genus, BufferedImage image)
+    {
+	if(image == null) {
+	    return;
+	}
+	try {
+	    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+	    ImageIO.write(image, "png", outputStream);
+	    ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+	    MultipartUtility multipart = new MultipartUtility(endpoint + "/gridCacheUpload", "utf-8");
+	    multipart.addFormField("id", Long.toString(gridId));
+	    multipart.addFormField("genus", genus);
+	    multipart.addFilePart("file", inputStream, "minimap.png");
+	    JSONObject extraData = new JSONObject();
+	    extraData.put("season", 0);
+	    multipart.addFormField("extraData", extraData.toString());
+	    MultipartUtility.Response response = multipart.finish();
+	    if(response.statusCode != 200) {
+		System.out.println("Upload Error: Code" + response.statusCode + " - " + response.response);
+	    }
+	} catch (Exception e) {
+	    System.out.println("Cannot upload " + gridId + ": " + e.getMessage());
+	}
+    }
 }

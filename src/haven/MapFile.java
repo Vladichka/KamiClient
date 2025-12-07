@@ -35,6 +35,8 @@ import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import haven.render.*;
 import haven.Defer.Future;
+import haven.resutil.Ridges;
+import integrations.mapv4.MappingClient;
 import me.ender.IDPool;
 import me.ender.minimap.*;
 
@@ -532,7 +534,12 @@ public class MapFile {
 	    return(texes[t]);
 	}
 
-	public BufferedImage render(Coord off) {
+	public BufferedImage render(Coord off)
+	{
+	    return render(off, false);
+	}
+	private static final Coord[] tccs = {new Coord(0, 0), new Coord(1, 0), new Coord(1, 1), new Coord(0, 1)};
+	public BufferedImage render(Coord off, boolean forUpload) {
 	    BufferedImage[] texes = new BufferedImage[tilesets.length];
 	    int[] dColor = new int[tilesets.length];
 	    Arrays.fill(dColor, -1);
@@ -544,7 +551,7 @@ public class MapFile {
 		    int t = gettile(c);
 		    BufferedImage tex = tiletex(t, texes, cached);
 		    int rgb = 0;
-		    if (CFG.PVP_MAP.get())
+		    if (CFG.PVP_MAP.get() && !forUpload)
 		    {
 			rgb = getColor(t);
 			if(tex != null && rgb == 0)
@@ -562,7 +569,39 @@ public class MapFile {
 		    buf.setSample(c.x, c.y, 3, (rgb & 0xff000000) >>> 24);
 		}
 	    }
-	    if (!CFG.PVP_MAP.get() && !CFG.REMOVE_BIOME_BORDER_FROM_MINIMAP.get())
+	    try {
+		if (forUpload)
+		{
+		    for (c.y = 1; c.y < cmaps.y - 1; c.y++) {
+			for (c.x = 1; c.x < cmaps.x - 1; c.x++) {
+			    boolean isBroken = false;
+			    for(int i = 0; i < 4; i++) {
+				if(Math.abs(getfz(c.add(tccs[(i + 1) % 4])) - getfz(c.add(tccs[i]))) > 20f) {
+				    isBroken = true;
+				    break;
+				}
+			    }
+			    if (isBroken) {
+				for (int y = c.y - 1; y <= c.y + 1; y++) {
+				    for (int x = c.x - 1; x <= c.x + 1; x++) {
+					buf.setSample(c.x, c.y, 0, 0);
+					buf.setSample(c.x, c.y, 1, 0);
+					buf.setSample(c.x, c.y, 2, 0);
+					buf.setSample(c.x, c.y, 3, ((x == c.x) && (y == c.y)) ? 255 : 25);
+				    }
+				}
+			    }
+			    
+			}
+		    }
+		}
+	    } catch(Exception ex)
+	    {
+		
+	    }
+	    
+	    
+	    if ((!CFG.PVP_MAP.get() && !CFG.REMOVE_BIOME_BORDER_FROM_MINIMAP.get()) || forUpload)
 		for(c.y = 1; c.y < cmaps.y - 1; c.y++) {
 		    for(c.x = 1; c.x < cmaps.x - 1; c.x++) {
 			int p = tilesets[gettile(c)].prio;
@@ -1792,6 +1831,65 @@ public class MapFile {
 	    Utils.checkirq();
 	}
 	zout.finish();
+    }
+    
+    public void exportToMapper(ExportFilter filter, ExportStatus prog, String genus) throws InterruptedException {
+	if(prog == null) prog = new ExportStatus() {};
+
+	Collection<Long> segbuf = locked((Collection<Long> c) -> new ArrayList<>(c), lock.readLock()).apply(knownsegs);
+	int nseg = 0;
+	for(Long sid : segbuf) {
+	    if(!filter.includeseg(sid))
+		continue;
+	    Segment seg;
+	    Collection<Pair<Coord, Long>> gridbuf = new ArrayList<>();
+	    lock.readLock().lock();
+	    try {
+		seg = segments.get(sid);
+		for (Map.Entry<Coord, Long> gd : seg.map.entrySet()) {
+		    if(filter.includegrid(seg, gd.getKey(), gd.getValue()))
+			gridbuf.add(new Pair<>(gd.getKey(), gd.getValue()));
+		}
+	    } finally {
+		lock.readLock().unlock();
+	    }
+	    int ngrid = 0;
+	    ArrayList<integrations.mapv4.GridInfo> gridInfos = new ArrayList<>();
+	    
+	    for (Pair<Coord, Long> gd : gridbuf) {
+		prog.grid(nseg, segbuf.size(), ngrid++, gridbuf.size());
+		gridInfos.add(new integrations.mapv4.GridInfo(gd.b, gd.a.x, gd.a.y));
+		Utils.checkirq();
+	    }
+	    
+	    MappingClient.getInstance().UploadCacheGrid(genus, seg.id, gridInfos);
+	    
+	    for (Pair<Coord, Long> gd : gridbuf) {
+		prog.grid(nseg, segbuf.size(), ngrid++, gridbuf.size());
+		Grid grid = Grid.load(this, gd.b);
+		if(grid == null) {
+		    continue;
+		}
+		BufferedImage b = null;
+		int maxtry = 5;
+		int curTry = 0;
+		while (b == null && curTry < maxtry)
+		{
+		    try {
+			b = grid.render(gd.a, true);
+			MappingClient.getInstance().UploadCacheImage(grid.id, genus, b);
+		    } catch(Exception ex)
+		    {
+			curTry++;
+			Thread.sleep(200);
+			System.out.println(ex.getMessage());
+		    }
+		}
+		
+		Utils.checkirq();
+	    }
+	    nseg++;
+	}
     }
 
     public void export(OutputStream out, ExportFilter filter, ExportStatus prog) throws InterruptedException {

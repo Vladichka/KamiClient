@@ -243,7 +243,7 @@ public class MapWnd extends WindowX implements Console.Directory {
     public class Toolbox extends Widget {
 	public final MarkerList list;
 	private final Frame listf;
-	private final Button pmbtn, smbtn, nobtn, tobtn, mebtn, mibtn;
+	private final Button pmbtn, smbtn, nobtn, tobtn, mebtn, mibtn, me2btn;
 	private TextEntry namesel;
 
 	private Toolbox() {
@@ -284,6 +284,11 @@ public class MapWnd extends WindowX implements Console.Directory {
 			importmap();
 		    }
 		});
+	    me2btn = add(new Button(btnw, "Export 2 Mapper", false) {
+		public void click() {
+		    exportmap2();
+		}
+	    });
 	}
 
 	public void resize(int h) {
@@ -292,6 +297,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    listf.c = new Coord(sz.x - listf.sz.x, 0);
 	    list.resize(listf.inner());
 	    mebtn.c = new Coord(0, sz.y - mebtn.sz.y);
+	    me2btn.c = new Coord(0, sz.y - (me2btn.sz.y * 2) - 8);
 	    mibtn.c = new Coord(sz.x - btnw, sz.y - mibtn.sz.y);
 	    nobtn.c = new Coord(0, mebtn.c.y - UI.scale(30) - nobtn.sz.y);
 	    tobtn.c = new Coord(sz.x - btnw, mibtn.c.y - UI.scale(30) - tobtn.sz.y);
@@ -1036,6 +1042,25 @@ public class MapWnd extends WindowX implements Console.Directory {
 	prog.run(th);
 	gui.adda(prog, gui.sz.div(2), 0.5, 1.0);
     }
+    
+    public void exportMapToMapper() {
+	GameUI gui = getparent(GameUI.class);
+	ExportWindow prog = new ExportWindow();
+	Thread th = new HackThread(() -> {
+	    boolean complete = false;
+	    try {
+		file.exportToMapper(MapFile.ExportFilter.all, prog, ui.sess.user.genus);
+		complete = true;
+		gui.msg("Map export complete!", GameUI.MsgType.INFO);
+	    } catch(Exception e)
+	    {
+		e.printStackTrace(Debug.log);
+		gui.error("Unexpected error occurred when exporting map.");
+	    }
+	}, "Mapfile exporter");
+	prog.run(th);
+	gui.adda(prog, gui.sz.div(2), 0.5, 1.0);
+    }
 
     public void importmap(Path path) {
 	GameUI gui = getparent(GameUI.class);
@@ -1080,6 +1105,10 @@ public class MapWnd extends WindowX implements Console.Directory {
 		    path = path.resolveSibling(path.getFileName() + ".hmap");
 		exportmap(path);
 	    });
+    }
+    
+    public void exportmap2() {
+	exportMapToMapper();
     }
 
     public void importmap() {
@@ -1151,7 +1180,7 @@ public class MapWnd extends WindowX implements Console.Directory {
     public class Toolbox2 extends Widget {
 	public final MarkerList list;
 	private final Frame listf;
-	private final Button mebtn, mibtn;
+	private final Button mebtn, mibtn, me2btn;
 	private final Dropbox<MarkerCategory> categories;
 	private final Dropbox<MarkerSorting> sorting;
 	private TextEntry namesel;
@@ -1223,6 +1252,11 @@ public class MapWnd extends WindowX implements Console.Directory {
 		    importmap();
 		}
 	    });
+	    me2btn = add(new Button(btnw * 2, "Export 2 Mapper (V1)", false) {
+		public void click() {
+		    exportmap2();
+		}
+	    });
 	}
 	
 	public void resize(int h) {
@@ -1233,6 +1267,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    listf.c = new Coord(sz.x - listf.sz.x, categories.sz.y + UI.scale(3));
 	    list.resize(listf.inner());
 	    mebtn.c = new Coord(0, sz.y - mebtn.sz.y - UI.scale(5));
+	    me2btn.c = new Coord(0, sz.y - (me2btn.sz.y * 2) - UI.scale(10));
 	    mibtn.c = new Coord(sz.x - btnw, sz.y - mibtn.sz.y - UI.scale(5));
 	    if(namesel != null) {
 		namesel.c = listf.c.add(0, listf.sz.y + UI.scale(10));
