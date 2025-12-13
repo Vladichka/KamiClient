@@ -1,3 +1,9 @@
+$size[14]{$u{update on 13.12.2025:}
+* Synced Alchemy stuff fixes
+* Synced Loftar code.
+* Synced missing changes and fixes, like adding new biomes to tile highlight.
+* Added new Map-Upload feature. Please wait for Sunday (14.12.2025) to try it. Backend update not published yet.
+
 $size[14]{$u{update on 29.11.2025:}
 * Merged with all the changes of the past year.
 * Merged remaining stuff from ender.
