@@ -99,6 +99,7 @@ public class KeyBinder {
 	add(KeyEvent.VK_H, CTRL,  TOGGLE_GOB_HITBOX);
 	add(KeyEvent.VK_R, ALT,   TOGGLE_GOB_RADIUS);
 	add(KeyEvent.VK_Z, CTRL,  TOGGLE_TILE_CENTERING);
+	add(KeyEvent.VK_T, ALT,  TOGGLE_FLAT_TERRAIN);
 	
 	add(TOGGLE_PEACE);
 	add(AGGRO_ONE_PVE);

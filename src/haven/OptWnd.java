@@ -1130,6 +1130,9 @@ public class OptWnd extends WindowX {
 	
 	y += STEP;
 	panel.add(new CFGBox("Disable transition between tiles", CFG.NO_TILE_TRANSITION), x, y);
+	
+	y += STEP;
+	panel.add(new CFGBox("Enable terrain blending", CFG.ENABLE_TERRAIN_BLEND), x, y);
     
 	y += STEP;
 	panel.add(new CFGBox("Make terrain flat", CFG.FLAT_TERRAIN, null, true), x, y);

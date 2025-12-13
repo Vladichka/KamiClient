@@ -80,7 +80,8 @@ public enum Action {
     LOGOUT_AND_SWITCH_AUTH_METHOD(gui -> {
         LoginScreen.authmech = Config.Variable.prop("nothing", (LoginScreen.authmech.get() == "steam" ? "native" : "steam"));
         gui.act("lo");
-    });
+    }),
+    TOGGLE_FLAT_TERRAIN(CFG.FLAT_TERRAIN, "Flat terrain", "Toggles terrain flattening on and off.");
     
     
     public final String name;
