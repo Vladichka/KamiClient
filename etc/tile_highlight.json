@@ -1,6 +1,7 @@
 {
   "Natural": [
     "gfx/tiles/ashland",
+    "gfx/tiles/badlands",
     "gfx/tiles/beach",
     "gfx/tiles/beechgrove",
     "gfx/tiles/blackwood",
@@ -47,6 +48,7 @@
     "gfx/tiles/peatmoss",
     "gfx/tiles/pinebarren",
     "gfx/tiles/redplain",
+    "gfx/tiles/riverbed",
     "gfx/tiles/rockbeach",
     "gfx/tiles/rootbosk",
     "gfx/tiles/sandcliff",

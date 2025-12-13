@@ -191,17 +191,7 @@ public class DecoX extends Window.DefaultDeco {
 	    Resource.loadsimg("gfx/hud/btn-close-h")
 	};
 	
-	private static final IBox wbox = new IBox.Scaled("gfx/hud/wnd", "tl", "tr", "bl", "br", "extvl", "extvr", "extht", "exthb") {
-	    final Coord co = UI.scale(3, 3), bo = UI.scale(2, 2);
-	    
-	    public Coord btloff() {return (super.btloff().sub(bo));}
-	    
-	    public Coord ctloff() {return (super.ctloff().sub(co));}
-	    
-	    public Coord bisz() {return (super.bisz().sub(bo.mul(2)));}
-	    
-	    public Coord cisz() {return (super.cisz().sub(co.mul(2)));}
-	};
+	private static final IBox wbox = new IBox.Scaled("gfx/hud/wnd", "tl", "tr", "bl", "br", "extvl", "extvr", "extht", "exthb");
 	
 	@Override
 	public void apply(WindowX wndX, DecoX decoX) {
@@ -267,7 +257,7 @@ public class DecoX extends Window.DefaultDeco {
 	
 	@Override
 	public boolean hitSizer(Coord c, DecoX decoX) {
-	    return c.x > decoX.sz.x - Window.sizer_sz.x 
+	    return c.x > decoX.sz.x - Window.sizer_sz.x
 		&& c.y > decoX.sz.y - Window.sizer_sz.y;
 //	    return c.isect(decoX.sz.sub(Window.sizer_sz), Window.sizer_sz);
 	}

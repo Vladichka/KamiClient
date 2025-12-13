@@ -1,21 +1,13 @@
 package haven;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
 import haven.MenuGrid.Pagina;
 import haven.res.ui.tt.alch.effect.Effect;
-import haven.res.ui.tt.attrmod.AttrMod;
 import haven.res.ui.tt.level.Level;
-import haven.res.ui.tt.slot.Slotted;
-import haven.res.ui.tt.slots.ISlots;
 import haven.resutil.FoodInfo;
-import me.ender.Reflect;
 
 import java.awt.*;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.List;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -23,7 +15,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static haven.BAttrWnd.Constipations.*;
-import static haven.QualityList.SingleType.*;
 
 public class ItemData {
     public static boolean DBG = Config.get().getprop("ender.debug.items", "off").equals("on");
@@ -175,214 +166,6 @@ public class ItemData {
     
     public interface ITipData {
 	ItemInfo create(Session sess);
-    }
-    
-    private static class WearData implements ITipData {
-	public final int max;
-	
-	private WearData(int wear) {
-	    max = wear;
-	}
-	
-	@Override
-	public ItemInfo create(Session sess) {
-	    return ItemInfo.make(sess, "ui/tt/wear", null, 0, max);
-	}
-	
-	public static WearData make(Integer wear) {
-	    if(wear != null) {
-		return new WearData(wear);
-	    } else {
-		return null;
-	    }
-	}
-    }
-    
-    private static class ArmorData implements ITipData {
-	private final Integer hard;
-	private final Integer soft;
-	
-	public ArmorData(Pair<Integer, Integer> armor, QualityList q) {
-	    QualityList.Quality single = q.single(Quality);
-	    if(single == null) {
-		single = QualityList.DEFAULT;
-	    }
-	    hard = (int) Math.round(armor.a / single.multiplier);
-	    soft = (int) Math.round(armor.b / single.multiplier);
-	}
-	
-	@Override
-	public ItemInfo create(Session sess) {
-	    return ItemInfo.make(sess, "ui/tt/armor", null, hard, soft);
-	}
-    }
-    
-    private static class GastronomyData implements ITipData {
-	private final double glut;
-	private final double fev;
-	
-	public GastronomyData(ItemInfo data, QualityList q) {
-	    QualityList.Quality single = q.single(Quality);
-	    if(single == null) {
-		single = QualityList.DEFAULT;
-	    }
-	    glut = Reflect.getFieldValueDouble(data, "glut") / single.multiplier;
-	    fev = Reflect.getFieldValueDouble(data, "fev") / single.multiplier;
-	}
-	
-	@Override
-	public ItemInfo create(Session sess) {
-	    return ItemInfo.make(sess, "ui/tt/gast", null, glut, fev);
-	}
-    }
-    
-    
-    private static class AttrData implements ITipData {
-	private final Map<Resource, Integer> attrs;
-	
-	public AttrData(Map<Resource, Integer> attrs) {
-	    this.attrs = attrs;
-	}
-	
-	@Override
-	public ItemInfo create(Session sess) {
-	    Object[] params = params(sess);
-	    return ItemInfo.make(sess, "ui/tt/attrmod", params);
-	}
-	
-	public Object[] params(Session sess) {
-	    Object[] params = new Object[2 * attrs.size() + 1];
-	    params[0] = sess.getresidf(Resource.remote().loadwait("ui/tt/attrmod"));
-	    int i = 1;
-	    for (Map.Entry<Resource, Integer> a : attrs.entrySet()) {
-		params[i] = sess.getresidf(a.getKey());
-		params[i + 1] = a.getValue();
-		i += 2;
-	    }
-	    return params;
-	}
-	
-	public static Map<Resource, Integer> parseInfo(List<ItemInfo> attrs, QualityList q) {
-	    return parse(ItemInfo.findall(AttrMod.class, attrs), q);
-	}
-	
-	public static Map<Resource, Integer> parse(List<AttrMod> attrs, QualityList q) {
-	    Map<Resource, Integer> parsed = new HashMap<>(attrs.size());
-	    ItemInfo.parseAttrMods(parsed, attrs);
-	    QualityList.Quality single = q.single(Quality);
-	    if(single == null) {
-		single = QualityList.DEFAULT;
-	    }
-	    double multiplier = single.multiplier;
-	    return parsed.entrySet()
-		.stream()
-		.collect(Collectors.toMap(
-		    Map.Entry::getKey,
-		    e -> {
-			double v = e.getValue() / multiplier;
-			if(v > 0) {
-			    return (int) Math.round(v);
-			} else {
-			    return (int) v;
-			}
-		    }
-		));
-	}
-	
-	public static AttrData make(Map<Resource, Integer> attrs) {
-	    if(attrs != null) {
-		return new AttrData(attrs);
-	    }
-	    return null;
-	}
-    }
-    
-    private static class SlotsData implements ITipData {
-	
-	private final int left;
-	private final double pmin;
-	private final double pmax;
-	private final Resource[] attrs;
-	
-	public SlotsData(int left, double pmin, double pmax, Resource[] attrs) {
-	    this.left = left;
-	    this.pmin = pmin;
-	    this.pmax = pmax;
-	    this.attrs = attrs;
-	}
-	
-	public static SlotsData make(ISlots info) {
-	    return new SlotsData(info.left, info.pmin, info.pmax, info.attrs);
-	}
-	
-	@Override
-	public ItemInfo create(Session sess) {
-	    List<Object> params = new ArrayList<>();
-	    params.add(null);
-	    params.add(pmin);
-	    params.add(pmax);
-	    if(attrs != null) {
-		params.addAll(Arrays.stream(attrs)
-		    .map(sess::getresidf)
-		    .collect(Collectors.toList())
-		);
-	    }
-	    params.add(null);
-	    params.add(left);
-	    return ItemInfo.make(sess, "ui/tt/slots", params.toArray());
-	}
-    }
-    
-    private static class SlottedData implements ITipData {
-	public final double pmin;
-	public final double pmax;
-	public final Resource[] attrs;
-	private final Map<Resource, Integer> bonuses;
-	
-	private SlottedData(double pmin, double pmax, Resource[] attrs, Map<Resource, Integer> bonuses) {
-	    this.pmin = pmin;
-	    this.pmax = pmax;
-	    this.attrs = attrs;
-	    this.bonuses = bonuses;
-	}
-	
-	@Override
-	public ItemInfo create(Session sess) {
-	    List<Object> params = new ArrayList<>();
-	    params.add(null);
-	    params.add(pmin);
-	    params.add(pmax);
-	    if(attrs != null) {
-		params.addAll(Arrays.stream(attrs)
-		    .map(sess::getresidf)
-		    .collect(Collectors.toList())
-		);
-	    }
-	    AttrData make = AttrData.make(bonuses);
-	    if(make != null) {
-		params.add(new Object[]{make.params(sess)});
-	    } else {
-		params.add(new Object[0]);
-	    }
-	    return ItemInfo.make(sess, "ui/tt/slot", params.toArray());
-	}
-	
-	public static SlottedData make(Slotted info, QualityList q) {
-	    return new SlottedData(info.pmin, info.pmax, info.attrs, AttrData.parseInfo(info.sub, q));
-	}
-    }
-    
-    private static class ResourceAdapter extends TypeAdapter<Resource> {
-	
-	@Override
-	public void write(JsonWriter writer, Resource resource) throws IOException {
-	    writer.value(resource.name);
-	}
-	
-	@Override
-	public Resource read(JsonReader reader) throws IOException {
-	    return Resource.remote().loadwait(reader.nextString());
-	}
     }
     
     public static float getMaxCapacity(WItem item) {

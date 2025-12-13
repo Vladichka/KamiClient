@@ -616,6 +616,14 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	Debug.log = new java.io.PrintWriter(System.err);
 	ui.cons.clearout();
 	pathQueue.clear();
+	if(alchemywnd != null) {
+	    alchemywnd.close();
+	    alchemywnd = null;
+	}
+	if(craftwnd != null) {
+	    craftwnd.close();
+	    craftwnd = null;
+	}
 	super.dispose();
     }
     
@@ -1931,6 +1939,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	if(prog != null)
 	    prog.move(sz.sub(prog.sz).mul(0.5, 0.35));
 	beltwdg.c = new Coord(blpw + UI.scale(10), sz.y - beltwdg.sz.y - UI.scale(5));
+	statuswdg.c = new Coord(sz.x/2 + UI.scale(70), UI.scale(10));
+	timewdg.c = new Coord(sz.x/2 - UI.scale(270), UI.scale(10));
     }
     
     public void presize() {

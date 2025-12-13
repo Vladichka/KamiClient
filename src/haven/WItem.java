@@ -30,8 +30,6 @@ import haven.QualityList.SingleType;
 import haven.render.*;
 import haven.res.gfx.invobjs.gems.gemstone.Gemstone;
 import haven.res.ui.tt.level.Level;
-import haven.res.ui.tt.slot.Slotted;
-import haven.res.ui.tt.slots.ISlots;
 import haven.res.ui.tt.wear.Wear;
 import haven.resutil.Curiosity;
 import me.ender.ClientUtils;
@@ -233,20 +231,6 @@ public class WItem extends Widget implements DTarget {
 	    return CFG.SHOW_ITEM_ARMOR.get() ? super.get() : null;
 	}
     };
-    
-    public final AttrCache<List<Slotted>> gilding = new AttrCache<>(this::info, AttrCache.cache(info -> ItemInfo.findall(Slotted.class, info)));
-    
-    public final AttrCache<List<ISlots>> slots = new AttrCache<>(this::info, AttrCache.cache(info -> ItemInfo.findall(ISlots.class, info)));
-    
-    public final AttrCache<Boolean> gildable = new AttrCache<Boolean>(this::info, AttrCache.cache(info -> {
-	List<ISlots> slots = ItemInfo.findall(ISlots.class, info);
-	for(ISlots slot : slots) {
-	    if(slot.left > 0) {
-		return true;
-	    }
-	}
-	return false;
-    }));
     
     public final AttrCache<String> name;
     
@@ -574,9 +558,7 @@ public class WItem extends Widget implements DTarget {
     }
     
     public boolean iteminteract(DTarget.Interact ev) {
-	if(!GildingWnd.processGilding(ui,this, ev.src)) {
-	    item.wdgmsg("itemact", ui.modflags());
-	}
+	item.wdgmsg("itemact", ui.modflags());
 	return(true);
     }
     

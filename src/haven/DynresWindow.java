@@ -48,21 +48,21 @@ public class DynresWindow extends WindowX {
     public final Color[] pal;
     public final List<Image> imgs = new ArrayList<>();
     private final Adder adder;
-
+    
     @RName("dynres")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
 	    return(new DynresWindow(Utils.cast((Object[])args[0], Color.class)));
 	}
     }
-
+    
     public DynresWindow(Color[] pal) {
 	super(Coord.z, "Imagery", true);
 	this.pal = pal;
 	this.adder = (service.get() == null) ? null : add(new Adder(itemsz));
 	arrange();
     }
-
+    
     public static Map<String, Object> ttoresp(HttpURLConnection conn) throws IOException {
 	int status = conn.getResponseCode();
 	if((status >= 500) && (status < 600))
@@ -82,14 +82,14 @@ public class DynresWindow extends WindowX {
 	    return(Utils.mapdecn(data, String.class, Object.class));
 	}
     }
-
+    
     public static String auth(Session sess) {
 	return("Haven " +
-	       Utils.b64.enc(Utils.concat(sess.user.reauth().getBytes(Utils.utf8),
-					  new byte[] {0},
-					  sess.sesskey.sign("dynres".getBytes(Utils.ascii)))));
+	    Utils.b64.enc(Utils.concat(sess.user.reauth().getBytes(Utils.utf8),
+		new byte[] {0},
+		sess.sesskey.sign("dynres".getBytes(Utils.ascii)))));
     }
-
+    
     public BufferedImage process(BufferedImage in) {
 	int w = in.getWidth(), h = in.getHeight();
 	int d = Math.min(1 << Math.round(Math.log((w + h) / 2) / Math.log(2)), 512);
@@ -117,8 +117,8 @@ public class DynresWindow extends WindowX {
 			    continue;
 			int diff =
 			    Math.abs(col.getRed()   - ((rgba & 0x00ff0000) >>> 16)) +
-			    Math.abs(col.getGreen() - ((rgba & 0x0000ff00) >>>  8)) +
-			    Math.abs(col.getBlue()  - ((rgba & 0x000000ff) >>>  0));
+				Math.abs(col.getGreen() - ((rgba & 0x0000ff00) >>>  8)) +
+				Math.abs(col.getBlue()  - ((rgba & 0x000000ff) >>>  0));
 			if((closest == null) || (diff < mdiff)) {
 			    closest = col;
 			    mdiff = diff;
@@ -139,11 +139,11 @@ public class DynresWindow extends WindowX {
 	}
 	return(rasterimg(buf));
     }
-
+    
     public static class PaletteCopy implements Transferable, ClipboardOwner {
 	public final Color[] pal;
 	private final Map<DataFlavor, Supplier<Object>> types;
-
+	
 	public PaletteCopy(Color[] pal) {
 	    this.pal = pal;
 	    types = Utils.<DataFlavor, Supplier<Object>>map()
@@ -151,7 +151,7 @@ public class DynresWindow extends WindowX {
 		.put(DataFlavor.stringFlavor, this::text)
 		.map();
 	}
-
+	
 	private BufferedImage img() {
 	    int w;
 	    for(w = (int)Math.floor(Math.sqrt(pal.length)); w > 1; w--) {
@@ -178,14 +178,14 @@ public class DynresWindow extends WindowX {
 	    }
 	    return(rasterimg(buf));
 	}
-
+	
 	private String text() {
 	    StringBuilder buf = new StringBuilder();
 	    for(Color c : pal)
 		buf.append(String.format("#%02X%02X%02X\n", c.getRed(), c.getGreen(), c.getBlue()));
 	    return(buf.toString());
 	}
-
+	
 	public DataFlavor[] getTransferDataFlavors() {
 	    return(types.keySet().toArray(new DataFlavor[0]));
 	}
@@ -198,56 +198,56 @@ public class DynresWindow extends WindowX {
 	public void lostOwnership(Clipboard c, Transferable t) {
 	}
     }
-
+    
     public class Adder extends Widget implements DropTarget {
 	private final List<Future<BufferedImage>> processing = new LinkedList<>();
 	private SListMenu menu;
-
+	
 	public Adder(Coord sz) {
 	    super(sz);
 	    adda(new Label("New image..."), sz.div(2), 0.5, 0.5);
 	    settip(mktip(), true);
 	}
-
+	
 	private String mktip() {
 	    StringBuilder tip = new StringBuilder();
 	    tip.append("$i{Tips for formatting images:}\n" +
-		       "\n" +
-		       " \u2022 Images should optimally be even powers of two in size. If they are not, they will be automatically resized.\n" +
-		       " \u2022 The following colors are accepted:\n");
+		"\n" +
+		" \u2022 Images should optimally be even powers of two in size. If they are not, they will be automatically resized.\n" +
+		" \u2022 The following colors are accepted:\n");
 	    int w = 5;
 	    for(int i = 0; i < pal.length; i++) {
 		Color c = pal[i];
-		    tip.append(((i % w) == 0) ? "\u2003" : ", ");
+		tip.append(((i % w) == 0) ? "\u2003" : ", ");
 		double val = (0.2126 * c.getRed() / 255.0) + (0.7152 * c.getGreen() / 255.0) + (0.0722 * c.getBlue() / 255.0);
 		tip.append(String.format("$bg[%d,%d,%d]{%s{$font[Monospaced]{$b{#%02X%02X%02X}}}}",
-					 c.getRed(), c.getGreen(), c.getBlue(),
-					 RichText.Parser.col2a((val > 0.25) ? Color.BLACK : Color.WHITE),
-					 c.getRed(), c.getGreen(), c.getBlue()));
+		    c.getRed(), c.getGreen(), c.getBlue(),
+		    RichText.Parser.col2a((val > 0.25) ? Color.BLACK : Color.WHITE),
+		    c.getRed(), c.getGreen(), c.getBlue()));
 		if(((i + 1) % w) == 0)
 		    tip.append("\n");
 	    }
 	    return(tip.toString());
 	}
-
+	
 	public void draw(GOut g) {
 	    super.draw(g);
 	    Window.wbox.draw(g, Coord.z, sz);
 	}
-
+	
 	public void create(Supplier<BufferedImage> img) {
 	    if(!previews.done()) {
 		ui.error("Please wait, still downloading preview information...");
 		return;
 	    }
 	    processing.add(Defer.later(() -> {
-			BufferedImage pre = img.get();
-			if(pre == null)
-			    return(null);
-			return(process(pre));
-		    }));
+		BufferedImage pre = img.get();
+		if(pre == null)
+		    return(null);
+		return(process(pre));
+	    }));
 	}
-
+	
 	public void tick(double dt) {
 	    super.tick(dt);
 	    for(Iterator<Future<BufferedImage>> i = processing.iterator(); i.hasNext();) {
@@ -256,7 +256,7 @@ public class DynresWindow extends WindowX {
 		    try {
 			BufferedImage img = proc.get();
 			if(img != null)
-			    getparent(GameUI.class).addchild(new PreviewWindow(img, previews.get(), false), "misc", new Coord2d(0.2, 0.2));
+			    getparent(GameUI.class).addchild(new PreviewWindow(img, previews.get()), "misc", new Coord2d(0.2, 0.2));
 		    } catch(Defer.DeferredException e) {
 			ui.error(e.getCause().getMessage());
 		    }
@@ -264,30 +264,30 @@ public class DynresWindow extends WindowX {
 		}
 	    }
 	}
-
+	
 	private void open(File file) {
 	    create(() -> {
-		    try {
-			BufferedImage img = ImageIO.read(file);
-			if(img == null)
-			    throw(new IOException("File format not recognized."));
-			return(img);
-		    } catch(IOException e) {
-			throw(new RuntimeException(e));
-		    }
-		});
+		try {
+		    BufferedImage img = ImageIO.read(file);
+		    if(img == null)
+			throw(new IOException("File format not recognized."));
+		    return(img);
+		} catch(IOException e) {
+		    throw(new RuntimeException(e));
+		}
+	    });
 	}
-
+	
 	private void open() {
 	    java.awt.EventQueue.invokeLater(() -> {
-		    JFileChooser fc = new JFileChooser();
-		    fc.setFileFilter(new FileNameExtensionFilter("Image file", "png", "jpg", "jpeg", "bmp"));
-		    if(fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
-			return;
-		    open(fc.getSelectedFile());
-		});
+		JFileChooser fc = new JFileChooser();
+		fc.setFileFilter(new FileNameExtensionFilter("Image file", "png", "jpg", "jpeg", "bmp"));
+		if(fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
+		    return;
+		open(fc.getSelectedFile());
+	    });
 	}
-
+	
 	private BufferedImage getpaste(Clipboard c) throws IOException {
 	    if(c == null)
 		return(null);
@@ -300,34 +300,34 @@ public class DynresWindow extends WindowX {
 	    }
 	    return(null);
 	}
-
+	
 	private void paste() {
 	    create(() -> {
+		try {
+		    BufferedImage img = getpaste(java.awt.Toolkit.getDefaultToolkit().getSystemClipboard());
+		    if(img == null)
+			throw(new RuntimeException("The clipboard contains no image."));
+		    return(img);
+		} catch(IOException e) {
+		    throw(new RuntimeException(e));
+		}
+	    });
+	}
+	
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(ev.b == 2) {
+		create(() -> {
 		    try {
-			BufferedImage img = getpaste(java.awt.Toolkit.getDefaultToolkit().getSystemClipboard());
-			if(img == null)
-			    throw(new RuntimeException("The clipboard contains no image."));
-			return(img);
+			return(getpaste(java.awt.Toolkit.getDefaultToolkit().getSystemSelection()));
 		    } catch(IOException e) {
 			throw(new RuntimeException(e));
 		    }
 		});
-	}
-
-	public boolean mousedown(MouseDownEvent ev) {
-	    if(ev.b == 2) {
-		create(() -> {
-			try {
-			    return(getpaste(java.awt.Toolkit.getDefaultToolkit().getSystemSelection()));
-			} catch(IOException e) {
-			    throw(new RuntimeException(e));
-			}
-		    });
 		return(true);
 	    }
 	    return(super.mousedown(ev));
 	}
-
+	
 	private void copypal() {
 	    Clipboard cb = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
 	    if(cb != null) {
@@ -338,14 +338,14 @@ public class DynresWindow extends WindowX {
 		}
 	    }
 	}
-
+	
 	public boolean mousehover(MouseHoverEvent ev, boolean hovering) {
 	    boolean menuhover = (menu != null) && (menu.parent != null) && menu.rootarea().contains(ui.mc);
 	    if((hovering || menuhover) && (menu == null)) {
 		menu = SListMenu.of(UI.scale(250, 200), null,
-				    Arrays.asList(SListMenu.Action.of("Select from file...", this::open),
-						  SListMenu.Action.of("Paste from clipboard...", this::paste),
-						  SListMenu.Action.of("Copy palette to clipboard", this::copypal)))
+			Arrays.asList(SListMenu.Action.of("Select from file...", this::open),
+			    SListMenu.Action.of("Paste from clipboard...", this::paste),
+			    SListMenu.Action.of("Copy palette to clipboard", this::copypal)))
 		    .addat(this, pos("cbl"));
 	    } else if(!(hovering || menuhover) && (menu != null)) {
 		menu.reqdestroy();
@@ -353,7 +353,7 @@ public class DynresWindow extends WindowX {
 	    }
 	    return(true);
 	}
-
+	
 	public boolean drophover(Coord c, boolean hovering, Object thing) {
 	    if(thing instanceof SystemDrop) {
 		SystemDrop d = (SystemDrop)thing;
@@ -361,7 +361,7 @@ public class DynresWindow extends WindowX {
 	    }
 	    return(false);
 	}
-
+	
 	public boolean dropthing(Coord c, Object thing) {
 	    if(thing instanceof SystemDrop) {
 		SystemDrop d = (SystemDrop)thing;
@@ -398,35 +398,35 @@ public class DynresWindow extends WindowX {
 	    return(false);
 	}
     }
-
+    
     public boolean keydown(KeyDownEvent ev) {
 	if(adder != null) {
 	    if(((ev.c == 'v') && (ev.mods == KeyMatch.C)) ||
-	       ((ev.code == KeyEvent.VK_INSERT) && (ev.mods == KeyMatch.S)))
-		{
-		    adder.paste();
-		    return(true);
-		}
+		((ev.code == KeyEvent.VK_INSERT) && (ev.mods == KeyMatch.S)))
+	    {
+		adder.paste();
+		return(true);
+	    }
 	}
 	return(super.keydown(ev));
     }
-
+    
     public class Image extends Widget implements Transferable, ClipboardOwner {
 	public final UID id;
 	public final Indir<Resource> res;
 	private BufferedImage img;
 	private SListMenu menu;
-
+	
 	public Image(Coord sz, UID id) {
 	    super(sz);
 	    this.id = id;
 	    this.res = Resource.remote().dynres(id);
 	}
-
+	
 	public Image(UID id) {
 	    this(itemsz, id);
 	}
-
+	
 	private TexRender tex = null;
 	public void draw(GOut g) {
 	    IBox b = Window.wbox;
@@ -438,11 +438,11 @@ public class DynresWindow extends WindowX {
 	    }
 	    b.draw(g, Coord.z, sz);
 	}
-
+	
 	private void craft(boolean master) {
 	    DynresWindow.this.wdgmsg("make", id, master ? 1 : 0);
 	}
-
+	
 	private void delete0() {
 	    try {
 		HttpURLConnection conn = (HttpURLConnection)Http.open(Utils.uriparam(service.get().resolve("remove"), "uid", id.toString()).toURL());
@@ -460,11 +460,11 @@ public class DynresWindow extends WindowX {
 		}
 	    }
 	}
-
+	
 	private void delete() {
 	    Defer.later(this::delete0, null);
 	}
-
+	
 	private void copy() {
 	    Clipboard c = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
 	    if(c != null) {
@@ -477,12 +477,6 @@ public class DynresWindow extends WindowX {
 	    }
 	}
 	
-	private void preview() {
-	    if(this.img == null)
-		this.img = res.get().flayer(TexR.class).tex().fill();
-	    getparent(GameUI.class).addchild(new PreviewWindow(img, previews.get(), true), "misc", new Coord2d(0.2, 0.2));
-	}
-
 	public DataFlavor[] getTransferDataFlavors() {
 	    return(new DataFlavor[] {DataFlavor.imageFlavor});
 	}
@@ -494,16 +488,15 @@ public class DynresWindow extends WindowX {
 	}
 	public void lostOwnership(Clipboard c, Transferable t) {
 	}
-
+	
 	public boolean mousehover(MouseHoverEvent ev, boolean hovering) {
 	    boolean menuhover = (menu != null) && (menu.parent != null) && menu.rootarea().contains(ui.mc);
 	    if((hovering || menuhover) && (menu == null)) {
 		menu = SListMenu.of(UI.scale(250, 200), null,
-				    Arrays.asList(SListMenu.Action.of("Paint Sketch", () -> craft(false)),
-						  SListMenu.Action.of("Paint Masterpiece", () -> craft(true)),
-					          SListMenu.Action.of("Preview", this::preview),
-						  SListMenu.Action.of("Copy to clipboard", this::copy),
-						  SListMenu.Action.of("Remove", this::delete)))
+			Arrays.asList(SListMenu.Action.of("Paint Sketch", () -> craft(false)),
+			    SListMenu.Action.of("Paint Masterpiece", () -> craft(true)),
+			    SListMenu.Action.of("Copy to clipboard", this::copy),
+			    SListMenu.Action.of("Remove", this::delete)))
 		    .addat(this, pos("cbl"));
 	    } else if(!(hovering || menuhover) && (menu != null)) {
 		menu.reqdestroy();
@@ -511,43 +504,43 @@ public class DynresWindow extends WindowX {
 	    }
 	    return(true);
 	}
-
+	
 	public void setinfo(int fields, float outline) {
 	    settip(String.format("Fields: %,d\nContours: %.2f", fields, outline), true);
 	}
     }
-
+    
     public static class Preview extends Widget {
 	public static final UID key = UID.of(1);
 	public final List<Spec> specs;
 	public View view;
 	private final Indir<Resource> vres;
 	private final SDropBox<Spec, Widget> list;
-
+	
 	public Preview(int minw, List<Spec> specs, TexL tex) {
 	    this.specs = new ArrayList<>(specs);
 	    vres = consres(tex);
 	    Widget prev = add(new Label("Preview on:"), 0, 0);
-	    // String last = Utils.getpref("dynres-pv/lastspec", "");
-	    Spec defspec = null; //Utils.find(specs, s -> s.name.equals(last));
+	    String last = Utils.getpref("dynres-pv/lastspec", "");
+	    Spec defspec = Utils.find(specs, s -> s.name.equals(last));
 	    if(defspec == null)
 		defspec = this.specs.get(0);
 	    Collections.sort(this.specs, (a, b) -> a.name.compareTo(b.name));
 	    prev = add(Frame.with(list = SDropBox.of(Math.max(UI.scale(250), minw) - Window.wbox.bisz().x, UI.scale(160), UI.scale(15),
-						     this.specs, (spec, sz) -> SListWidget.TextItem.of(sz, Text.std, () -> spec.name), this::set),
-				  false),
-		       prev.pos("bl").adds(0, 5));
+			this.specs, (spec, sz) -> SListWidget.TextItem.of(sz, Text.std, () -> spec.name), this::set),
+		    false),
+		prev.pos("bl").adds(0, 5));
 	    list.change(defspec);
 	    add(Frame.with(view = new View(Coord.of(prev.sz.x), list.sel, vres), true), prev.pos("bl").adds(0, 5));
 	    pack();
 	}
-
+	
 	public static Indir<Resource> consres(TexL tex) {
 	    Resource.Virtual cons = new Resource.Virtual("dyn/" + key, 1);
 	    cons.add(new TexR.Image(cons, tex));
 	    return(() -> cons);
 	}
-
+	
 	public void set(Spec spec) {
 	    if((view != null) && (spec != view.spec)) {
 		View nview = view.parent.add(new View(view.sz, spec, vres), view.c);
@@ -556,7 +549,7 @@ public class DynresWindow extends WindowX {
 		Utils.setpref("dynres-pv/lastspec", spec.name);
 	    }
 	}
-
+	
 	public static class Spec {
 	    public final String name;
 	    public final Indir<Resource> res;
@@ -564,7 +557,7 @@ public class DynresWindow extends WindowX {
 	    public final int sdtoff;
 	    public final Map<Integer, Indir<Resource>> resmap = new HashMap<>();
 	    public final Pipe.Op st;
-
+	    
 	    public Spec(Map<String, Object> spec) {
 		this.name = (String)spec.get("name");
 		Object[] res = (Object[])spec.get("res");
@@ -593,7 +586,7 @@ public class DynresWindow extends WindowX {
 		    st = new Location(xf);
 		}
 	    }
-
+	    
 	    public static Future<List<Spec>> fetch() {
 		Defer.Callable<List<Spec>> t = () -> {
 		    if(service.get() == null)
@@ -609,35 +602,35 @@ public class DynresWindow extends WindowX {
 		};
 		return(Defer.later(t));
 	    }
-
+	    
 	    public static final OwnerContext.ClassResolver<Owner> ctxr = new OwnerContext.ClassResolver<Owner>()
 		.add(Resource.Resolver.class, o -> o);
 	    public class Owner implements Sprite.Owner, Resource.Resolver {
 		public final Sprite.Owner bk;
 		public final Indir<Resource> vres;
-
+		
 		public Owner(Sprite.Owner bk, Indir<Resource> vres) {
 		    this.bk = bk;
 		    this.vres = vres;
 		}
-
+		
 		public Indir<Resource> getres(int id) {
 		    return(resmap.get(id));
 		}
-
+		
 		public Indir<Resource> dynres(UID uid) {
 		    if(Utils.eq(uid, key))
 			return(vres);
 		    return(null);
 		}
-
+		
 		public <T> T context(Class<T> cl) {
 		    return(OwnerContext.orparent(cl, ctxr.context(cl, this), bk));
 		}
-
+		
 		public Random mkrandoom() {return(bk.mkrandoom());}
 	    }
-
+	    
 	    public Sprite create(Sprite.Owner owner, Indir<Resource> vres) {
 		Message sdt = Message.nil;
 		if(this.sdt != null) {
@@ -649,7 +642,7 @@ public class DynresWindow extends WindowX {
 		return(Sprite.create(new Owner(owner, vres), res.get(), sdt));
 	    }
 	}
-
+	
 	public static class View extends PView implements Sprite.Owner {
 	    public final Spec spec;
 	    private final Indir<Resource> vres;
@@ -657,7 +650,7 @@ public class DynresWindow extends WindowX {
 	    private RenderTree.Slot slot;
 	    private float field, elev, angl;
 	    private float tfield = Float.NaN, telev, tangl;
-
+	    
 	    public View(Coord sz, Spec spec, Indir<Resource> vres) {
 		super(sz);
 		this.spec = spec;
@@ -665,18 +658,18 @@ public class DynresWindow extends WindowX {
 		basic(Camera.class, Camera.pointed(Coord3f.o, 200, (float)Math.PI / 6, (float)Math.PI / 4));
 		basic.add(new DirLight(new Color(96, 96, 160), new Color(255, 255, 208), Color.WHITE, Coord3f.of(1, 1, 1).norm()));
 	    }
-
+	    
 	    private void makeproj() {
 	    }
-
+	    
 	    public void resize(Coord sz) {
 		super.resize(sz);
 	    }
-
+	    
 	    protected FColor clearcolor() {
 		return(new FColor(0, 0, 0, 0.5f));
 	    }
-
+	    
 	    public static Volume3f getbounds(RenderTree.Node spr) {
 		Volume3f ret = null;
 		RenderTree tree = new RenderTree();
@@ -689,7 +682,7 @@ public class DynresWindow extends WindowX {
 		}
 		return(ret);
 	    }
-
+	    
 	    private void updatecam(double dt) {
 		double tf = 3;
 		float cf = 1f - (float)Math.pow(500, -dt * tf);
@@ -711,11 +704,11 @@ public class DynresWindow extends WindowX {
 		}
 		if(slot != null) {
 		    Location rot = new Location(Transform.makerot(new Matrix4f(), Coord3f.zu, angl)
-						.mul1(Transform.makerot(new Matrix4f(), Coord3f.yu, elev)));
+			.mul1(Transform.makerot(new Matrix4f(), Coord3f.yu, elev)));
 		    slot.ostate(rot);
 		}
 	    }
-
+	    
 	    public void tick(double dt) {
 		super.tick(dt);
 		if(slot == null) {
@@ -732,13 +725,13 @@ public class DynresWindow extends WindowX {
 		    spr.tick(dt);
 		updatecam(dt);
 	    }
-
+	    
 	    public void gtick(Render out) {
 		super.gtick(out);
 		if(spr != null)
 		    spr.gtick(out);
 	    }
-
+	    
 	    public static final OwnerContext.ClassResolver<View> ctxr = new OwnerContext.ClassResolver<View>()
 		.add(View.class, v -> v)
 		.add(Glob.class, v -> v.ui.sess.glob)
@@ -746,15 +739,15 @@ public class DynresWindow extends WindowX {
 	    public <T> T context(Class<T> cl) {
 		return(ctxr.context(cl, this));
 	    }
-
+	    
 	    public Random mkrandoom() {return(new Random());}
 	    @SuppressWarnings("deprecation") public Resource getres() {throw(new UnsupportedOperationException());}
-
+	    
 	    public boolean mousewheel(MouseWheelEvent ev) {
 		tfield += ev.a * 10;
 		return(true);
 	    }
-
+	    
 	    private Coord dragstart;
 	    private UI.Grab grab;
 	    private float dragelev, dragangl;
@@ -768,7 +761,7 @@ public class DynresWindow extends WindowX {
 		}
 		return(super.mousedown(ev));
 	    }
-
+	    
 	    public boolean mouseup(MouseUpEvent ev) {
 		if((ev.b == 1) && (grab != null)) {
 		    grab.remove();
@@ -777,7 +770,7 @@ public class DynresWindow extends WindowX {
 		}
 		return(super.mouseup(ev));
 	    }
-
+	    
 	    public void mousemove(MouseMoveEvent ev) {
 		super.mousemove(ev);
 		if(grab != null) {
@@ -787,16 +780,16 @@ public class DynresWindow extends WindowX {
 	    }
 	}
     }
-
+    
     public static class PreviewWindow extends WindowX {
 	public final BufferedImage img;
 	public final TexL tex;
 	private final Display display;
-	private Button uploadbtn;
+	private final Button uploadbtn;
 	private Upload upload;
 	private Progress prog;
-
-	public PreviewWindow(BufferedImage img, List<Preview.Spec> previews, boolean disableUpload) {
+	
+	public PreviewWindow(BufferedImage img, List<Preview.Spec> previews) {
 	    super(Coord.z, "Preview", true);
 	    this.img = img;
 	    this.tex = new TexL.Fixed(img);
@@ -805,26 +798,16 @@ public class DynresWindow extends WindowX {
 	    Widget prev = display = add(new Display(tex.sz().max(128, 128)), 0, 0);
 	    if(previews != null)
 		prev = add(new Preview(display.sz.x, previews, tex), prev.pos("bl").adds(0, 10));
-	    if (!disableUpload)
-	    	uploadbtn = add(new Button(UI.scale(100), "Upload", false, this::upload), prev.pos("bl").adds(0, 10));
+	    uploadbtn = add(new Button(UI.scale(100), "Upload", false, this::upload), prev.pos("bl").adds(0, 10));
 	    pack();
-	    //display.move(Coord.of((csz().x - display.sz.x) / 2, display.c.y));
+	    display.move(Coord.of((csz().x - display.sz.x) / 2, display.c.y));
 	}
 	
-	public void wdgmsg(Widget sender, String msg, Object... args) {
-	    if((sender == this) && (msg == "close")) {
-		reqdestroy();
-		close();
-	    } else {
-		super.wdgmsg(sender, msg, args);
-	    }
-	}
-
 	public class Display extends Widget {
 	    public Display(Coord sz) {
 		super(sz.add(Window.wbox.bisz()));
 	    }
-
+	    
 	    public void draw(GOut g) {
 		try {
 		    g.image(tex, Window.wbox.btloff(), sz.sub(Window.wbox.bisz()));
@@ -833,23 +816,23 @@ public class DynresWindow extends WindowX {
 		Window.wbox.draw(g, Coord.z, sz);
 	    }
 	}
-
+	
 	public void reqclose() {
 	    reqdestroy();
 	}
-
+	
 	private class Upload implements Runnable {
 	    volatile byte[] data;
 	    volatile int off;
 	    Map<String, Object> resp;
-
+	    
 	    void prepare() throws IOException {
 		ByteArrayOutputStream buf = new ByteArrayOutputStream();
 		ImageIO.write(img, "PNG", buf);
 		data = buf.toByteArray();
 		buf = null;
 	    }
-
+	    
 	    void post() throws IOException {
 		HttpURLConnection conn = (HttpURLConnection)Http.open(service.get().resolve("create").toURL());
 		conn.setDoOutput(true);
@@ -867,7 +850,7 @@ public class DynresWindow extends WindowX {
 		}
 		resp = ttoresp(conn);
 	    }
-
+	    
 	    void handle() throws IOException {
 		if(Utils.eq(resp.get("status"), "error"))
 		    throw(new IOException((String)resp.get("message")));
@@ -875,12 +858,12 @@ public class DynresWindow extends WindowX {
 		    reqdestroy();
 		}
 	    }
-
+	    
 	    void restore() {
 		prog.destroy();
 		uploadbtn.show();
 	    }
-
+	    
 	    public void run() {
 		try {
 		    prepare();
@@ -897,13 +880,13 @@ public class DynresWindow extends WindowX {
 		    }
 		}
 	    }
-
+	    
 	    float prog() {
 		if(data == null)
 		    return(0);
 		return((float)off / (float)data.length);
 	    }
-
+	    
 	    String text() {
 		if(data == null) {
 		    return("Preparing...");
@@ -916,7 +899,7 @@ public class DynresWindow extends WindowX {
 		}
 	    }
 	}
-
+	
 	public void upload() {
 	    if(upload == null) {
 		Defer.later(upload = new Upload(), null);
@@ -926,7 +909,7 @@ public class DynresWindow extends WindowX {
 	    }
 	}
     }
-
+    
     private void arrange() {
 	int n = 0;
 	Coord pos = Coord.z;
@@ -941,7 +924,7 @@ public class DynresWindow extends WindowX {
 	    adder.move(pos);
 	pack();
     }
-
+    
     private Image find(UID id) {
 	for(Image img : imgs) {
 	    if(Utils.eq(img.id, id))
@@ -949,7 +932,7 @@ public class DynresWindow extends WindowX {
 	}
 	return(null);
     }
-
+    
     public void uimsg(String nm, Object... args) {
 	if(nm == "add") {
 	    UID id = (UID)args[0];

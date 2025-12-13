@@ -53,7 +53,7 @@ public class AuthClient implements Closeable {
 	    throw(new RuntimeException(e));
 	}
     }
-
+    
     /* XXX: This layer exists only because some (primarily Russian?)
      * ISPs seem to do some sort of "transparent" SSL injection. Since
      * they're hardly targetting Haven specifically, try to get around
@@ -62,27 +62,27 @@ public class AuthClient implements Closeable {
 	public final ByteChannel bk;
 	public byte key = (byte)0xa5;
 	private boolean senthead = false;
-
+	
 	public Obfuscation(ByteChannel bk) {
 	    this.bk = bk;
 	}
-
+	
 	private void obf(ByteBuffer data, int a, int b) {
 	    for(int i = a; i < b; i++)
 		data.put(i, (byte)(data.get(i) ^ key));
 	}
-
+	
 	public int read(ByteBuffer dst) throws IOException {
 	    int rv = bk.read(dst);
 	    obf(dst, dst.position() - rv, dst.position());
 	    return(rv);
 	}
-
+	
 	public int write(ByteBuffer src) throws IOException {
 	    if(!senthead) {
 		ByteBuffer head = ByteBuffer.wrap(new byte[] {
-			'H', 'O', 'B', 'F', key,
-		    });
+		    'H', 'O', 'B', 'F', key,
+		});
 		while(head.hasRemaining())
 		    bk.write(head);
 		senthead = true;
@@ -92,11 +92,11 @@ public class AuthClient implements Closeable {
 	    obf(src, src.position(), src.limit());
 	    return(rv);
 	}
-
+	
 	public void close() throws IOException {bk.close();}
 	public boolean isOpen() {return(bk.isOpen());}
     }
-
+    
     private void connect(String host, int port, boolean obf) throws IOException {
 	boolean fin = false;
 	sk = Utils.connect(host, port);
@@ -111,7 +111,7 @@ public class AuthClient implements Closeable {
 		sk.close();
 	}
     }
-
+    
     public AuthClient(String host, int port) throws IOException {
 	try {
 	    connect(host, port, false);
@@ -126,7 +126,7 @@ public class AuthClient implements Closeable {
 	skin = Channels.newInputStream(ssk);
 	skout = Channels.newOutputStream(ssk);
     }
-
+    
     private void checkname(String host, SSLSession sess) throws IOException {
 	Certificate peer = sess.getPeerCertificates()[0];
 	String dns = null;
@@ -164,7 +164,7 @@ public class AuthClient implements Closeable {
 	}
 	// throw(new AssertionError("unreachable"));
     }
-
+    
     public SocketAddress address() {
 	try {
 	    return(sk.getRemoteAddress());
@@ -172,7 +172,7 @@ public class AuthClient implements Closeable {
 	    throw(new RuntimeException(e));
 	}
     }
-
+    
     public byte[] getcookie() throws IOException {
 	Message rpl = cmd("cookie");
 	String stat = rpl.string();
@@ -182,7 +182,7 @@ public class AuthClient implements Closeable {
 	    throw(new RuntimeException("Unexpected reply `" + stat + "' from auth server"));
 	}
     }
-
+    
     public String getalias() throws IOException {
 	Message rpl = cmd("logalias");
 	String stat = rpl.string();
@@ -192,14 +192,14 @@ public class AuthClient implements Closeable {
 	    throw(new RuntimeException("Unexpected reply `" + stat + "' from auth server"));
 	}
     }
-
+    
     public static class TokenInfo {
 	public byte[] id = new byte[] {};
 	public String desc = "";
-
+	
 	public TokenInfo id(byte[] id) {this.id = id; return(this);}
 	public TokenInfo desc(String desc) {this.desc = desc; return(this);}
-
+	
 	public Object[] encode() {
 	    Object[] ret = {};
 	    if(this.id.length > 0)
@@ -208,7 +208,7 @@ public class AuthClient implements Closeable {
 		ret = Utils.extend(ret, new Object[] {new Object[] {"desc", this.desc}});
 	    return(ret);
 	}
-
+	
 	public static TokenInfo forhost() {
 	    TokenInfo ret = new TokenInfo();
 	    if((ret.id = Utils.getprefb("token-id", ret.id)).length == 0) {
@@ -226,7 +226,7 @@ public class AuthClient implements Closeable {
 	    return(ret);
 	}
     }
-
+    
     public byte[] gettoken(TokenInfo info) throws IOException {
 	Message rpl = cmd("mktoken", info.encode());
 	String stat = rpl.string();
@@ -243,7 +243,7 @@ public class AuthClient implements Closeable {
     public void close() throws IOException {
 	ssk.close();
     }
-
+    
     private void sendmsg(MessageBuf msg) throws IOException {
 	if(msg.size() > 65535)
 	    throw(new RuntimeException("Too long message in AuthClient (" + msg.size() + " bytes)"));
@@ -269,7 +269,7 @@ public class AuthClient implements Closeable {
 	}
 	sendmsg(buf);
     }
-
+    
     private static void readall(InputStream in, byte[] buf) throws IOException {
 	int rv;
 	for(int i = 0; i < buf.length; i += rv) {
@@ -278,7 +278,7 @@ public class AuthClient implements Closeable {
 		throw(new IOException("Premature end of input"));
 	}
     }
-
+    
     private Message recvmsg() throws IOException {
 	byte[] header = new byte[2];
 	readall(skin, header);
@@ -304,64 +304,64 @@ public class AuthClient implements Closeable {
 	    }
 	}
     }
-
+    
     public static class SrpAssertion {
 	public static final Digest.Algorithm digest = Digest.SHA256;
 	/* Safe 4096-bit prime and generator from RFC 5054 */
 	public static final BigInteger N = b2i(new byte[] {
-		  -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,  -55,   15,  -38,  -94,   33,  104,  -62,   52,
-		 -60,  -58,   98, -117, -128,  -36,   28,  -47,   41,    2,   78,    8, -118,  103,  -52,  116,
-		   2,   11,  -66,  -90,   59,   19, -101,   34,   81,   74,    8,  121, -114,   52,    4,  -35,
-		 -17, -107,   25,  -77,  -51,   58,   67,   27,   48,   43,   10,  109,  -14,   95,   20,   55,
-		  79,  -31,   53,  109,  109,   81,  -62,   69,  -28, -123,  -75,  118,   98,   94,  126,  -58,
-		 -12,   76,   66,  -23,  -90,   55,  -19,  107,   11,   -1,   92,  -74,  -12,    6,  -73,  -19,
-		 -18,   56,  107,   -5,   90, -119,  -97,  -91,  -82,  -97,   36,   17,  124,   75,   31,  -26,
-		  73,   40,  102,   81,  -20,  -28,   91,   61,  -62,    0,  124,  -72,  -95,   99,  -65,    5,
-		-104,  -38,   72,   54,   28,   85,  -45, -102,  105,   22,   63,  -88,   -3,   36,  -49,   95,
-		-125,  101,   93,   35,  -36,  -93,  -83, -106,   28,   98,  -13,   86,   32, -123,   82,  -69,
-		 -98,  -43,   41,    7,  112, -106, -106,  109,  103,   12,   53,   78,   74,  -68, -104,    4,
-		 -15,  116,  108,    8,  -54,   24,   33,  124,   50, -112,   94,   70,   46,   54,  -50,   59,
-		 -29,  -98,  119,   44,   24,   14, -122,    3, -101,   39, -125,  -94,  -20,    7,  -94, -113,
-		 -75,  -59,   93,  -16,  111,   76,   82,  -55,  -34,   43,  -53,  -10, -107,   88,   23,   24,
-		  57, -107,   73,  124,  -22, -107,  106,  -27,   21,  -46,   38,   24, -104,   -6,    5,   16,
-		  21,  114, -114,   90, -118,  -86,  -60,   45,  -83,   51,   23,   13,    4,   80,  122,   51,
-		 -88,   85,   33,  -85,  -33,   28,  -70,  100,  -20,   -5, -123,    4,   88,  -37,  -17,   10,
-		-118,  -22,  113,   87,   93,    6,   12,  125,  -77, -105,   15, -123,  -90,  -31,  -28,  -57,
-		 -85,  -11,  -82, -116,  -37,    9,   51,  -41,   30, -116, -108,  -32,   74,   37,   97,  -99,
-		 -50,  -29,  -46,   38,   26,  -46,  -18,  107,  -15,   47,   -6,    6,  -39, -118,    8,  100,
-		 -40,  118,    2,  115,   62,  -56,  106,  100,   82,   31,   43,   24,   23,  123,   32,   12,
-		 -69,  -31,   23,   87,  122,   97,   93,  108,  119,    9, -120,  -64,  -70,  -39,   70,  -30,
-		   8,  -30,   79,  -96,  116,  -27,  -85,   49,   67,  -37,   91,   -4,  -32,   -3,   16, -114,
-		  75, -126,  -47,   32,  -87,   33,    8,    1,   26,  114,   60,   18,  -89, -121,  -26,  -41,
-		-120,  113, -102,   16,  -67,  -70,   91,   38, -103,  -61,   39,   24,  106,  -12,  -30,   60,
-		  26, -108,  104,   52,  -74,   21,   11,  -38,   37, -125,  -23,  -54,   42,  -44,   76,  -24,
-		 -37,  -69,  -62,  -37,    4,  -34, -114,   -7,   46, -114,   -4,   20,   31,  -66,  -54,  -90,
-		  40,  124,   89,   71,   78,  107,  -64,   93, -103,  -78, -106,   79,  -96, -112,  -61,  -94,
-		  35,   59,  -95, -122,   81,   91,  -25,  -19,   31,   97,   41,  112,  -50,  -30,  -41,  -81,
-		 -72,   27,  -35,  118,   33,  112,   72,   28,  -48,    6, -111,   39,  -43,  -80,   90,  -87,
-		-109,  -76,  -22, -104, -115, -113,  -35,  -63, -122,   -1,  -73,  -36, -112,  -90,  -64, -113,
-		  77,  -12,   53,  -55,   52,    6,   49, -103,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-	    });
+	    -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,  -55,   15,  -38,  -94,   33,  104,  -62,   52,
+	    -60,  -58,   98, -117, -128,  -36,   28,  -47,   41,    2,   78,    8, -118,  103,  -52,  116,
+	    2,   11,  -66,  -90,   59,   19, -101,   34,   81,   74,    8,  121, -114,   52,    4,  -35,
+	    -17, -107,   25,  -77,  -51,   58,   67,   27,   48,   43,   10,  109,  -14,   95,   20,   55,
+	    79,  -31,   53,  109,  109,   81,  -62,   69,  -28, -123,  -75,  118,   98,   94,  126,  -58,
+	    -12,   76,   66,  -23,  -90,   55,  -19,  107,   11,   -1,   92,  -74,  -12,    6,  -73,  -19,
+	    -18,   56,  107,   -5,   90, -119,  -97,  -91,  -82,  -97,   36,   17,  124,   75,   31,  -26,
+	    73,   40,  102,   81,  -20,  -28,   91,   61,  -62,    0,  124,  -72,  -95,   99,  -65,    5,
+	    -104,  -38,   72,   54,   28,   85,  -45, -102,  105,   22,   63,  -88,   -3,   36,  -49,   95,
+	    -125,  101,   93,   35,  -36,  -93,  -83, -106,   28,   98,  -13,   86,   32, -123,   82,  -69,
+	    -98,  -43,   41,    7,  112, -106, -106,  109,  103,   12,   53,   78,   74,  -68, -104,    4,
+	    -15,  116,  108,    8,  -54,   24,   33,  124,   50, -112,   94,   70,   46,   54,  -50,   59,
+	    -29,  -98,  119,   44,   24,   14, -122,    3, -101,   39, -125,  -94,  -20,    7,  -94, -113,
+	    -75,  -59,   93,  -16,  111,   76,   82,  -55,  -34,   43,  -53,  -10, -107,   88,   23,   24,
+	    57, -107,   73,  124,  -22, -107,  106,  -27,   21,  -46,   38,   24, -104,   -6,    5,   16,
+	    21,  114, -114,   90, -118,  -86,  -60,   45,  -83,   51,   23,   13,    4,   80,  122,   51,
+	    -88,   85,   33,  -85,  -33,   28,  -70,  100,  -20,   -5, -123,    4,   88,  -37,  -17,   10,
+	    -118,  -22,  113,   87,   93,    6,   12,  125,  -77, -105,   15, -123,  -90,  -31,  -28,  -57,
+	    -85,  -11,  -82, -116,  -37,    9,   51,  -41,   30, -116, -108,  -32,   74,   37,   97,  -99,
+	    -50,  -29,  -46,   38,   26,  -46,  -18,  107,  -15,   47,   -6,    6,  -39, -118,    8,  100,
+	    -40,  118,    2,  115,   62,  -56,  106,  100,   82,   31,   43,   24,   23,  123,   32,   12,
+	    -69,  -31,   23,   87,  122,   97,   93,  108,  119,    9, -120,  -64,  -70,  -39,   70,  -30,
+	    8,  -30,   79,  -96,  116,  -27,  -85,   49,   67,  -37,   91,   -4,  -32,   -3,   16, -114,
+	    75, -126,  -47,   32,  -87,   33,    8,    1,   26,  114,   60,   18,  -89, -121,  -26,  -41,
+	    -120,  113, -102,   16,  -67,  -70,   91,   38, -103,  -61,   39,   24,  106,  -12,  -30,   60,
+	    26, -108,  104,   52,  -74,   21,   11,  -38,   37, -125,  -23,  -54,   42,  -44,   76,  -24,
+	    -37,  -69,  -62,  -37,    4,  -34, -114,   -7,   46, -114,   -4,   20,   31,  -66,  -54,  -90,
+	    40,  124,   89,   71,   78,  107,  -64,   93, -103,  -78, -106,   79,  -96, -112,  -61,  -94,
+	    35,   59,  -95, -122,   81,   91,  -25,  -19,   31,   97,   41,  112,  -50,  -30,  -41,  -81,
+	    -72,   27,  -35,  118,   33,  112,   72,   28,  -48,    6, -111,   39,  -43,  -80,   90,  -87,
+	    -109,  -76,  -22, -104, -115, -113,  -35,  -63, -122,   -1,  -73,  -36, -112,  -90,  -64, -113,
+	    77,  -12,   53,  -55,   52,    6,   49, -103,   -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+	});
 	public static final BigInteger g = n(2);
 	public static final BigInteger k = b2i(Digest.hash(digest, i2b(N), i2b(g)));
 	public final byte[] A;
 	public final byte[] K;
-
+	
 	public static BigInteger n(long v) {
 	    return(BigInteger.valueOf(v));
 	}
-
+	
 	public static BigInteger b2i(byte[] b) {
 	    return(new BigInteger(1, b));
 	}
-
+	
 	public static byte[] i2b(BigInteger i) {
 	    byte[] ret = i.toByteArray();
 	    if(ret[0] == 0)
 		ret = Utils.splice(ret, 1);
 	    return(ret);
 	}
-
+	
 	public SrpAssertion(byte[] phash, byte[] Bb) {
 	    BigInteger B = b2i(Bb).mod(N);
 	    if(B.equals(n(0)))
@@ -376,12 +376,12 @@ public class AuthClient implements Closeable {
 	    this.A = i2b(A);
 	    this.K = Digest.hash(digest, i2b(S));
 	}
-
+	
 	public byte[] sign(byte[] msg) {
 	    return(Digest.hash(Digest.HMAC.of(Digest.SHA256, K), msg));
 	}
     }
-
+    
     public static class NativeCred extends Credentials {
 	public final String username;
 	private final byte[] pw;
@@ -400,7 +400,7 @@ public class AuthClient implements Closeable {
 	public String name() {
 	    return(username);
 	}
-
+	
 	public static byte[] prehash(byte[] pw, Object[] spec) {
 	    if(Utils.eq(spec[0], "sha256")) {
 		return(Digest.hash(Digest.SHA256, pw));
@@ -437,7 +437,7 @@ public class AuthClient implements Closeable {
 		return(prehash(pw, pwdata));
 	    }
 	}
-
+	
 	public String tryauth(AuthClient cl) throws IOException {
 	    Message rpl = cl.cmd("pw", username, hashpw(cl));
 	    String stat = rpl.string();
@@ -456,7 +456,7 @@ public class AuthClient implements Closeable {
 	    clean.run();
 	}
     }
-
+    
     public static class TokenCred extends Credentials implements Serializable {
 	public final String acctname;
 	public final byte[] token;
@@ -486,33 +486,33 @@ public class AuthClient implements Closeable {
 		throw(new RuntimeException("Unexpected reply `" + stat + "' from auth server"));
 	    }
 	}
-
+	
 	public void discard() {
 	    clean.run();
 	}
     }
-
+    
     public static void main(final String[] args) throws Exception {
 	Thread t = new HackThread(new Runnable() {
-		public void run() {
+	    public void run() {
+		try {
+		    AuthClient test = new AuthClient("127.0.0.1", 1871);
 		    try {
-			AuthClient test = new AuthClient("127.0.0.1", 1871);
-			try {
-			    String acct = new NativeCred(args[0], args[1]).tryauth(test);
-			    if(acct == null) {
-				System.err.println("failed");
-				return;
-			    }
-			    System.out.println(acct);
-			    System.out.println(Utils.hex.enc(test.getcookie()));
-			} finally {
-			    test.close();
+			String acct = new NativeCred(args[0], args[1]).tryauth(test);
+			if(acct == null) {
+			    System.err.println("failed");
+			    return;
 			}
-		    } catch(Exception e) {
-			throw(new RuntimeException(e));
+			System.out.println(acct);
+			System.out.println(Utils.hex.enc(test.getcookie()));
+		    } finally {
+			test.close();
 		    }
+		} catch(Exception e) {
+		    throw(new RuntimeException(e));
 		}
-	    }, "Test");
+	    }
+	}, "Test");
 	t.start();
 	t.join();
     }

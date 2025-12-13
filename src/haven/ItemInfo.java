@@ -32,7 +32,7 @@ import haven.res.ui.tt.attrmod.Mod;
 import haven.res.ui.tt.attrmod.resattr;
 import haven.res.ui.tt.ncont.NamedContents;
 import haven.res.ui.tt.slot.Slotted;
-import haven.res.ui.tt.slots.ISlots;
+import haven.res.ui.tt.slots_alt.ISlots;
 import haven.res.ui.tt.wear.Wear;
 import me.ender.DamageTip;
 import me.ender.Reflect;
@@ -166,7 +166,7 @@ public abstract class ItemInfo {
 	public interface TipID<T extends Tip> {
 	    public T make(Owner owner);
 	}
-
+	
 	@SuppressWarnings("unchecked")
 	public <T extends Tip> T intern(TipID<T> id) {
 	    T ret = (T)itab.get(id);
@@ -176,7 +176,7 @@ public abstract class ItemInfo {
 	    }
 	    return(ret);
 	}
-
+	
 	public void add(Tip tip) {
 	    tips.add(tip);
 	    tip.prepare(this);

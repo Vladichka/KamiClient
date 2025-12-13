@@ -24,6 +24,10 @@
       name: "Cave",
       res: "radar/cave-in"
     },
+    "gfx/tiles/ridges/cavein2": {
+      name: "Cave",
+      res: "radar/cave-in"
+    },
     "gfx/tiles/ridges/caveout": {
       name: "Exit",
       res: "radar/cave-out"
