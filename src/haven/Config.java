@@ -36,6 +36,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.function.*;
 
@@ -119,6 +121,15 @@ public class Config {
 	return getString(getJarStream(name));
     }
     
+    public static String loadFSFile(String name, String genus) {
+	String data = loadFSFile(genusFile(name, genus));
+	//TODO: remove this block after W16 ends - this is compatibility for older builds that didn't save files in world-specific folders
+	if(data == null && Objects.equals(genus, "c646473983afec09")) {
+	    data = loadFSFile(name);
+	}
+	return data;
+    }
+    
     public static String loadFSFile(String name) {
 	return getString(getFSStream(name));
     }
@@ -152,6 +163,14 @@ public class Config {
 	    }
 	}
 	return null;
+    }
+    
+    public static String genusFile(String name, String genus) {
+	return Paths.get(String.format("world-%s", genus), name).toString();
+    }
+    
+    public static void saveFile(String name, String data, String genus) {
+	saveFile(genusFile(name, genus), data);
     }
     
     public static void saveFile(String name, String data) {

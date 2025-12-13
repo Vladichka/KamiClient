@@ -6,14 +6,14 @@ import java.util.Set;
 
 public class ComboFilter extends AlchemyItemFilter {
     private final Set<String> tested;
-
+    
     public ComboFilter(Ingredient ingredient, Set<Effect> testedEffects, Set<String> testedIngredients) {
 	super(ingredient, testedEffects);
 	this.tested = testedIngredients;
     }
-
+    
     public boolean matches(GItem item) {
 	String res = item.resname();
-	return AlchemyData.allIngredients().contains(res) && !tested.contains(res);
+	return AlchemyData.allIngredients(item.ui.gui.genus).contains(res) && !tested.contains(res);
     }
 }
