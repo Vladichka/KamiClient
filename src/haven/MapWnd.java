@@ -1045,13 +1045,17 @@ public class MapWnd extends WindowX implements Console.Directory {
     
     public void exportMapToMapper() {
 	GameUI gui = getparent(GameUI.class);
+	if (integrations.mapv4.MappingClient.initialized())
+	{
+	    gui.error("Mapper is not initialized. Check your options.");
+	}
 	ExportWindow prog = new ExportWindow();
 	Thread th = new HackThread(() -> {
 	    boolean complete = false;
 	    try {
 		file.exportToMapper(MapFile.ExportFilter.all, prog, ui.sess.user.genus);
 		complete = true;
-		gui.msg("Map export complete!", GameUI.MsgType.INFO);
+		gui.msg("Map upload complete!", GameUI.MsgType.INFO);
 	    } catch(Exception e)
 	    {
 		e.printStackTrace(Debug.log);
@@ -1252,7 +1256,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 		    importmap();
 		}
 	    });
-	    me2btn = add(new Button(btnw * 2, "Export 2 Mapper (V1)", false) {
+	    me2btn = add(new Button((btnw * 2) + UI.scale(10), "Export 2 Mapper (V1)", false) {
 		public void click() {
 		    exportmap2();
 		}
@@ -1267,7 +1271,7 @@ public class MapWnd extends WindowX implements Console.Directory {
 	    listf.c = new Coord(sz.x - listf.sz.x, categories.sz.y + UI.scale(3));
 	    list.resize(listf.inner());
 	    mebtn.c = new Coord(0, sz.y - mebtn.sz.y - UI.scale(5));
-	    me2btn.c = new Coord(0, sz.y - (me2btn.sz.y * 2) - UI.scale(10));
+	    me2btn.c = new Coord(0, sz.y - (me2btn.sz.y * 2) - UI.scale(15));
 	    mibtn.c = new Coord(sz.x - btnw, sz.y - mibtn.sz.y - UI.scale(5));
 	    if(namesel != null) {
 		namesel.c = listf.c.add(0, listf.sz.y + UI.scale(10));

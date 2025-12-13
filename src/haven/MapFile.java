@@ -1865,7 +1865,7 @@ public class MapFile {
 		Utils.checkirq();
 	    }
 	    
-	    MappingClient.getInstance().UploadCacheGrid(genus, seg.id, gridInfos);
+	    ngrid = 0;
 	    
 	    for (Pair<Coord, Long> gd : gridbuf) {
 		prog.grid(nseg, segbuf.size(), ngrid++, gridbuf.size());
@@ -1874,25 +1874,26 @@ public class MapFile {
 		    continue;
 		}
 		BufferedImage b = null;
+		BufferedImage overlay = null;
 		int maxtry = 5;
 		int curTry = 0;
-		while (b == null && curTry < maxtry)
-		{
+		while (b == null && curTry < maxtry) {
 		    try {
 			b = grid.render(gd.a, true);
-			File f = new File("G:\\tmp\\" + gd.b + ".png");
-			ImageIO.write(b, "png", f);
+			overlay = grid.olrender(gd.a, "realm");
+//			File f = new File("X:\\tmp\\" + gd.b + ".png");
+//			ImageIO.write(b, "png", f);
 			MappingClient.getInstance().UploadCacheImage(grid.id, genus, b);
-		    } catch(Exception ex)
-		    {
+			MappingClient.getInstance().UploadCacheOverlayImage(grid.id, genus, overlay);
+		    } catch (Exception ex) {
 			curTry++;
 			Thread.sleep(200);
 			System.out.println(ex.getMessage());
 		    }
 		}
-		
 		Utils.checkirq();
 	    }
+	    MappingClient.getInstance().UploadCacheGrid(genus, seg.id, gridInfos);
 	    nseg++;
 	}
     }

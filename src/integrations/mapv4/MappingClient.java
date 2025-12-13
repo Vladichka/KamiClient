@@ -827,4 +827,29 @@ public class MappingClient {
 	    System.out.println("Cannot upload " + gridId + ": " + e.getMessage());
 	}
     }
+    
+    public void UploadCacheOverlayImage(long gridId, String genus, BufferedImage image)
+    {
+	if(image == null) {
+	    return;
+	}
+	try {
+	    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+	    ImageIO.write(image, "png", outputStream);
+	    ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+	    MultipartUtility multipart = new MultipartUtility(endpoint + "/gridCacheOverlayUpload", "utf-8");
+	    multipart.addFormField("id", Long.toString(gridId));
+	    multipart.addFormField("genus", genus);
+	    multipart.addFilePart("file", inputStream, "minimap.png");
+	    JSONObject extraData = new JSONObject();
+	    extraData.put("season", 0);
+	    multipart.addFormField("extraData", extraData.toString());
+	    MultipartUtility.Response response = multipart.finish();
+	    if(response.statusCode != 200) {
+		System.out.println("Upload Error: Code" + response.statusCode + " - " + response.response);
+	    }
+	} catch (Exception e) {
+	    System.out.println("Cannot upload " + gridId + ": " + e.getMessage());
+	}
+    }
 }
