@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.List;
 
 /* >wdg: LocalInspect */
-@FromResource(name = "ui/inspect", version = 4)
+@FromResource(name = "ui/inspect", version = 5)
 public class LocalInspect extends Widget {
     public MapView mv;
     public Hover last = null, cur = null;
@@ -114,7 +114,7 @@ public class LocalInspect extends Widget {
 	    }
 	    if(mc != null) {
 		int tid = ui.sess.glob.map.gettile(mc.floor(MCache.tilesz));
-		Resource tile = ui.sess.glob.map.tilesetr(tid);
+		Resource tile = ui.sess.glob.map.tileset(tid).getres();
 		Resource.Tooltip name = tile.layer(Resource.tooltip);
 		if(name != null)
 		    return(name.t);

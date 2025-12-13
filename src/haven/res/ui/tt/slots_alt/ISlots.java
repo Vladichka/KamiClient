@@ -1,5 +1,5 @@
 /* Preprocessed source code */
-package haven.res.ui.tt.slots;
+package haven.res.ui.tt.slots_alt;
 
 import haven.*;
 import static haven.PUtils.*;
@@ -10,19 +10,21 @@ import java.awt.Color;
 import java.util.*;
 
 /* >tt: Fac */
-@FromResource(name = "ui/tt/slots", version = 32)
+@FromResource(name = "ui/tt/slots-alt", version = 2)
 public class ISlots extends ItemInfo.Tip implements GItem.NumberInfo {
     public static final Text ch = Text.render("Gilding:");
-    public static final Text.Foundry progf = new Text.Foundry(Text.dfont.deriveFont(Font.ITALIC), 10, new Color(0, 169, 224));
+    public static final Color fcol = new Color(0, 169, 224), scol = new Color(255, 192, 64);
+    public static final Text.Foundry progf = new Text.Foundry(Text.dfont.deriveFont(Font.ITALIC), 10);
     public final Collection<SItem> s = new ArrayList<SItem>();
-    public final int left;
+    public final int uses, used;
     public final double pmin, pmax;
     public final Resource[] attrs;
     public final boolean ignol;
 
-    public ISlots(Owner owner, int left, double pmin, double pmax, Resource[] attrs) {
+    public ISlots(Owner owner, int uses, int used, double pmin, double pmax, Resource[] attrs) {
 	super(owner);
-	this.left = left;
+	this.uses = uses;
+	this.used = used;
 	this.pmin = pmin;
 	this.pmax = pmax;
 	this.attrs = attrs;
@@ -50,8 +52,10 @@ public class ISlots extends ItemInfo.Tip implements GItem.NumberInfo {
 	}
 	for(SItem si : s)
 	    si.layout(l);
-	if(left > 0)
-	    l.cmp.add(progf.render((left > 1)?String.format("Gildable \u00d7%d", left):"Gildable").img, new Coord(10, l.cmp.sz.y));
+	if(used < uses)
+	    l.cmp.add(progf.render(String.format("Gildable (%d/%d)", uses - used, uses), fcol).img, new Coord(10, l.cmp.sz.y));
+	else
+	    l.cmp.add(progf.render(String.format("Not further gildable (0/%d)", uses), scol).img, new Coord(10, l.cmp.sz.y));
     }
 
     public static final Object[] defn = {Loading.waitfor(Resource.classres(ISlots.class).pool.load("ui/tt/defn", 7))};
@@ -98,7 +102,7 @@ public class ISlots extends ItemInfo.Tip implements GItem.NumberInfo {
 
     public static final Color avail = new Color(128, 192, 255);
     public Color numcolor() {
-	return((left > 0) ? avail : Color.WHITE);
+	return((used < uses) ? avail : Color.WHITE);
     }
 
     public void drawoverlay(GOut g, Tex tex) {

@@ -1,5 +1,5 @@
 /* Preprocessed source code */
-package haven.res.ui.tt.slots;
+package haven.res.ui.tt.slots_alt;
 
 import haven.*;
 import static haven.PUtils.*;
@@ -10,7 +10,7 @@ import java.awt.Color;
 import java.util.*;
 
 /* >tt: Fac */
-@FromResource(name = "ui/tt/slots", version = 32)
+@FromResource(name = "ui/tt/slots-alt", version = 2)
 public class Fac implements ItemInfo.InfoFactory {
     public ItemInfo build(ItemInfo.Owner owner, ItemInfo.Raw rawi, Object... args) {
 	Resource.Resolver rr = owner.context(Resource.Resolver.class);
@@ -23,9 +23,7 @@ public class Fac implements ItemInfo.InfoFactory {
 	a++;
 	int uses = (Integer)args[a++];
 	int used = (Integer)args[a++];
-	int left = uses - used;
-	//use new ISlots for compatibility - `slots_alt` is used for w16.1 onward
-	haven.res.ui.tt.slots_alt.ISlots ret = new haven.res.ui.tt.slots_alt.ISlots(owner, uses, used, pmin, pmax, attrs.toArray(new Resource[0]));
+	ISlots ret = new ISlots(owner, uses, used, pmin, pmax, attrs.toArray(new Resource[0]));
 	while(a < args.length) {
 	    Indir<Resource> res = rr.getres((Integer)args[a++]);
 	    Message sdt = Message.nil;
