@@ -26,9 +26,13 @@
 
 package haven;
 
-import java.awt.Color;
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
 import java.util.*;
 import java.text.Collator;
+import java.util.List;
 
 public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
     private List<Buddy> buddies = new ArrayList<Buddy>();
@@ -56,6 +60,10 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 	Group.Purple.col,
 	Group.Orange.col,
     };
+    
+    public static int defaultGroup = 0;
+    public static boolean addingKinFromList = false;
+    public static final List<String> colorList = Arrays.asList("white", "green", "red", "blue", "cyan", "yellow", "purple", "orange");
     
     public enum Group {
 	White(new Color(255, 255, 255)),
@@ -461,6 +469,15 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 	setfocustab(true);
 	Widget prev;
         prev = add(new Img(CharWnd.catf.render(L10N.label("Kin")).tex()));
+	
+	if (CFG.ENABLE_PURGE_BUTTON_IN_KIN_LIST.get())
+	    add(new Button(UI.scale(80), "Purge").action(() -> {
+		for (Buddy b: buddies)
+		{
+		    b.endkin();
+		    b.forget();
+		}
+	    }), prev.pos("bl").adds(sz.x - UI.scale(85), -30));
 
 	bl = add(new BuddyList(Coord.of(sz.x - Window.wbox.bisz().x, UI.scale(140))), prev.pos("bl").add(Window.wbox.btloff()));
 	prev = Frame.around(this, Collections.singletonList(bl));
@@ -516,6 +533,40 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 		    BuddyWnd.this.wdgmsg("bypwd", opass.text());
 		    opass.settext("");
 	}), opass.pos("bl").adds(0, 5));
+	
+	prev = add(new Button(sbw * 2, "Add kin from clipboard list").action(() -> {
+	    try {
+		Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+		Transferable contents = clipboard.getContents(null);
+		if(contents != null && contents.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+		    String clipboardText = (String) contents.getTransferData(DataFlavor.stringFlavor);
+		    String[] list = clipboardText.split("\\r?\\n");
+		    for (String s: list) {
+			if (colorList.contains(s.toLowerCase())) {
+			    defaultGroup = colorList.indexOf(s.toLowerCase());
+			    if (defaultGroup < 0) {
+				defaultGroup = 0;
+				break;
+			    }
+			}
+		    }
+		    addingKinFromList = true;
+		    for (String s: list) {
+			BuddyWnd.this.wdgmsg("bypwd", s);
+		    }
+		    Timer timer = new Timer();
+		    timer.schedule(new TimerTask(){
+			@Override
+			public void run() {
+			    addingKinFromList = false;
+			}
+		    }, 5000);
+		}
+	    }
+	    catch (Exception ex) {
+		
+	    }
+	}), prev.pos("bl").adds(0, 5));
 	pack();
     }
 
@@ -564,6 +615,9 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 		idmap.put(b.id, b);
 		Collections.sort(buddies, bcmp);
 	    }
+	    if (addingKinFromList)
+		if (group != defaultGroup)
+		    b.chgrp(defaultGroup);
 	    serial++;
 	} else if(msg == "rm") {
 	    int id = Utils.iv(args[0]);
