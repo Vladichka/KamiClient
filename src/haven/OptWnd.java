@@ -815,13 +815,6 @@ public class OptWnd extends WindowX {
 	addPanelButton("Widget shortcuts", 'k', keybind, colum, row++);
 	addPanelButton("Global shortcuts", 's', shortcuts, colum, row++);
 	//addPanelButton("",'l', Action.);
-	if (LoginScreen.authmech.get() == "steam" || LoginScreen.authmech.get() == null) {
-	    addPanelButton("Log out to native", 'q', Action.LOGOUT_AND_SWITCH_AUTH_METHOD, colum, row++);
-	}
-	if (LoginScreen.authmech.get() == "native") {
-	    addPanelButton("log out to steam", 'q', Action.LOGOUT_AND_SWITCH_AUTH_METHOD, colum, row++);
-	}
-	addPanelButton("Automation settings", 't', automation, colum, row++);
     
 	colum++;
 	mrow = Math.max(mrow, row);
@@ -833,33 +826,47 @@ public class OptWnd extends WindowX {
 	addPanelButton("Colors", 'o', color, colum, row++);
 	addPanelButton("Combat", 'b', combat, colum, row++);
 	addPanelButton("Minimap", 'm', minimap, colum, row++);
+	
+	colum++;
+	mrow = Math.max(mrow, row);
+	row = 0;
+	
 	addPanelButton("Map upload", 'm', mapping, colum, row++);
+	addPanelButton("Automation settings", 't', automation, colum, row++);
 	addPanelButton("Experimental", 'x', experimental, colum, row++);
 
 	int y = 0;
 	mrow = Math.max(mrow, row);
 	Widget prev;
-	//y = main.add(new PButton(UI.scale(200), "Interface settings", 'v', iface), 0, y).pos("bl").adds(0, 5).y;
-	//y = main.add(new PButton(UI.scale(200), "Video settings", 'v', video), 0, y).pos("bl").adds(0, 5).y;
-	//y = main.add(new PButton(UI.scale(200), "Audio settings", 'a', audio), 0, y).pos("bl").adds(0, 5).y;
-	//y = main.add(new PButton(UI.scale(200), "Keybindings", 'k', keybind), 0, y).pos("bl").adds(0, 5).y;
+	int x = PANEL_POS.mul(colum - 1, 0).x;
+	
 	y += UI.scale((mrow + 1) * PANEL_POS.y);
 	if(gopts) {
 	    if((SteamStore.steamsvc.get() != null) && (Steam.get() != null)) {
 		y = main.add(new Button(UI.scale(200), "Visit store", false).action(() -> {
 			    SteamStore.launch(ui.sess);
-		}), 0, y).pos("bl").adds(0, 5).y;
+		}), x, y).pos("bl").adds(0, 5).y;
 	    }
 	    y = main.add(new Button(UI.scale(200), "Switch character", false).action(() -> {
 			getparent(GameUI.class).act("lo", "cs");
-	    }), 0, y).pos("bl").adds(0, 5).y;
+	    }), x, y).pos("bl").adds(0, 5).y;
+	    if (LoginScreen.authmech.get() == "steam" || LoginScreen.authmech.get() == null) {
+		y = main.add(new Button(UI.scale(200), "Log out to native", false).action(() -> {
+		    Action.LOGOUT_AND_SWITCH_AUTH_METHOD.run(ui.gui);
+		}), x, y).pos("bl").adds(0, 5).y;
+	    }
+	    if (LoginScreen.authmech.get() == "native") {
+		y = main.add(new Button(UI.scale(200), "Log out to steam", false).action(() -> {
+		    Action.LOGOUT_AND_SWITCH_AUTH_METHOD.run(ui.gui);
+		}), x, y).pos("bl").adds(0, 5).y;
+	    }
 	    y = main.add(new Button(UI.scale(200), "Log out", false).action(() -> {
 			getparent(GameUI.class).act("lo");
-	    }), 0, y).pos("bl").adds(0, 5).y;
+	    }), x, y).pos("bl").adds(0, 5).y;
 	}
 	y = main.add(new Button(UI.scale(200), "Close", false).action(() -> {
 		    OptWnd.this.hide();
-	}), 0, y).pos("bl").adds(0, 5).y;
+	}), x, y).pos("bl").adds(0, 5).y;
 	this.main.pack();
 
 	chpanel(this.main);
@@ -1430,6 +1437,9 @@ public class OptWnd extends WindowX {
 	
 	y += STEP;
 	panel.add(new CFGBox("Show QuestGiver tasks in tooltip on map ", CFG.QUESTHELPER_SHOW_TASKS_IN_TOOLTIP), x, y);
+	
+	y += STEP;
+	panel.add(new CFGBox("Enable purge button for kin list. (restart required)", CFG.ENABLE_PURGE_BUTTON_IN_KIN_LIST), x, y);
 	
 	my = Math.max(my, y);
     
